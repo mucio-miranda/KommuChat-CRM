@@ -1,0 +1,216 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Healthcare CRM Design System - Atendly Inspired */
+
+@layer base {
+  :root {
+    /* Core backgrounds */
+    --background: 250 50% 98%;
+    --foreground: 260 15% 15%;
+
+    /* Cards and surfaces */
+    --card: 0 0% 100%;
+    --card-foreground: 260 15% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 260 15% 15%;
+
+    /* Primary Kommu brand colors - Red theme */
+    --primary: 0 75% 50%; /* #BB1623 - Kommu Red */
+    --primary-glow: 0 80% 60%; /* #D91E2B - Lighter Kommu Red */
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary - Clean medical grays with red accents */
+    --secondary: 0 15% 96%; /* #F8F8F8 - Light Gray with red undertone */
+    --secondary-foreground: 0 15% 25%;
+
+    /* Muted - Professional tones with red hints */
+    --muted: 0 10% 94%; /* #F1F1F1 - Professional Gray with red hint */
+    --muted-foreground: 0 8% 45%; /* #6B6B6B - Medical Text Gray */
+
+    /* Accent colors - Kommu Red variants */
+    --accent: 0 75% 50%; /* #BB1623 - Kommu Red */
+    --accent-foreground: 0 0% 100%;
+
+    /* Status colors */
+    --success: 140 65% 52%; /* #42C77A */
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 45 85% 58%; /* #E4B146 */
+    --warning-foreground: 0 0% 100%;
+    
+    --destructive: 0 75% 62%; /* #EF4E55 */
+    --destructive-foreground: 0 0% 100%;
+
+    /* Borders and inputs */
+    --border: 210 30% 90%;
+    --input: 210 30% 94%;
+    --ring: 210 85% 55%;
+
+    /* Enhanced styling */
+    --radius: 0.75rem;
+
+    /* Custom gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    --gradient-subtle: linear-gradient(180deg, hsl(var(--secondary)), hsl(var(--muted)));
+    --gradient-dark: linear-gradient(180deg, hsl(0 25% 8%), hsl(0 20% 12%));
+    --gradient-kommu: linear-gradient(135deg, #BB1623 0%, #D91E2B 50%, #F44336 100%);
+
+    /* Shadows */
+    --shadow-soft: 0 3px 6px rgba(187, 22, 35, 0.05);
+    --shadow-medium: 0 8px 25px rgba(187, 22, 35, 0.1);
+    --shadow-strong: 0 20px 40px rgba(187, 22, 35, 0.15);
+    --shadow-kommu: 0 4px 14px rgba(187, 22, 35, 0.15);
+
+    /* Transitions */
+    --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    --sidebar-background: 0 20% 98%;
+
+    --sidebar-foreground: 0 5% 26%;
+
+    --sidebar-primary: 0 75% 50%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 0 10% 95%;
+
+    --sidebar-accent-foreground: 0 5% 10%;
+
+    --sidebar-border: 0 15% 91%;
+
+    --sidebar-ring: 0 75% 50%;
+  }
+
+  .dark {
+    /* Dark mode maintains the same medical blue healthcare aesthetic */
+    --background: 210 50% 4%;
+    --foreground: 210 30% 95%;
+
+    --card: 210 40% 8%;
+    --card-foreground: 210 30% 95%;
+
+    --popover: 210 40% 8%;
+    --popover-foreground: 210 30% 95%;
+
+    --primary: 0 75% 50%;
+    --primary-glow: 0 80% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 20% 12%;
+    --secondary-foreground: 0 15% 95%;
+
+    --muted: 0 20% 10%;
+    --muted-foreground: 0 10% 65%;
+
+    --accent: 0 75% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --success: 140 65% 52%;
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 45 85% 58%;
+    --warning-foreground: 0 0% 100%;
+    
+    --destructive: 0 75% 62%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 35% 15%;
+    --input: 210 35% 18%;
+    --ring: 210 85% 55%;
+
+    /* Dark sidebar */
+    --sidebar-background: 0 25% 8%;
+    --sidebar-foreground: 0 15% 85%;
+    --sidebar-primary: 0 75% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 20% 12%;
+    --sidebar-accent-foreground: 0 15% 85%;
+    --sidebar-border: 0 20% 15%;
+    --sidebar-ring: 0 75% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+@layer components {
+  /* Custom component classes */
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .gradient-subtle {
+    background: var(--gradient-subtle);
+  }
+  
+  .gradient-dark {
+    background: var(--gradient-dark);
+  }
+
+  .gradient-kommu {
+    background: var(--gradient-kommu);
+  }
+  
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+  
+  .shadow-medium {
+    box-shadow: var(--shadow-medium);
+  }
+  
+  .shadow-strong {
+    box-shadow: var(--shadow-strong);
+  }
+
+  .shadow-kommu {
+    box-shadow: var(--shadow-kommu);
+  }
+  
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+  
+  .transition-bounce {
+    transition: var(--transition-bounce);
+  }
+
+  /* Healthcare specific utilities */
+  .status-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-smooth;
+  }
+
+  .metric-card {
+    @apply bg-card rounded-2xl shadow-soft p-6 transition-smooth hover:shadow-medium;
+  }
+
+  .sidebar-nav-item {
+    @apply flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-smooth relative;
+  }
+
+  .sidebar-nav-item.active {
+    @apply bg-transparent text-primary font-bold;
+  }
+
+  .sidebar-nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background-color: hsl(var(--primary));
+    border-radius: 0 2px 2px 0;
+  }
+}
