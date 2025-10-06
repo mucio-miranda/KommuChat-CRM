@@ -10,12 +10,12 @@ console.log('');
 console.log('='.repeat(80));
 console.log(`
 # Supabase CRM (para gerenciamento de usuários e credenciais Google)
-VITE_CRM_SUPABASE_URL=https://wywzdtyjzzmcehrsalvn.supabase.co
-VITE_CRM_SUPABASE_ANON_KEY=REMOVED_SUPABASE_CRM_ANON_KEY
+VITE_CRM_SUPABASE_URL=https://your-crm-project.supabase.co
+VITE_CRM_SUPABASE_ANON_KEY=your_crm_supabase_anon_key_here
 
 # Supabase Principal (para dados dos clientes - pacientes, etc.)
-VITE_SUPABASE_URL=https://fxrsizluqodjotcorxop.supabase.co
-VITE_SUPABASE_ANON_KEY=REMOVED_SUPABASE_ANON_KEY
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 
 # Google Calendar API (padrão - será sobrescrito pelas credenciais do cliente)
 VITE_GOOGLE_CLIENT_ID=your_google_client_id_here
@@ -23,14 +23,14 @@ VITE_GOOGLE_CLIENT_SECRET=your_google_client_secret_here
 VITE_GOOGLE_REDIRECT_URI=http://localhost:8080/auth/google/callback
 
 # Configuração de Criptografia para Credenciais
-VITE_ENCRYPTION_KEY=kommuchat-encryption-key-2024
+VITE_ENCRYPTION_KEY=your_secure_encryption_key_here
 
 # WhatsApp API (opcional)
 VITE_WHATSAPP_API_URL=http://localhost:3001
 
 # Configuração Admin
 VITE_ADMIN_EMAIL=admin@kommuchat.com
-VITE_ADMIN_PASSWORD=admin123
+VITE_ADMIN_PASSWORD=your_secure_admin_password_here
 
 # App Configuration
 VITE_APP_NAME=KOMMUchat CRM

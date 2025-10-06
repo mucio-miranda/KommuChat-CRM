@@ -26,8 +26,8 @@ VITE_SUPABASE_URL=https://seu-projeto.supabase.co
 VITE_SUPABASE_ANON_KEY=sua_chave_anonima_aqui
 
 # Google Calendar API Configuration
-VITE_GOOGLE_CLIENT_ID=REMOVED_GOOGLE_CLIENT_ID
-VITE_GOOGLE_CLIENT_SECRET=REMOVED_GOOGLE_CLIENT_SECRET
+VITE_GOOGLE_CLIENT_ID=your_google_client_id_here
+VITE_GOOGLE_CLIENT_SECRET=your_google_client_secret_here
 VITE_GOOGLE_REDIRECT_URI=http://localhost:8080/auth/google/callback
 
 # App Configuration

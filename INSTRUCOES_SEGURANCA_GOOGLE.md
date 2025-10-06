@@ -75,7 +75,7 @@ FROM google_calendar_tokens;
 
 ### ✅ **Chave de Criptografia**
 - Configurada via `VITE_ENCRYPTION_KEY` no arquivo `.env`
-- Chave atual: `kommuchat-encryption-key-2024`
+- Chave atual: `your_secure_encryption_key_here`
 
 ### ✅ **Serviços Seguros**
 - `secureGoogleCredentialsService` - Para credenciais
