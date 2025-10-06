@@ -51,4 +51,4 @@ Para dúvidas ou suporte, entre em contato através dos canais oficiais do proje
 
 ---
 
-**Desenvolvido com nmuito empenho para revolucionar o atendimento em saúde**
+**Desenvolvido com muito empenho para revolucionar o atendimento em saúde**
