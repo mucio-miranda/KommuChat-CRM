@@ -1,2 +1,0 @@
-Teste para verificar se a Netlify consegue acessar os arquivos do repositório.
-Este arquivo deve estar visível na Netlify se a conexão estiver funcionando.

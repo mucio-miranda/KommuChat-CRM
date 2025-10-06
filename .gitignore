@@ -27,7 +27,7 @@ kommu-env-example.txt
 *.key
 *.pem
 *.p12
-*.json
+# Note: package.json and package-lock.json are needed for deployment
 
 # Supabase
 .supabase/
