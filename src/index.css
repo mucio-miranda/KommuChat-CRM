@@ -59,10 +59,10 @@
     --gradient-kommu: linear-gradient(135deg, #BB1623 0%, #D91E2B 50%, #F44336 100%);
 
     /* Shadows */
-    --shadow-soft: 0 3px 6px rgba(187, 22, 35, 0.05);
-    --shadow-medium: 0 8px 25px rgba(187, 22, 35, 0.1);
-    --shadow-strong: 0 20px 40px rgba(187, 22, 35, 0.15);
-    --shadow-kommu: 0 4px 14px rgba(187, 22, 35, 0.15);
+    --shadow-soft: 0 3px 6px rgba(0, 0, 0, 0.03);
+    --shadow-medium: 0 8px 25px rgba(0, 0, 0, 0.06);
+    --shadow-strong: 0 20px 40px rgba(0, 0, 0, 0.1);
+    --shadow-neutral: 0 4px 14px rgba(0, 0, 0, 0.05);
 
     /* Transitions */
     --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -174,8 +174,8 @@
     box-shadow: var(--shadow-strong);
   }
 
-  .shadow-kommu {
-    box-shadow: var(--shadow-kommu);
+  .shadow-neutral {
+    box-shadow: var(--shadow-neutral);
   }
   
   .transition-smooth {

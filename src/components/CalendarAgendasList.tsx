@@ -18,9 +18,10 @@ interface Calendar {
 
 interface CalendarAgendasListProps {
   isConnected: boolean;
+  onDateSelect?: (date: Date) => void;
 }
 
-export function CalendarAgendasList({ isConnected }: CalendarAgendasListProps) {
+export function CalendarAgendasList({ isConnected, onDateSelect }: CalendarAgendasListProps) {
   const { getCalendarList, selectedCalendars, setSelectedCalendars } = useGoogleCalendar();
   const [calendars, setCalendars] = useState<Calendar[]>([]);
   const [isExpanded, setIsExpanded] = useState(true);
@@ -150,7 +151,7 @@ export function CalendarAgendasList({ isConnected }: CalendarAgendasListProps) {
       className="mt-4"
       onDateSelect={(date) => {
         console.log('📅 Data selecionada no mini calendário:', date);
-        // Aqui você pode adicionar lógica para navegar para a data selecionada
+        onDateSelect?.(date);
       }}
     />
   </div>

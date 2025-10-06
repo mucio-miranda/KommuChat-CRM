@@ -13,7 +13,6 @@ import Pacientes from "./pages/Pacientes";
 import Calendario from "./pages/Calendario";
 // UserManagement movido para AdminDashboard
 import Automatizacoes from "./pages/Automatizacoes";
-import Configuracoes from "./pages/Configuracoes";
 import Login from "./pages/Login";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -99,14 +98,9 @@ function AppRoutes() {
         </ProtectedRoute>
       } />
       {/* Rota /usuarios removida - funcionalidade movida para /admin/dashboard */}
-      <Route path="/automatizacoes" element={
+      <Route path="/automacoes" element={
         <ProtectedRoute>
           <Automatizacoes />
-        </ProtectedRoute>
-      } />
-      <Route path="/configuracoes" element={
-        <ProtectedRoute>
-          <Configuracoes />
         </ProtectedRoute>
       } />
       <Route path="/funcionarios" element={

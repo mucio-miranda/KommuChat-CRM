@@ -211,6 +211,18 @@ export default function Calendario() {
     setViewMode('week');
   };
 
+  const handleMiniCalendarDateSelect = (date: Date) => {
+    // Definir a semana atual para incluir a data selecionada
+    setCurrentWeek(date);
+    
+    // Atualizar mês e ano para a data selecionada
+    setCurrentMonth(date.getMonth());
+    setCurrentYear(date.getFullYear());
+    
+    // Mudar para visualização semanal
+    setViewMode('week');
+  };
+
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
@@ -394,7 +406,10 @@ export default function Calendario() {
       <div className="flex space-x-6">
         {/* Sidebar com lista de agendas */}
         <div className="w-80 flex-shrink-0">
-          <CalendarAgendasList isConnected={isConnected} />
+          <CalendarAgendasList 
+            isConnected={isConnected} 
+            onDateSelect={handleMiniCalendarDateSelect}
+          />
           <SearchConsultation 
             className="mt-4"
             onSearch={setSearchQuery}

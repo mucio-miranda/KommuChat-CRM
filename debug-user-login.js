@@ -32,3 +32,7 @@ console.log('🌐 URL atual:', window.location.href);
 console.log('📍 Pathname:', window.location.pathname);
 
 
+
+
+
+

@@ -355,3 +355,7 @@ export function QRCodeManager({ clienteId, clienteNome, onQRCodeUpdated }: QRCod
 }
 
 
+
+
+
+

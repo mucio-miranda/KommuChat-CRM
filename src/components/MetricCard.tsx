@@ -44,7 +44,7 @@ export function MetricCard({
           )}
         </div>
         
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-red-50 group-hover:shadow-kommu transition-smooth">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gray-50 group-hover:shadow-neutral transition-smooth">
           <Icon className="w-5 h-5 text-[#E21929]" />
         </div>
       </div>

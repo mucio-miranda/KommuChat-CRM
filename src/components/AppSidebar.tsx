@@ -30,8 +30,7 @@ const getMenuItems = (userRole: string) => {
     { title: "Pacientes", url: "/pacientes", icon: Users },
     { title: "Calendário", url: "/calendario", icon: Calendar },
     // { title: "Usuários", url: "/usuarios", icon: UserCog }, // Movido para Admin Dashboard
-    { title: "Automatizações", url: "/automatizacoes", icon: Zap },
-    { title: "Configurações", url: "/configuracoes", icon: Settings },
+    { title: "Automações", url: "/automacoes", icon: Zap },
   ];
 
   // Adicionar "Funcionários" para admin_clinica OU admin

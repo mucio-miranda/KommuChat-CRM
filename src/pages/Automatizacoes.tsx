@@ -14,7 +14,6 @@ import {
   Loader2,
   RefreshCw,
   Zap,
-  Settings,
   Users,
   Calendar,
   Mail
@@ -97,29 +96,29 @@ export default function Automatizacoes() {
       title: "Mensagens Automáticas",
       description: "Envie mensagens automáticas para novos pacientes",
       icon: MessageCircle,
-      status: connection.isConnected ? "Ativo" : "Inativo",
-      color: connection.isConnected ? "text-green-600" : "text-gray-400"
+      status: "Ativo",
+      color: "text-green-600"
     },
     {
       title: "Lembretes de Consulta",
       description: "Envie lembretes automáticos antes das consultas",
       icon: Mail,
-      status: connection.isConnected ? "Ativo" : "Inativo",
-      color: connection.isConnected ? "text-green-600" : "text-gray-400"
+      status: "Ativo",
+      color: "text-green-600"
     },
     {
       title: "Follow-up Pós Consulta",
       description: "Mensagens de acompanhamento após consultas",
       icon: Users,
-      status: connection.isConnected ? "Ativo" : "Inativo",
-      color: connection.isConnected ? "text-green-600" : "text-gray-400"
+      status: "Ativo",
+      color: "text-green-600"
     },
     {
       title: "Integração com Calendário",
       description: "Sincronização automática com Google Calendar",
       icon: Calendar,
-      status: connection.isConnected ? "Ativo" : "Inativo",
-      color: connection.isConnected ? "text-green-600" : "text-gray-400"
+      status: "Ativo",
+      color: "text-green-600"
     }
   ];
 
@@ -330,20 +329,13 @@ export default function Automatizacoes() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-start">
                   <Badge 
-                    variant={feature.status === "Ativo" ? "default" : "secondary"}
-                    className={feature.status === "Ativo" ? "bg-green-500 hover:bg-green-600" : ""}
+                    variant="default"
+                    className="bg-green-500 hover:bg-green-600"
                   >
                     {feature.status}
                   </Badge>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    disabled={!connection.isConnected}
-                  >
-                    <Settings className="w-4 h-4" />
-                  </Button>
                 </div>
               </CardContent>
             </Card>

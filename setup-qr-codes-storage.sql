@@ -125,3 +125,7 @@ COMMENT ON FUNCTION save_qr_code_with_upload(UUID, TEXT, INTEGER, TEXT, TEXT) IS
 -- );
 
 
+
+
+
+

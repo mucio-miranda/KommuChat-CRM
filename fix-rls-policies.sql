@@ -1,81 +1,35 @@
--- Script para corrigir políticas RLS da tabela google_calendar_tokens
--- Execute este script no SQL Editor do Supabase CRM: https://wywzdtyjzzmcehrsalvn.supabase.co
+-- Fix RLS policies for pacientes_manuais table
+-- Execute this SQL in the Supabase SQL Editor
 
--- 1. Verificar políticas existentes
-SELECT 
-  schemaname,
-  tablename,
-  policyname,
-  permissive,
-  roles,
-  cmd,
-  qual,
-  with_check
+-- First, let's check current policies
+SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual 
 FROM pg_policies 
-WHERE tablename = 'google_calendar_tokens'
-  AND schemaname = 'public';
+WHERE tablename = 'pacientes_manuais';
 
--- 2. Remover todas as políticas existentes
-DROP POLICY IF EXISTS "Permitir todas as operações google_calendar_tokens" ON google_calendar_tokens;
-DROP POLICY IF EXISTS "Enable read access for all users" ON google_calendar_tokens;
-DROP POLICY IF EXISTS "Enable insert for all users" ON google_calendar_tokens;
-DROP POLICY IF EXISTS "Enable update for all users" ON google_calendar_tokens;
-DROP POLICY IF EXISTS "Enable delete for all users" ON google_calendar_tokens;
+-- Remove existing policies (force drop)
+DROP POLICY IF EXISTS "Users can view their own manual patients" ON pacientes_manuais CASCADE;
+DROP POLICY IF EXISTS "Users can insert their own manual patients" ON pacientes_manuais CASCADE;
+DROP POLICY IF EXISTS "Users can update their own manual patients" ON pacientes_manuais CASCADE;
+DROP POLICY IF EXISTS "Users can delete their own manual patients" ON pacientes_manuais CASCADE;
+DROP POLICY IF EXISTS "Allow insert with valid client_id" ON pacientes_manuais CASCADE;
 
--- 3. Criar políticas permissivas para desenvolvimento
-CREATE POLICY "Allow all operations google_calendar_tokens" ON google_calendar_tokens
-  FOR ALL USING (true) WITH CHECK (true);
+-- Create new policies with more permissive insertion
+-- Allow insertion with any valid cliente_id (not necessarily auth.uid())
+CREATE POLICY "Allow insert with valid client_id" ON pacientes_manuais
+    FOR INSERT WITH CHECK (cliente_id IS NOT NULL);
 
--- 4. Verificar se RLS está habilitado
-SELECT 
-  schemaname,
-  tablename,
-  rowsecurity
-FROM pg_tables 
-WHERE tablename = 'google_calendar_tokens'
-  AND schemaname = 'public';
+-- Restrictive policies for other operations
+CREATE POLICY "Users can view their own manual patients" ON pacientes_manuais
+    FOR SELECT USING (auth.uid() = cliente_id);
 
--- 5. Se RLS não estiver habilitado, habilitar
-ALTER TABLE google_calendar_tokens ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can update their own manual patients" ON pacientes_manuais
+    FOR UPDATE USING (auth.uid() = cliente_id);
 
--- 6. Verificar políticas finais
-SELECT 
-  policyname,
-  cmd,
-  permissive
+CREATE POLICY "Users can delete their own manual patients" ON pacientes_manuais
+    FOR DELETE USING (auth.uid() = cliente_id);
+
+-- Verify policies were created
+SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual 
 FROM pg_policies 
-WHERE tablename = 'google_calendar_tokens'
-  AND schemaname = 'public';
-
--- 7. Teste de busca que estava falhando
-SELECT * FROM google_calendar_tokens WHERE user_id = 'fantom.weblabs@gmail.com';
-
--- 8. Inserir um token de teste para o usuário real
-INSERT INTO google_calendar_tokens (
-  user_id, 
-  access_token, 
-  token_type,
-  expires_in,
-  scope
-) VALUES (
-  'fantom.weblabs@gmail.com',
-  'test_access_token_real_user',
-  'Bearer',
-  3600,
-  'calendar.readonly calendar.events'
-) ON CONFLICT (user_id) DO UPDATE SET
-  access_token = EXCLUDED.access_token,
-  updated_at = NOW();
-
--- 9. Verificar se o token foi inserido
-SELECT 
-  user_id,
-  token_type,
-  expires_in,
-  scope,
-  created_at
-FROM google_calendar_tokens
-WHERE user_id = 'fantom.weblabs@gmail.com';
-
--- 10. Contagem final
-SELECT COUNT(*) as total_registros FROM google_calendar_tokens;
+WHERE tablename = 'pacientes_manuais'
+ORDER BY policyname;

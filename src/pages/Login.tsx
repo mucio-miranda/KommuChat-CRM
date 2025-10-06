@@ -64,7 +64,6 @@ export default function Login() {
               <Input
                 id="email"
                 type="text"
-                placeholder="admin-nutrivida ou seu@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -77,7 +76,6 @@ export default function Login() {
               <Input
                 id="password"
                 type="password"
-                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required

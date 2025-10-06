@@ -1,27 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
 import { 
   Search, 
-  Filter, 
   Plus, 
-  Eye, 
-  Edit, 
-  Calendar as CalendarIcon,
-  CheckCircle,
-  MoreHorizontal,
   RefreshCw
 } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Layout } from "@/components/Layout";
+import { NewPatientModal } from "@/components/NewPatientModal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -39,7 +28,7 @@ interface Patient {
   nome: string;
   email: string;
   telefone: string;
-  chatid: string;
+  chatid?: string;
   status: string;
   setdata?: string;
   followup?: string;
@@ -47,20 +36,24 @@ interface Patient {
   topoucall?: string;
   atendimentofinal?: string;
   atende_humano?: string;
+  observacoes?: string;
   created_at?: string;
   updated_at?: string;
+  fonte: 'ia' | 'humano'; // Fonte dos dados: IA ou Humano
 }
 
 export default function Pacientes() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
+  const [fonteFilter, setFonteFilter] = useState("todas");
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const [isNewPatientModalOpen, setIsNewPatientModalOpen] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
-  const { read: supabase, config: supabaseConfig } = useSupabase();
+  const { read: supabase, config: supabaseConfig, write: supabaseWrite } = useSupabase();
 
   // Função para determinar o status baseado nos campos do Supabase
   const getPatientStatus = (patient: Patient): "followup" | "atende_humano" | "topoucall" | "atendimentofinal" | "novo" => {
@@ -95,7 +88,7 @@ export default function Pacientes() {
     }
   };
 
-  // Função para carregar dados dos pacientes
+  // Função para carregar dados dos pacientes (IA + Manual)
   const loadData = useCallback(async (isAutoRefresh = false) => {
     try {
       if (isAutoRefresh) {
@@ -104,20 +97,21 @@ export default function Pacientes() {
         setLoading(true);
       }
       
-      if (!supabase) {
+      if (!supabase || !supabaseWrite) {
         setLoading(false);
         setIsRefreshing(false);
         return;
       }
 
-      // Determinar qual tabela usar
-      let tableName = "kommuchat_mvp"; // Tabela padrão para visitantes
-      
       console.log('🔍 PACIENTES - user:', user?.email);
+
+      // 1. Carregar pacientes da IA (tabela dinâmica)
+      let iaPatients: Patient[] = [];
+      let tableName = "kommuchat_mvp"; // Tabela padrão para visitantes
       
       // Se o usuário está logado, buscar a tabela selecionada nas configurações
       if (user) {
-        console.log('🔍 PACIENTES - Usuário logado, buscando tabela...');
+        console.log('🔍 PACIENTES - Usuário logado, buscando tabela IA...');
         
         const { data: configData, error: configError } = await supabaseConfig
           .from('configuracoes_cliente')
@@ -126,58 +120,79 @@ export default function Pacientes() {
           .eq('chave', 'tabela_supabase')
           .single();
         
-        console.log('🔍 PACIENTES - Config result:', { configData, configError });
-        
         if (!configError && configData?.valor && configData.valor.trim() !== '') {
           tableName = configData.valor;
-          console.log('✅ PACIENTES - Tabela alterada para:', tableName);
-        } else {
-          console.log('⚠️ PACIENTES - Mantendo tabela padrão:', tableName);
+          console.log('✅ PACIENTES - Tabela IA alterada para:', tableName);
         }
-        } else {
-          console.log('ℹ️ PACIENTES - Usuário não logado, usando padrão:', tableName);
-        }
+      }
 
-      console.log('🎯 PACIENTES - Carregando dados da tabela:', tableName);
+      console.log('🎯 PACIENTES - Carregando dados da tabela IA:', tableName);
 
-      const { data, error } = await supabase
+      const { data: iaData, error: iaError } = await supabase
         .from(tableName)
         .select('*');
 
-      if (error) {
-        console.error('Erro ao buscar pacientes:', error);
-        if (!isAutoRefresh) {
-          toast({
-            title: "Erro",
-            description: "Não foi possível carregar os pacientes do Supabase",
-            variant: "destructive",
-          });
-        }
-        return;
-      }
-
-      if (data) {
-        console.log('✅ PACIENTES - Dados carregados:', data.length, 'registros da tabela', tableName);
+      if (iaError) {
+        console.error('Erro ao buscar pacientes IA:', iaError);
+      } else if (iaData) {
+        // Adicionar fonte IA aos dados
+        iaPatients = iaData.map(patient => ({
+          ...patient,
+          fonte: 'ia' as const,
+          status: getPatientStatus({ ...patient, fonte: 'ia' })
+        }));
         
-        // Ordenar por data de atualização (mais recente primeiro)
-        const sortedData = data.sort((a, b) => {
-          const dateA = a.updated_at || a.created_at || '';
-          const dateB = b.updated_at || b.created_at || '';
-          return new Date(dateB).getTime() - new Date(dateA).getTime();
-        });
-
         // Remover duplicatas baseado no chatid
-        const uniquePatients = sortedData.filter((patient, index, self) => 
+        iaPatients = iaPatients.filter((patient, index, self) => 
           index === self.findIndex(p => p.chatid === patient.chatid)
         );
-
-        setPatients(uniquePatients);
-        setLastUpdate(new Date());
         
-        if (isAutoRefresh) {
-          console.log('✅ PACIENTES - Refresh automático concluído');
+        console.log('✅ PACIENTES - Dados IA carregados:', iaPatients.length, 'registros');
+      }
+
+      // 2. Carregar pacientes manuais (se usuário logado)
+      let manualPatients: Patient[] = [];
+      if (user) {
+        console.log('🎯 PACIENTES - Carregando pacientes manuais...');
+        
+        const { data: manualData, error: manualError } = await supabaseWrite
+          .from('pacientes_manuais')
+          .select('*')
+          .eq('cliente_id', user.id);
+
+        if (manualError) {
+          console.error('Erro ao buscar pacientes manuais:', manualError);
+        } else if (manualData) {
+          // Adicionar fonte humano aos dados
+          manualPatients = manualData.map(patient => ({
+            ...patient,
+            fonte: 'humano' as const,
+            status: patient.status || 'novo'
+          }));
+          
+          console.log('✅ PACIENTES - Dados manuais carregados:', manualPatients.length, 'registros');
         }
       }
+
+      // 3. Unificar e ordenar dados
+      const allPatients = [...iaPatients, ...manualPatients];
+      
+      // Ordenar por data de atualização (mais recente primeiro)
+      const sortedPatients = allPatients.sort((a, b) => {
+        const dateA = a.updated_at || a.created_at || '';
+        const dateB = b.updated_at || b.created_at || '';
+        return new Date(dateB).getTime() - new Date(dateA).getTime();
+      });
+
+      setPatients(sortedPatients);
+      setLastUpdate(new Date());
+      
+      console.log('✅ PACIENTES - Total unificado:', sortedPatients.length, 'pacientes');
+      
+      if (isAutoRefresh) {
+        console.log('✅ PACIENTES - Refresh automático concluído');
+      }
+
     } catch (error) {
       console.error('Erro ao buscar pacientes:', error);
       if (!isAutoRefresh) {
@@ -191,7 +206,7 @@ export default function Pacientes() {
       setLoading(false);
       setIsRefreshing(false);
     }
-  }, [supabase, supabaseConfig, user, toast]);
+  }, [supabase, supabaseWrite, supabaseConfig, user, toast]);
 
   // Carregamento inicial
   useEffect(() => {
@@ -216,7 +231,9 @@ export default function Pacientes() {
     const patientStatus = getPatientStatus(patient);
     const matchesStatus = statusFilter === "todos" || patientStatus === statusFilter;
     
-    return matchesSearch && matchesStatus;
+    const matchesFonte = fonteFilter === "todas" || patient.fonte === fonteFilter;
+    
+    return matchesSearch && matchesStatus && matchesFonte;
   });
 
   if (loading) {
@@ -267,7 +284,7 @@ export default function Pacientes() {
             <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
             {isRefreshing ? 'Atualizando...' : 'Atualizar'}
           </Button>
-          <Button>
+          <Button onClick={() => setIsNewPatientModalOpen(true)}>
             <Plus className="w-4 h-4" />
             Novo Paciente
           </Button>
@@ -301,11 +318,17 @@ export default function Pacientes() {
                 <SelectItem value="atendimentofinal">Concluído</SelectItem>
               </SelectContent>
             </Select>
-            
-            <Button variant="outline">
-              <Filter className="w-4 h-4" />
-              Mais filtros
-            </Button>
+
+            <Select value={fonteFilter} onValueChange={setFonteFilter}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Filtrar por fonte" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas as fontes</SelectItem>
+                <SelectItem value="ia">Adicionado por IA</SelectItem>
+                <SelectItem value="humano">Adicionado por Humano</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -334,8 +357,8 @@ export default function Pacientes() {
                   <th className="text-left py-3 px-2 font-medium text-muted-foreground">Paciente</th>
                   <th className="text-left py-3 px-2 font-medium text-muted-foreground">Contato</th>
                   <th className="text-left py-3 px-2 font-medium text-muted-foreground">Status</th>
+                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">Fonte</th>
                   <th className="text-left py-3 px-2 font-medium text-muted-foreground">Última Atualização</th>
-                  <th className="text-right py-3 px-2 font-medium text-muted-foreground">Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -359,38 +382,19 @@ export default function Pacientes() {
                       <StatusBadge status={getPatientStatus(patient)} />
                     </td>
                     <td className="py-4 px-2">
+                      <Badge 
+                        variant={patient.fonte === 'ia' ? 'default' : 'secondary'}
+                        className="text-xs"
+                      >
+                        {patient.fonte === 'ia' ? 'IA' : 'Humano'}
+                      </Badge>
+                    </td>
+                    <td className="py-4 px-2">
                       <div className="text-sm">
                         <div className="text-foreground font-medium">
-                          {formatDate(patient.setdata)}
+                          {formatDate(patient.setdata || patient.updated_at || patient.created_at)}
                         </div>
                       </div>
-                    </td>
-                    <td className="py-4 px-2 text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
-                          <DropdownMenuItem>
-                            <Eye className="w-4 h-4 mr-2" />
-                            Ver detalhes
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Edit className="w-4 h-4 mr-2" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <CalendarIcon className="w-4 h-4 mr-2" />
-                            Agendar consulta
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <CheckCircle className="w-4 h-4 mr-2" />
-                            Marcar como concluído
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
                     </td>
                   </tr>
                 ))}
@@ -408,6 +412,13 @@ export default function Pacientes() {
         </CardContent>
       </Card>
       </div>
+
+      {/* Modal para Novo Paciente */}
+      <NewPatientModal
+        isOpen={isNewPatientModalOpen}
+        onClose={() => setIsNewPatientModalOpen(false)}
+        onPatientAdded={() => loadData(false)}
+      />
     </Layout>
   );
 }

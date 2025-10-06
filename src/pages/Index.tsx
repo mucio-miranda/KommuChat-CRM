@@ -17,6 +17,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSupabase } from "@/hooks/useSupabase";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
+import { convertToBrazilDateString, getTodayBrazilString, filterByToday } from "@/lib/date-utils";
 
 // Tipagem mínima da tabela
 type Row = {
@@ -137,43 +138,16 @@ const Index = () => {
     
     // Buscar consultas do dia atual na coluna data_agendamento
     // Usar fuso horário do Brasil (UTC-3)
-    const hoje = new Date();
-    const hojeBrasil = new Date(hoje.toLocaleString("en-US", {timeZone: "America/Sao_Paulo"}));
-    const hojeString = hojeBrasil.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+    const hojeString = getTodayBrazilString();
     
-    console.log('🔍 CONSULTAS HOJE - Data atual UTC:', hoje.toISOString().split('T')[0]);
     console.log('🔍 CONSULTAS HOJE - Data atual Brasil:', hojeString);
     
-    const consultasHoje = list.filter(r => {
-      if (!r.data_agendamento) return false;
-      
-      // Converter a data do agendamento para o fuso do Brasil
-      const dataAgendamento = new Date(r.data_agendamento);
-      const dataAgendamentoBrasil = new Date(dataAgendamento.toLocaleString("en-US", {timeZone: "America/Sao_Paulo"}));
-      const dataAgendamentoString = dataAgendamentoBrasil.toISOString().split('T')[0];
-      
-      console.log('🔍 CONSULTAS HOJE - Data agendamento original:', r.data_agendamento);
-      console.log('🔍 CONSULTAS HOJE - Data agendamento Brasil:', dataAgendamentoString);
-      
-      return dataAgendamentoString === hojeString;
-    }).length;
+    const consultasHoje = filterByToday(list, 'data_agendamento').length;
     
     console.log('✅ CONSULTAS HOJE - Resultado:', consultasHoje);
     
     // Buscar atendimentos do dia atual na coluna setdata
-    const atendimentosHoje = list.filter(r => {
-      if (!r.setdata) return false;
-      
-      // Converter a data do setdata para o fuso do Brasil
-      const dataSetdata = new Date(r.setdata);
-      const dataSetdataBrasil = new Date(dataSetdata.toLocaleString("en-US", {timeZone: "America/Sao_Paulo"}));
-      const dataSetdataString = dataSetdataBrasil.toISOString().split('T')[0];
-      
-      console.log('🔍 ATENDIMENTOS HOJE - Data setdata original:', r.setdata);
-      console.log('🔍 ATENDIMENTOS HOJE - Data setdata Brasil:', dataSetdataString);
-      
-      return dataSetdataString === hojeString;
-    }).length;
+    const atendimentosHoje = filterByToday(list, 'setdata').length;
     
     console.log('✅ ATENDIMENTOS HOJE - Resultado:', atendimentosHoje);
     

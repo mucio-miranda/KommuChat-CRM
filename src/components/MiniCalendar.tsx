@@ -11,11 +11,11 @@ interface MiniCalendarProps {
 }
 
 const monthNames = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
 ];
 
-const weekDays = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 export function MiniCalendar({ selectedDate, onDateSelect, className }: MiniCalendarProps) {
   const [currentDate, setCurrentDate] = useState(selectedDate || new Date());

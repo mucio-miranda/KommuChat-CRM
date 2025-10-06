@@ -26,7 +26,8 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
       if (selectedPeriod === "week") {
         return weekDaysShort.map(day => ({ day, count: 0 }));
       } else if (selectedPeriod === "month") {
-        return getMonthLabels().map(month => ({ day: month, count: 0 }));
+        const { monthLabels } = getLast6Months();
+        return monthLabels.map(month => ({ day: month, count: 0 }));
       } else {
         return getYearLabels().map(year => ({ day: year, count: 0 }));
       }
@@ -68,9 +69,9 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
         count: counts[index]
       }));
     } else if (selectedPeriod === "month") {
-      // Lógica para mês
-      const monthLabels = getMonthLabels();
-      const counts = new Array(12).fill(0);
+      // Lógica para mês - mostrar apenas 6 meses (atual + 1 futuro + 4 passados)
+      const { monthLabels, monthMapping } = getLast6Months();
+      const counts = new Array(6).fill(0);
 
       rows.forEach(row => {
         if (!row.data_agendamento) return;
@@ -79,8 +80,15 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
           const dataAgendamento = new Date(row.data_agendamento);
           const dataAgendamentoBrasil = new Date(dataAgendamento.toLocaleString("en-US", {timeZone: "America/Sao_Paulo"}));
           
-          const month = dataAgendamentoBrasil.getMonth(); // 0 = Jan, 1 = Fev, etc.
-          counts[month]++;
+          const year = dataAgendamentoBrasil.getFullYear();
+          const month = dataAgendamentoBrasil.getMonth();
+          const monthKey = `${year}-${month}`;
+          
+          // Verificar se o mês está no range de 6 meses
+          const monthIndex = monthMapping[monthKey];
+          if (monthIndex !== undefined) {
+            counts[monthIndex]++;
+          }
         } catch (error) {
           console.error('Erro ao processar data:', error);
         }
@@ -123,9 +131,32 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
     }
   }, [rows, selectedPeriod]);
 
-  // Função para obter labels dos meses
-  function getMonthLabels() {
-    return ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+  // Função para obter os últimos 6 meses (4 passados + atual + 1 futuro)
+  function getLast6Months() {
+    const now = new Date();
+    const nowBrasil = new Date(now.toLocaleString("en-US", {timeZone: "America/Sao_Paulo"}));
+    
+    const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+    const monthLabels: string[] = [];
+    const monthMapping: { [key: string]: number } = {};
+    
+    // Gerar 6 meses: 4 passados + atual + 1 futuro
+    for (let i = -4; i <= 1; i++) {
+      const date = new Date(nowBrasil.getFullYear(), nowBrasil.getMonth() + i, 1);
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const monthKey = `${year}-${month}`;
+      
+      // Criar label no formato "Jan 24"
+      const monthName = monthNames[month];
+      const yearShort = year.toString().slice(-2);
+      const label = `${monthName} ${yearShort}`;
+      
+      monthLabels.push(label);
+      monthMapping[monthKey] = monthLabels.length - 1;
+    }
+    
+    return { monthLabels, monthMapping };
   }
 
   // Função para obter labels dos anos (últimos 4 anos)
@@ -144,28 +175,65 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
     return chartData.reduce((sum, item) => sum + item.count, 0);
   }, [chartData]);
 
+  // Filtrar e ordenar pacientes com agendamentos
+  const recentPatients = useMemo(() => {
+    if (!rows || rows.length === 0) return [];
+    
+    return rows
+      .filter(row => row.data_agendamento && row.nome) // Apenas pacientes com agendamento e nome
+      .sort((a, b) => {
+        // Ordenar por data_agendamento (mais recente primeiro)
+        const dateA = new Date(a.data_agendamento);
+        const dateB = new Date(b.data_agendamento);
+        return dateB.getTime() - dateA.getTime();
+      })
+      .slice(0, 5); // Limitar a 5 pacientes mais recentes
+  }, [rows]);
+
+  // Função para formatar a data do agendamento
+  const formatAppointmentDate = (dateString: string): string => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    } catch {
+      return "Data inválida";
+    }
+  };
+
+  // Função para formatar o telefone
+  const formatPhone = (phone: string): string => {
+    if (!phone) return "N/A";
+    const cleanPhone = phone.replace(/\D/g, '');
+    if (cleanPhone.length === 11) {
+      return `(${cleanPhone.slice(0,2)}) ${cleanPhone.slice(2,7)}-${cleanPhone.slice(7)}`;
+    } else if (cleanPhone.length === 10) {
+      return `(${cleanPhone.slice(0,2)}) ${cleanPhone.slice(2,6)}-${cleanPhone.slice(6)}`;
+    }
+    return phone;
+  };
+
   // Encontrar o valor máximo para normalizar as barras
   const maxCount = Math.max(...chartData.map(d => d.count), 1); // Mínimo 1 para evitar divisão por zero
   
-  // Calcular altura das barras em pixels
+  // Calcular altura das barras de forma proporcional
   const calculateBarHeight = (count: number) => {
     if (count === 0) return 0;
     
-    // Para números pequenos (1-15), usar escala linear com incremento bem visível
-    if (count <= 15) {
-      // Cada consulta adiciona 12px de altura - muito visível!
-      const height = count * 12;
-      console.log(`📊 Barra: ${count} consultas → ${height}px de altura`);
-      return height;
-    } else {
-      // Para números maiores, usar escala proporcional
-      const baseHeight = 15 * 12; // 180px para 15 consultas
-      const remainingCount = count - 15;
-      const remainingHeight = (remainingCount / Math.max(maxCount - 15, 1)) * 60; // 60px restante
-      const finalHeight = Math.min(baseHeight + remainingHeight, 240);
-      console.log(`📊 Barra: ${count} consultas → ${finalHeight}px de altura (escala proporcional)`);
-      return finalHeight;
-    }
+    // Altura máxima da área do gráfico (considerando padding)
+    const maxHeight = 200; // 200px é a altura máxima da área do gráfico
+    
+    // Calcular altura proporcional: (valor / valor_máximo) * altura_máxima
+    const proportionalHeight = (count / maxCount) * maxHeight;
+    
+    // Garantir altura mínima para valores pequenos mas visíveis
+    const minVisibleHeight = 8; // 8px mínimo para ser visível
+    const finalHeight = Math.max(proportionalHeight, count > 0 ? minVisibleHeight : 0);
+    
+    return finalHeight;
   };
 
   return (
@@ -204,8 +272,6 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
             const heightPercentage = calculateBarHeight(item.count);
             const isHovered = hoveredBar === index;
             
-            // Debug: Log detalhado para cada barra
-            console.log(`🔍 Barra ${index} (${item.day}): ${item.count} agendamentos → ${heightPercentage}% altura`);
             
             return (
               <div
@@ -232,13 +298,10 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
                       : 'bg-[#E21929]/70'
                   }`}
                   style={{ 
-                    height: `${heightPercentage}px`, // Mudando de % para px
-                    minHeight: item.count > 0 ? '8px' : '0px',
-                    // Debug: borda temporária para visualizar
-                    border: '2px solid white',
-                    maxHeight: '200px' // Limite máximo
+                    height: `${heightPercentage}px`,
+                    minHeight: item.count > 0 ? '8px' : '0px'
                   }}
-                  title={`${item.count} agendamentos (${heightPercentage}px altura)`}
+                  title={`${item.count} agendamentos`}
                 >
                   {/* Gradient overlay */}
                   <div className="w-full h-full rounded-t-xl bg-gradient-to-t from-transparent to-white/10"></div>
@@ -256,15 +319,46 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
 
       {/* Footer Info */}
       <div className="pt-4 border-t border-gray-200">
-        <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center justify-between text-sm mb-4">
           <span className="text-muted-foreground">
             {selectedPeriod === "week" ? "Total da semana" : 
-             selectedPeriod === "month" ? "Total do ano" : "Total dos últimos 4 anos"}
+             selectedPeriod === "month" ? "Total dos últimos 6 meses" : "Total dos últimos 4 anos"}
           </span>
           <span className="font-bold text-foreground">
             {totalPeriod} {totalPeriod === 1 ? 'agendamento' : 'agendamentos'}
           </span>
         </div>
+
+        {/* Lista dos últimos pacientes com agendamento */}
+        {recentPatients.length > 0 && (
+          <div className="mt-4">
+            <h4 className="text-sm font-semibold text-foreground mb-3">
+              Últimos agendamentos
+            </h4>
+            <div className="space-y-2">
+              {recentPatients.map((patient, index) => (
+                <div
+                  key={`${patient.id || index}-${patient.data_agendamento}`}
+                  className="flex items-center justify-between p-2 bg-gray-50 rounded-lg text-xs"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-foreground truncate">
+                      {patient.nome}
+                    </div>
+                    <div className="text-muted-foreground">
+                      {formatPhone(patient.telefone || '')}
+                    </div>
+                  </div>
+                  <div className="text-right ml-2">
+                    <div className="font-medium text-foreground">
+                      {formatAppointmentDate(patient.data_agendamento)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </Card>
   );
