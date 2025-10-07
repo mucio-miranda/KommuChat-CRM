@@ -25,9 +25,9 @@ function SidebarToggleButton() {
   return (
     <Button
       variant="ghost"
-      size="sm"
+      size="icon"
       onClick={toggleSidebar}
-      className="hidden lg:flex items-center gap-2 text-muted-foreground hover:text-foreground"
+      className="hidden lg:flex h-7 w-7"
       title={state === "collapsed" ? "Expandir sidebar" : "Minimizar sidebar"}
     >
       {state === "collapsed" ? (
@@ -35,8 +35,8 @@ function SidebarToggleButton() {
       ) : (
         <PanelLeftClose className="w-4 h-4" />
       )}
-      <span className="text-sm">
-        {state === "collapsed" ? "Expandir" : "Minimizar"}
+      <span className="sr-only">
+        {state === "collapsed" ? "Expandir sidebar" : "Minimizar sidebar"}
       </span>
     </Button>
   );
