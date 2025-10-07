@@ -1,6 +1,6 @@
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
-import { Menu, LogOut, User, Eye, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Menu, LogOut, User, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -31,9 +31,9 @@ function SidebarToggleButton() {
       title={state === "collapsed" ? "Expandir sidebar" : "Minimizar sidebar"}
     >
       {state === "collapsed" ? (
-        <PanelLeftOpen className="w-4 h-4" />
+        <ChevronRight className="w-4 h-4" />
       ) : (
-        <PanelLeftClose className="w-4 h-4" />
+        <ChevronLeft className="w-4 h-4" />
       )}
       <span className="sr-only">
         {state === "collapsed" ? "Expandir sidebar" : "Minimizar sidebar"}
