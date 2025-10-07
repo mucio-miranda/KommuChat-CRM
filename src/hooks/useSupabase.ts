@@ -1,5 +1,5 @@
-import { supabase } from '@/lib/supabase'
-import { supabaseCrm } from '@/lib/supabase-crm'
+import { supabase } from '@/lib/supabase.js'
+import { supabaseCrm } from '@/lib/supabase-crm.js'
 import { useAuth } from '@/contexts/AuthContext'
 
 export function useSupabase() {

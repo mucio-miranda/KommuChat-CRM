@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, User } from 'lucide-react'
-import { Logo } from '@/components/Logo'
+import { Logo } from '@/components/Logo.js'
 
 export default function Login() {
   const [email, setEmail] = useState('')

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { supabase, Usuario } from '@/lib/supabase'
-import { supabaseCrm } from '@/lib/supabase-crm'
+import { supabase, Usuario } from '@/lib/supabase.js'
+import { supabaseCrm } from '@/lib/supabase-crm.js'
 
 interface AuthContextType {
   user: Usuario | null
