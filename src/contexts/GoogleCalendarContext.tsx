@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { googleCalendarServiceSimple, GoogleCalendarEvent } from '@/lib/google-calendar-simple';
-import { sharedGoogleCredentialsService } from '@/lib/shared-google-credentials';
+import { sharedGoogleCredentialsService } from '@/lib/shared-google-credentials.js';
 import { useAuth } from './AuthContext';
 
 interface GoogleCalendarContextType {

@@ -1,5 +1,5 @@
 import { GoogleCalendarEvent } from '@/types/google-calendar';
-import { sharedGoogleCredentialsService } from './shared-google-credentials';
+import { sharedGoogleCredentialsService } from './shared-google-credentials.js';
 
 // Configurações globais (fallback)
 const DEFAULT_GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
