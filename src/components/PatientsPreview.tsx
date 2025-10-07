@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+  import { useState, useEffect, useCallback } from "react";
 import { 
   Search, 
   Eye, 
@@ -6,8 +6,7 @@ import {
   Calendar as CalendarIcon,
   CheckCircle,
   MoreHorizontal,
-  Users,
-  RefreshCw
+  Users
 } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Card } from "@/components/ui/card";
@@ -45,7 +44,6 @@ export function PatientsPreview() {
   const [searchTerm, setSearchTerm] = useState("");
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const { user } = useAuth();
   const { read: supabase, config: supabaseConfig } = useSupabase();
@@ -87,15 +85,12 @@ export function PatientsPreview() {
   // Função para carregar dados dos pacientes - copiada exatamente da página de pacientes
   const loadData = useCallback(async (isAutoRefresh = false) => {
     try {
-      if (isAutoRefresh) {
-        setIsRefreshing(true);
-      } else {
+      if (!isAutoRefresh) {
         setLoading(true);
       }
       
       if (!supabase) {
         setLoading(false);
-        setIsRefreshing(false);
         return;
       }
 
@@ -164,7 +159,6 @@ export function PatientsPreview() {
       console.error('Erro ao buscar pacientes:', error);
     } finally {
       setLoading(false);
-      setIsRefreshing(false);
     }
   }, [supabase, supabaseConfig, user]);
 
@@ -210,7 +204,6 @@ export function PatientsPreview() {
   // Debug: Log do estado atual
   console.log('🔍 PATIENTS PREVIEW - Render state:', { 
     loading, 
-    isRefreshing, 
     patientsCount: patients.length, 
     filteredCount: filteredPatients.length,
     searchTerm 
@@ -254,16 +247,6 @@ export function PatientsPreview() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => loadData(false)}
-            disabled={isRefreshing}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            {isRefreshing ? 'Atualizando...' : 'Atualizar'}
-          </Button>
           <Button 
             variant="ghost" 
             className="text-sm text-muted-foreground hover:text-foreground"
