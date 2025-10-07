@@ -39,7 +39,7 @@ import {
 import { useSupabase } from '@/hooks/useSupabase';
 import { toast } from '@/components/ui/use-toast';
 import TableSelector from '@/components/TableSelector';
-import { GoogleCredentialsManager } from '@/components/GoogleCredentialsManager';
+import { GoogleCredentialsManager } from '@/components/GoogleManager.tsx';
 import { QRCodeManager } from '@/components/QRCodeManager';
 import { simpleGoogleCredentialsService } from '@/lib/simple-google-credentials';
 
