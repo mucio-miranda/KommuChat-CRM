@@ -140,18 +140,16 @@ const EmployeeManagement: React.FC = () => {
         return;
       }
 
-      // Verificar se email já existe (apenas se email foi fornecido)
-      if (newEmployee.email && newEmployee.email.trim() !== '') {
-        const { data: existingEmail } = await supabaseCrm
-          .from('usuarios')
-          .select('email')
-          .eq('email', newEmployee.email)
-          .single();
+      // Verificar se email já existe
+      const { data: existingEmail } = await supabaseCrm
+        .from('usuarios')
+        .select('email')
+        .eq('email', newEmployee.email)
+        .single();
 
-        if (existingEmail) {
-          setError('Email já está em uso');
-          return;
-        }
+      if (existingEmail) {
+        setError('Email já está em uso');
+        return;
       }
 
       // Criar hash da senha
@@ -166,7 +164,7 @@ const EmployeeManagement: React.FC = () => {
         .insert({
           username: finalUsername,
           nome: newEmployee.nome,
-          email: newEmployee.email && newEmployee.email.trim() !== '' ? newEmployee.email : null,
+          email: newEmployee.email,
           password: hashedPassword, // Usar a coluna password existente
           role: newEmployee.role,
           cliente_id: user?.cliente_id,
@@ -305,13 +303,14 @@ const EmployeeManagement: React.FC = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="email">Email (Opcional)</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   type="email"
                   value={newEmployee.email}
                   onChange={(e) => setNewEmployee({ ...newEmployee, email: e.target.value })}
                   placeholder="joao.silva@clinica.com"
+                  required
                 />
               </div>
               

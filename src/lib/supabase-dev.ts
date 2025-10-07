@@ -19,7 +19,7 @@ export interface Cliente {
 
 export interface Usuario {
   id: string
-  email?: string | null
+  email: string
   nome: string
   role: 'admin' | 'funcionario'
   cliente_id: string
