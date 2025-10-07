@@ -7,9 +7,9 @@
 
 [build.environment]
   # Versão do Node.js para usar no build
-  NODE_VERSION = "18"
+  NODE_VERSION = "18.19.0"
   # Versão do NPM
-  NPM_VERSION = "9"
+  NPM_VERSION = "10"
 
 # Redirecionamentos para SPA (Single Page Application)
 [[redirects]]
