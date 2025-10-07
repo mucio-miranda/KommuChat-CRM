@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { googleCalendarServiceHybrid } from '@/lib/google-calendar-hybrid';
 import { GoogleCalendarEvent } from '@/types/google-calendar';
-import { sharedGoogleCredentialsService } from '@/lib/shared-google-credentials.js';
+import { sharedGoogleCredentialsService } from '@/lib/shared-google-credentials';
 import { supabaseGoogleTokensService } from '@/lib/supabase-google-tokens';
 import { useAuth } from './AuthContext';
 

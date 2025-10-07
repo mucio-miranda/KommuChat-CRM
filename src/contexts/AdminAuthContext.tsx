@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { supabaseCrm } from '@/lib/supabase-crm.js'
+import { supabaseCrm } from '@/lib/supabase-crm'
 
 interface AdminUser {
   id: string;

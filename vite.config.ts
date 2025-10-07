@@ -24,7 +24,7 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     // Otimizações para produção
-    minify: 'terser',
+    minify: mode === 'production' ? 'esbuild' : false,
     sourcemap: mode === 'development',
     rollupOptions: {
       output: {
@@ -38,13 +38,6 @@ export default defineConfig(({ mode }) => ({
     },
     // Define o diretório de output
     outDir: 'dist',
-    // Remove console.logs em produção
-    terserOptions: mode === 'production' ? {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-      },
-    } : undefined,
   },
   plugins: [
     react(),
