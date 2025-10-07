@@ -53,9 +53,6 @@ export default function AdminLogin() {
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
             Acesso Administrativo
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Faça login para gerenciar credenciais Google dos clientes
-          </p>
         </div>
 
         <Card>
@@ -80,7 +77,7 @@ export default function AdminLogin() {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="kommuchat.admin"
+                  placeholder="Digite seu username"
                   required
                 />
               </div>
@@ -105,12 +102,6 @@ export default function AdminLogin() {
                 {loading ? 'Entrando...' : 'Entrar'}
               </Button>
             </form>
-
-            <div className="mt-6 text-center text-sm text-gray-600">
-              <p>Credenciais da equipe técnica KOMMUchat:</p>
-              <p><strong>Username:</strong> kommuchat.admin</p>
-              <p><strong>Senha:</strong> [Senha segura configurada]</p>
-            </div>
           </CardContent>
         </Card>
       </div>
