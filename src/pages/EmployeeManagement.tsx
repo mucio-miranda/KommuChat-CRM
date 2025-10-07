@@ -43,6 +43,7 @@ const EmployeeManagement: React.FC = () => {
   const [newEmployee, setNewEmployee] = useState({
     username: '',
     nome: '',
+    email: '',
     password: '',
     role: 'funcionario'
   });
@@ -139,6 +140,18 @@ const EmployeeManagement: React.FC = () => {
         return;
       }
 
+      // Verificar se email já existe
+      const { data: existingEmail } = await supabaseCrm
+        .from('usuarios')
+        .select('email')
+        .eq('email', newEmployee.email)
+        .single();
+
+      if (existingEmail) {
+        setError('Email já está em uso');
+        return;
+      }
+
       // Criar hash da senha
       const { data: hashedPassword, error: hashError } = await supabaseCrm
         .rpc('hash_password', { password_param: newEmployee.password });
@@ -151,6 +164,7 @@ const EmployeeManagement: React.FC = () => {
         .insert({
           username: finalUsername,
           nome: newEmployee.nome,
+          email: newEmployee.email,
           password: hashedPassword, // Usar a coluna password existente
           role: newEmployee.role,
           cliente_id: user?.cliente_id,
@@ -164,7 +178,7 @@ const EmployeeManagement: React.FC = () => {
 
       setSuccess('Funcionário criado com sucesso!');
       setIsCreateDialogOpen(false);
-      setNewEmployee({ username: '', nome: '', password: '', role: 'funcionario' });
+      setNewEmployee({ username: '', nome: '', email: '', password: '', role: 'funcionario' });
       fetchEmployees();
     } catch (err) {
       console.error('Erro ao criar funcionário:', err);
@@ -288,6 +302,17 @@ const EmployeeManagement: React.FC = () => {
                 />
               </div>
               
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={newEmployee.email}
+                  onChange={(e) => setNewEmployee({ ...newEmployee, email: e.target.value })}
+                  placeholder="joao.silva@clinica.com"
+                  required
+                />
+              </div>
               
               <div className="space-y-2">
                 <Label htmlFor="password">Senha</Label>
