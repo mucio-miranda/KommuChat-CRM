@@ -41,7 +41,7 @@ import { toast } from '@/components/ui/use-toast';
 import TableSelector from '@/components/TableSelector';
 import { GoogleCredentialsManager } from '@/components/GoogleManager.tsx';
 import { QRCodeManager } from '@/components/QRCodeManager';
-import { simpleGoogleCredentialsService } from '@/lib/simple-google-credentials';
+import { simpleGoogleCredentialsService } from '@/lib/simple-google-service.ts';
 
 interface Cliente {
   id: string;

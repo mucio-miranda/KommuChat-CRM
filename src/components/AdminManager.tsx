@@ -46,7 +46,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { supabaseCrm } from '@/lib/supabase-crm';
-import { simpleGoogleCredentialsService } from '@/lib/simple-google-credentials';
+import { simpleGoogleCredentialsService } from '@/lib/simple-google-service.ts';
 
 interface Cliente {
   id: string;

@@ -24,7 +24,7 @@ import {
   X,
   Shield
 } from 'lucide-react';
-import { simpleGoogleCredentialsService, SimpleGoogleCredentials } from '@/lib/simple-google-credentials';
+import { simpleGoogleCredentialsService, SimpleGoogleCredentials } from '@/lib/simple-google-service.ts';
 import { useSupabase } from '@/hooks/useSupabase';
 import { toast } from '@/components/ui/use-toast';
 
