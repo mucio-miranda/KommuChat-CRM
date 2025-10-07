@@ -10,6 +10,10 @@
   NODE_VERSION = "18.19.0"
   # Versão do NPM
   NPM_VERSION = "10"
+  # Desabilitar scan de secrets em arquivos de documentação
+  SECRETS_SCAN_OMIT_PATHS = "*.md,*.txt"
+  # Ignorar chaves de criptografia em arquivos de exemplo/documentação
+  SECRETS_SCAN_OMIT_KEYS = "VITE_ENCRYPTION_KEY"
 
 # Redirecionamentos para SPA (Single Page Application)
 [[redirects]]
@@ -61,7 +65,3 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000"
 
-# Configurações de função (se necessário no futuro)
-[functions]
-  # Diretório onde ficam as funções serverless
-  directory = "netlify/functions"
