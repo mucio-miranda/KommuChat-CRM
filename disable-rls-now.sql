@@ -39,3 +39,4 @@ SELECT 'RLS desabilitado! Agora você pode inserir pacientes normalmente.' as re
 
 
 
+

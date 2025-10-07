@@ -187,7 +187,7 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
         const dateB = new Date(b.data_agendamento);
         return dateB.getTime() - dateA.getTime();
       })
-      .slice(0, 5); // Limitar a 5 pacientes mais recentes
+      .slice(0, 10); // Limitar a 10 pacientes mais recentes
   }, [rows]);
 
   // Função para formatar a data do agendamento
