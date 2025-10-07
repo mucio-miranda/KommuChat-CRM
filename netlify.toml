@@ -1,0 +1,67 @@
+[build]
+  # Diretório de build (onde o Vite gera os arquivos estáticos)
+  publish = "dist"
+  
+  # Comando para fazer o build da aplicação
+  command = "npm run build"
+
+[build.environment]
+  # Versão do Node.js para usar no build
+  NODE_VERSION = "18"
+  # Versão do NPM
+  NPM_VERSION = "9"
+
+# Redirecionamentos para SPA (Single Page Application)
+[[redirects]]
+  # Redireciona todas as rotas não encontradas para index.html
+  # Isso permite que o React Router funcione corretamente
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Headers de segurança e cache
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Headers de segurança
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+# Cache para arquivos estáticos
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache para imagens
+[[headers]]
+  for = "*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+[[headers]]
+  for = "*.jpg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+[[headers]]
+  for = "*.jpeg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+[[headers]]
+  for = "*.svg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+[[headers]]
+  for = "*.webp"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+# Configurações de função (se necessário no futuro)
+[functions]
+  # Diretório onde ficam as funções serverless
+  directory = "netlify/functions"

@@ -22,6 +22,30 @@ export default defineConfig(({ mode }) => ({
       }
     }
   },
+  build: {
+    // Otimizações para produção
+    minify: 'terser',
+    sourcemap: mode === 'development',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Separa vendor chunks para melhor cache
+          vendor: ['react', 'react-dom'],
+          supabase: ['@supabase/supabase-js'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select'],
+        },
+      },
+    },
+    // Define o diretório de output
+    outDir: 'dist',
+    // Remove console.logs em produção
+    terserOptions: mode === 'production' ? {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    } : undefined,
+  },
   plugins: [
     react(),
     mode === 'development' &&

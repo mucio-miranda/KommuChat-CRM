@@ -1,0 +1,44 @@
+# ===============================================
+# CONFIGURAÇÕES PARA PRODUÇÃO - NETLIFY
+# ===============================================
+# Copie este arquivo e configure as variáveis no painel do Netlify
+# Site Settings > Environment Variables
+
+# ===============================================
+# SUPABASE CONFIGURATION
+# ===============================================
+# Projeto principal para leitura de dados
+VITE_SUPABASE_URL=https://seu-projeto.supabase.co
+VITE_SUPABASE_ANON_KEY=sua_chave_anonima_aqui
+
+# Projeto CRM para escrita de usuários/clientes
+VITE_CRM_SUPABASE_URL=https://seu-projeto-crm.supabase.co
+VITE_CRM_SUPABASE_ANON_KEY=sua_chave_anonima_crm_aqui
+
+# ===============================================
+# GOOGLE CALENDAR API CONFIGURATION
+# ===============================================
+# IMPORTANTE: Configure o redirect URI no Google Console para:
+# https://seu-dominio.netlify.app/auth/google/callback
+VITE_GOOGLE_CLIENT_ID=seu_google_client_id
+VITE_GOOGLE_CLIENT_SECRET=seu_google_client_secret
+VITE_GOOGLE_REDIRECT_URI=https://seu-dominio.netlify.app/auth/google/callback
+
+# ===============================================
+# CONFIGURAÇÃO DE CRIPTOGRAFIA
+# ===============================================
+# Chave de 256 bits para criptografar credenciais
+VITE_ENCRYPTION_KEY=sua_chave_criptografia_256_bits
+
+# ===============================================
+# CONFIGURAÇÃO DA APLICAÇÃO
+# ===============================================
+VITE_APP_NAME=KOMMUchat CRM
+VITE_APP_VERSION=1.0.0
+VITE_APP_ENV=production
+
+# ===============================================
+# CONFIGURAÇÕES ESPECÍFICAS DO NETLIFY
+# ===============================================
+# URL base da aplicação (será preenchida automaticamente)
+VITE_APP_URL=https://seu-dominio.netlify.app
