@@ -3,7 +3,7 @@ import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, Plus, Calendar, RefreshCw, Grid3X3, CalendarDays, Menu, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Calendar, RefreshCw, Grid3X3, CalendarDays } from "lucide-react";
 import { useGoogleCalendar } from "@/contexts/GoogleCalendarContextSimple";
 import { GoogleCalendarEvent } from "@/lib/google-calendar-hybrid";
 import { GoogleCalendarSetup } from "@/components/GoogleCalendarSetup";
@@ -29,7 +29,6 @@ export default function Calendario() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [searchQuery, setSearchQuery] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { isConnected, isLoading, events, connect, disconnect, refreshEvents, forceRefreshToken } = useGoogleCalendar();
 
   const getDaysInMonth = (month: number, year: number) => {
@@ -308,7 +307,7 @@ export default function Calendario() {
     // Empty cells for days before the first day of the month
     for (let i = 0; i < firstDay; i++) {
       days.push(
-        <div key={`empty-${i}`} className="h-32 lg:h-48 border border-border/20"></div>
+        <div key={`empty-${i}`} className="h-48 border border-border/20"></div>
       );
     }
 
@@ -320,16 +319,16 @@ export default function Calendario() {
       days.push(
         <div 
           key={day} 
-          className={`h-32 lg:h-48 border border-border/20 p-1 lg:p-2 bg-card relative transition-colors hover:bg-muted/20 cursor-pointer ${isToday ? 'bg-primary/5' : ''}`}
+          className={`h-48 border border-border/20 p-2 bg-card relative transition-colors hover:bg-muted/20 cursor-pointer ${isToday ? 'bg-primary/5' : ''}`}
           onClick={() => handleDateClick(day)}
         >
-          <div className={`text-sm font-medium mb-1 lg:mb-2 ${isToday ? 'text-primary font-semibold' : 'text-foreground'}`}>
+          <div className={`text-sm font-medium mb-2 ${isToday ? 'text-primary font-semibold' : 'text-foreground'}`}>
             {day}
           </div>
           <div className="space-y-1 overflow-hidden">
             {appointments.slice(0, 2).map((apt, index) => (
               <div key={`${apt.id}-${index}`} className={`text-xs p-1 rounded ${apt.color} truncate`}>
-                <div className="font-medium text-xs hidden lg:block">{apt.time}</div>
+                <div className="font-medium text-xs">{apt.time}</div>
                 <div className="truncate text-xs">{apt.title}</div>
               </div>
             ))}
@@ -360,28 +359,28 @@ export default function Calendario() {
             const isCurrentMonth = day.getMonth() === currentMonth && day.getFullYear() === currentYear;
 
             return (
-              <div key={index} className={`min-h-[400px] lg:min-h-[600px] border border-border/20 p-2 lg:p-3 bg-card relative transition-colors hover:bg-muted/20 ${isToday ? 'bg-primary/5' : ''}`}>
+              <div key={index} className={`min-h-[600px] border border-border/20 p-3 bg-card relative transition-colors hover:bg-muted/20 ${isToday ? 'bg-primary/5' : ''}`}>
                 {/* Header do dia */}
-                <div className="mb-2 lg:mb-3">
-                  <div className={`text-xs lg:text-sm font-medium ${isToday ? 'text-primary font-semibold' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}`}>
+                <div className="mb-3">
+                  <div className={`text-sm font-medium ${isToday ? 'text-primary font-semibold' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}`}>
                     {weekDays[day.getDay()]}
                   </div>
-                  <div className={`text-base lg:text-lg font-bold ${isToday ? 'text-primary' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}`}>
+                  <div className={`text-lg font-bold ${isToday ? 'text-primary' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}`}>
                     {day.getDate()}
                   </div>
                 </div>
 
                 {/* Appointments */}
-                <div className="space-y-2 lg:space-y-3">
+                <div className="space-y-3">
                   {appointments.map((apt) => (
-                    <div key={apt.id} className={`text-xs lg:text-sm p-2 lg:p-3 rounded-lg ${apt.color} cursor-pointer hover:opacity-80 transition-opacity shadow-sm`}>
-                      <div className="font-semibold text-xs lg:text-sm mb-1 hidden lg:block">{apt.time}</div>
-                      <div className="font-medium text-xs lg:text-sm mb-1 truncate">{apt.title}</div>
-                      <div className="text-xs opacity-75 hidden lg:block">{apt.patient}</div>
+                    <div key={apt.id} className={`text-sm p-3 rounded-lg ${apt.color} cursor-pointer hover:opacity-80 transition-opacity shadow-sm`}>
+                      <div className="font-semibold text-sm mb-1">{apt.time}</div>
+                      <div className="font-medium text-sm mb-1">{apt.title}</div>
+                      <div className="text-xs opacity-75">{apt.patient}</div>
                     </div>
                   ))}
                   {appointments.length === 0 && (
-                    <div className="text-xs lg:text-sm text-muted-foreground text-center py-4 lg:py-8">
+                    <div className="text-sm text-muted-foreground text-center py-8">
                       Nenhum agendamento
                     </div>
                   )}
@@ -404,20 +403,9 @@ export default function Calendario() {
 
   return (
     <Layout>
-      <div className="flex flex-col lg:flex-row lg:space-x-6 space-y-4 lg:space-y-0">
-        {/* Sidebar com lista de agendas - Responsiva */}
-        <div className={`${sidebarOpen ? 'block' : 'hidden'} lg:block lg:w-80 lg:flex-shrink-0`}>
-          <div className="lg:hidden mb-4 flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Menu</h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSidebarOpen(false)}
-              className="lg:hidden"
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
+      <div className="flex space-x-6">
+        {/* Sidebar com lista de agendas */}
+        <div className="w-80 flex-shrink-0">
           <CalendarAgendasList 
             isConnected={isConnected} 
             onDateSelect={handleMiniCalendarDateSelect}
@@ -430,43 +418,12 @@ export default function Calendario() {
         </div>
         
         {/* Conteúdo principal */}
-        <div className="flex-1 min-w-0">
-          <div className="space-y-6 lg:space-y-8">
-            {/* Header responsivo */}
-            <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
-              {/* Mobile menu button */}
-              <div className="flex items-center justify-between lg:hidden">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSidebarOpen(true)}
-                  className="lg:hidden"
-                >
-                  <Menu className="w-4 h-4 mr-2" />
-                  Menu
-                </Button>
-                <div className="flex items-center gap-2">
-                  {isConnected ? (
-                    <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
-                      <Calendar className="w-3 h-3 mr-1" />
-                      Conectado
-                    </Badge>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={connect}
-                      className="flex items-center gap-2"
-                    >
-                      <Calendar className="w-4 h-4" />
-                      Conectar
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              {/* View Toggle */}
-              <div className="flex items-center gap-1 bg-muted rounded-lg p-1 w-fit">
+        <div className="flex-1">
+          <div className="space-y-8">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              {/* View Toggle - Esquerda */}
+              <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
                 <Button
                   variant={viewMode === 'month' ? 'default' : 'ghost'}
                   size="sm"
@@ -474,7 +431,7 @@ export default function Calendario() {
                   className="h-8 px-3"
                 >
                   <Grid3X3 className="w-4 h-4 mr-1" />
-                  <span className="hidden sm:inline">Mês</span>
+                  Mês
                 </Button>
                 <Button
                   variant={viewMode === 'week' ? 'default' : 'ghost'}
@@ -483,12 +440,12 @@ export default function Calendario() {
                   className="h-8 px-3"
                 >
                   <CalendarDays className="w-4 h-4 mr-1" />
-                  <span className="hidden sm:inline">Semana</span>
+                  Semana
                 </Button>
               </div>
 
-              {/* Navigation */}
-              <div className="flex items-center justify-center gap-2">
+              {/* Navigation - Centro */}
+              <div className="flex items-center gap-2">
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -496,7 +453,7 @@ export default function Calendario() {
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
-                <h2 className="text-lg lg:text-xl font-semibold min-w-[160px] lg:min-w-[200px] text-center">
+                <h2 className="text-xl font-semibold min-w-[200px] text-center">
                   {viewMode === 'month' 
                     ? `${monthNames[currentMonth]} ${currentYear}`
                     : getWeekRangeText(getWeekStart(currentWeek))
@@ -511,14 +468,15 @@ export default function Calendario() {
                 </Button>
               </div>
 
-              {/* Status da conexão Google Calendar - Desktop */}
-              <div className="hidden lg:flex items-center gap-2">
+              {/* Status da conexão Google Calendar - Direita */}
+              <div className="flex items-center gap-2">
                 {isConnected ? (
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary" className="bg-green-100 text-green-800">
                       <Calendar className="w-3 h-3 mr-1" />
                       Google Calendar Conectado
                     </Badge>
+                    {/* Informação da última atualização */}
                     <p className="text-xs text-muted-foreground mr-2">
                       Última atualização: {lastUpdate.toLocaleTimeString('pt-BR')}
                     </p>
@@ -548,59 +506,60 @@ export default function Calendario() {
                 )}
               </div>
             </div>
+        </div>
 
-            {/* Calendar - Responsivo */}
-            <div className="bg-card rounded-2xl shadow-soft border border-border overflow-hidden">
-              {/* Week days header */}
-              <div className="grid grid-cols-7 border-b border-border">
-                {weekDays.map((day) => (
-                  <div key={day} className="p-2 lg:p-4 text-center font-medium text-muted-foreground bg-muted/30 text-xs lg:text-sm">
-                    {day}
-                  </div>
-                ))}
+        {/* Calendar */}
+        <div className="bg-card rounded-2xl shadow-soft border border-border mt-6">
+          {/* Week days header */}
+          <div className="grid grid-cols-7 border-b border-border">
+            {weekDays.map((day) => (
+              <div key={day} className="p-4 text-center font-medium text-muted-foreground bg-muted/30">
+                {day}
               </div>
-
-              {/* Calendar grid */}
-              {viewMode === 'month' ? (
-                <div className="grid grid-cols-7">
-                  {renderCalendarDays()}
-                </div>
-              ) : (
-                renderWeeklyView()
-              )}
-            </div>
-
-            {/* Legend - Responsiva */}
-            <div className="flex flex-wrap gap-3 lg:gap-4 items-center text-xs lg:text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded bg-primary/20 border border-primary/30"></div>
-                <span className="text-muted-foreground">Consulta Rotina</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded bg-primary/30 border border-primary/40"></div>
-                <span className="text-muted-foreground">Primeira Consulta</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded bg-muted border border-border"></div>
-                <span className="text-muted-foreground">Retorno</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded bg-destructive/20 border border-destructive/30"></div>
-                <span className="text-muted-foreground">Emergência</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded bg-primary/15 border border-primary/25"></div>
-                <span className="text-muted-foreground">Eventos Google Calendar</span>
-              </div>
-            </div>
-
-            {/* Google Calendar Setup/Status */}
-            <GoogleCalendarSetup 
-              onConnect={connect}
-              onDisconnect={disconnect}
-              isConnected={isConnected}
-            />
+            ))}
           </div>
+
+          {/* Calendar grid */}
+          {viewMode === 'month' ? (
+            <div className="grid grid-cols-7">
+              {renderCalendarDays()}
+            </div>
+          ) : (
+            renderWeeklyView()
+          )}
+        </div>
+
+        {/* Legend */}
+        <div className="flex flex-wrap gap-4 items-center text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded bg-primary/20 border border-primary/30"></div>
+            <span className="text-muted-foreground">Consulta Rotina</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded bg-primary/30 border border-primary/40"></div>
+            <span className="text-muted-foreground">Primeira Consulta</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded bg-muted border border-border"></div>
+            <span className="text-muted-foreground">Retorno</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded bg-destructive/20 border border-destructive/30"></div>
+            <span className="text-muted-foreground">Emergência</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded bg-primary/15 border border-primary/25"></div>
+            <span className="text-muted-foreground">Eventos Google Calendar</span>
+          </div>
+        </div>
+
+        {/* Google Calendar Setup/Status */}
+        <GoogleCalendarSetup 
+          onConnect={connect}
+          onDisconnect={disconnect}
+          isConnected={isConnected}
+        />
+
         </div>
       </div>
     </Layout>

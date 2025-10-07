@@ -65,3 +65,4 @@ COMMENT ON COLUMN pacientes_manuais.cliente_id IS 'ID do usuário que criou o pa
 
 
 
+

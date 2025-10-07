@@ -10,3 +10,4 @@ SELECT 'RLS desabilitado com sucesso!' as resultado;
 
 
 
+

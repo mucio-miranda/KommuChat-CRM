@@ -33,3 +33,4 @@ SELECT 'RLS desabilitado temporariamente! Agora você pode inserir pacientes.' a
 
 
 
+
