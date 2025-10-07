@@ -33,7 +33,7 @@ export interface Cliente {
 
 export interface Usuario {
   id: string
-  email: string
+  email?: string | null
   nome: string
   role: 'admin' | 'funcionario'
   cliente_id: string
