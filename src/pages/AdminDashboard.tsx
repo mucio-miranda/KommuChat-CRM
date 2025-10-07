@@ -16,7 +16,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { AdminCredentialsManager } from '@/components/AdminCredentialsManager.tsx';
+import { AdminCredentialsManager } from '@/components/AdminManager.tsx';
 import { supabaseCrm } from '@/lib/supabase-crm';
 import { useToast } from '@/hooks/use-toast';
 import UserManagement from '@/pages/UserManagement';
