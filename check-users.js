@@ -3,7 +3,7 @@ console.log('👤 Verificando usuários cadastrados...\n');
 
 const env = {
   VITE_CRM_SUPABASE_URL: 'https://wywzdtyjzzmcehrsalvn.supabase.co',
-  VITE_CRM_SUPABASE_ANON_KEY: 'REMOVED_SUPABASE_CRM_ANON_KEY'
+  VITE_CRM_SUPABASE_ANON_KEY: 'sua_chave_anonima_crm_aqui'
 };
 
 async function checkUsers() {

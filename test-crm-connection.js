@@ -1,20 +1,9 @@
 // Script para testar conexão com o projeto CRM Supabase
 import { createClient } from '@supabase/supabase-js'
 
-// Configurações do projeto CRM (do arquivo .env)
-const CRM_SUPABASE_URL = process.env.VITE_CRM_SUPABASE_URL || 'https://your-crm-project.supabase.co'
-const CRM_SUPABASE_ANON_KEY = process.env.VITE_CRM_SUPABASE_ANON_KEY || 'your_crm_supabase_anon_key_here'
-
-// Verificar se as credenciais estão configuradas
-if (!process.env.VITE_CRM_SUPABASE_URL || !process.env.VITE_CRM_SUPABASE_ANON_KEY) {
-  console.error('❌ ERRO: Variáveis de ambiente não configuradas!')
-  console.log('📝 Configure as seguintes variáveis no arquivo .env:')
-  console.log('   VITE_CRM_SUPABASE_URL=https://your-crm-project.supabase.co')
-  console.log('   VITE_CRM_SUPABASE_ANON_KEY=your_crm_supabase_anon_key_here')
-  console.log('')
-  console.log('🔧 Copie o arquivo env.example para .env e configure suas credenciais reais')
-  process.exit(1)
-}
+// Configurações do projeto CRM (do env.example)
+const CRM_SUPABASE_URL = 'https://wywzdtyjzzmcehrsalvn.supabase.co'
+const CRM_SUPABASE_ANON_KEY = 'REMOVED_SUPABASE_CRM_ANON_KEY'
 
 console.log('🔍 Testando conexão com projeto CRM Supabase...')
 console.log('URL:', CRM_SUPABASE_URL)

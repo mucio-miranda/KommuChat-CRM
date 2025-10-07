@@ -26,7 +26,7 @@ export class ClientEnvGenerator {
   private encryptionKey: string;
 
   private constructor() {
-    this.encryptionKey = import.meta.env.VITE_ENCRYPTION_KEY || 'your_secure_encryption_key_here';
+    this.encryptionKey = import.meta.env.VITE_ENCRYPTION_KEY || 'kommuchat-encryption-key-2024';
   }
 
   public static getInstance(): ClientEnvGenerator {

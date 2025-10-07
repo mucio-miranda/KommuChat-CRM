@@ -85,7 +85,7 @@ VITE_CRM_SUPABASE_ANON_KEY=sua-chave-anonima-crm
 ```typescript
 // Login como super admin
 const { adminSignIn } = useAdminAuth();
-await adminSignIn('admin@kommuchat.com', 'your_secure_password');
+await adminSignIn('seu_username_admin', 'sua_senha_admin');
 
 // Acesse: /admin/dashboard
 ```
