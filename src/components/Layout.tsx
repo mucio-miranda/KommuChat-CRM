@@ -1,6 +1,6 @@
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
-import { Menu, LogOut, User, Eye } from "lucide-react";
+import { Menu, LogOut, User, Eye, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -16,6 +16,30 @@ import {
 
 interface LayoutProps {
   children: React.ReactNode;
+}
+
+// Componente interno para o botão de toggle da sidebar
+function SidebarToggleButton() {
+  const { toggleSidebar, state } = useSidebar();
+  
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={toggleSidebar}
+      className="hidden lg:flex items-center gap-2 text-muted-foreground hover:text-foreground"
+      title={state === "collapsed" ? "Expandir sidebar" : "Minimizar sidebar"}
+    >
+      {state === "collapsed" ? (
+        <PanelLeftOpen className="w-4 h-4" />
+      ) : (
+        <PanelLeftClose className="w-4 h-4" />
+      )}
+      <span className="text-sm">
+        {state === "collapsed" ? "Expandir" : "Minimizar"}
+      </span>
+    </Button>
+  );
 }
 
 export function Layout({ children }: LayoutProps) {
@@ -39,9 +63,12 @@ export function Layout({ children }: LayoutProps) {
           {/* Header com informações do usuário */}
           <header className="h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="flex items-center justify-between h-full px-6">
-              <SidebarTrigger className="lg:hidden">
-                <Menu className="w-5 h-5" />
-              </SidebarTrigger>
+              <div className="flex items-center gap-2">
+                <SidebarTrigger className="lg:hidden">
+                  <Menu className="w-5 h-5" />
+                </SidebarTrigger>
+                <SidebarToggleButton />
+              </div>
               
               <div className="flex items-center gap-4">
                 <div className="text-sm text-muted-foreground">
