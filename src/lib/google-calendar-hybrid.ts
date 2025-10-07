@@ -1,5 +1,5 @@
 import { GoogleCalendarEvent } from '@/types/google-calendar';
-import { sharedGoogleCredentialsService } from './shared-google-credentials';
+import { sharedGoogleCredentialsService } from './google-credentials-service';
 
 // Scopes necessários para acessar o Google Calendar
 const SCOPES = [
