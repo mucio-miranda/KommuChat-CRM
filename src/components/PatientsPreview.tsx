@@ -245,9 +245,6 @@ export function PatientsPreview() {
           </div>
           <div>
             <h2 className="text-xl font-bold text-foreground">Pacientes</h2>
-            <p className="text-xs text-muted-foreground">
-              {filteredPatients.length} de {patients.length} pacientes
-            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
