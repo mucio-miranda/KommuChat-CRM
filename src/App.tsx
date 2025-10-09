@@ -19,6 +19,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import EmployeeManagement from "./pages/EmployeeManagement";
 // import TestPage from "./pages/TestPage";
 import GoogleCallback from "./pages/GoogleCallback";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -65,6 +66,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin/dashboard" element={
         <AdminProtectedRoute>
