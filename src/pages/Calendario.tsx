@@ -307,7 +307,7 @@ export default function Calendario() {
     // Empty cells for days before the first day of the month
     for (let i = 0; i < firstDay; i++) {
       days.push(
-        <div key={`empty-${i}`} className="h-16 sm:h-20 md:h-28 lg:h-40 border border-border/20"></div>
+        <div key={`empty-${i}`} className="h-14 sm:h-18 md:h-24 lg:h-36 border border-border/20"></div>
       );
     }
 
@@ -319,21 +319,21 @@ export default function Calendario() {
       days.push(
         <div 
           key={day} 
-          className={`h-16 sm:h-20 md:h-28 lg:h-40 border border-border/20 p-0.5 sm:p-1 md:p-2 bg-card relative transition-colors hover:bg-muted/20 cursor-pointer ${isToday ? 'bg-primary/5' : ''}`}
+          className={`h-14 sm:h-18 md:h-24 lg:h-36 border border-border/20 p-0.5 sm:p-1 md:p-1.5 bg-card relative transition-colors hover:bg-muted/20 cursor-pointer ${isToday ? 'bg-primary/5' : ''}`}
           onClick={() => handleDateClick(day)}
         >
-          <div className={`text-[10px] sm:text-xs md:text-sm font-medium mb-0.5 sm:mb-1 md:mb-2 ${isToday ? 'text-primary font-semibold' : 'text-foreground'}`}>
+          <div className={`text-[9px] sm:text-[10px] md:text-xs font-medium mb-0.5 ${isToday ? 'text-primary font-semibold' : 'text-foreground'}`}>
             {day}
           </div>
-          <div className="space-y-0.5 md:space-y-1 overflow-hidden">
+          <div className="space-y-0.5 overflow-hidden">
             {appointments.slice(0, 1).map((apt, index) => (
-              <div key={`${apt.id}-${index}`} className={`text-[9px] sm:text-[10px] md:text-xs p-0.5 rounded ${apt.color} truncate`}>
+              <div key={`${apt.id}-${index}`} className={`text-[8px] sm:text-[9px] md:text-[10px] p-0.5 rounded ${apt.color} truncate leading-tight`}>
                 <div className="font-medium truncate">{apt.time}</div>
                 <div className="truncate hidden md:block">{apt.title}</div>
               </div>
             ))}
             {appointments.length > 1 && (
-              <div className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground font-medium">
+              <div className="text-[8px] sm:text-[9px] md:text-[10px] text-muted-foreground font-medium">
                 +{appointments.length - 1}
               </div>
             )}
@@ -393,7 +393,7 @@ export default function Calendario() {
           </div>
 
           {/* Mobile - Visão de 1 dia apenas */}
-          <div className="lg:hidden">
+          <div className="lg:hidden px-1">
             {(() => {
               const day = currentWeek;
               const appointments = getAppointmentsForDate(day);
@@ -401,31 +401,31 @@ export default function Calendario() {
               const isCurrentMonth = day.getMonth() === currentMonth && day.getFullYear() === currentYear;
 
               return (
-                <div className={`min-h-[300px] border border-border/20 p-3 sm:p-4 bg-card rounded-lg ${isToday ? 'bg-primary/5' : ''}`}>
+                <div className={`min-h-[250px] border border-border/20 p-2.5 sm:p-3 bg-card rounded-md sm:rounded-lg ${isToday ? 'bg-primary/5' : ''}`}>
                   {/* Header do dia */}
-                  <div className="mb-3 sm:mb-4 text-center">
-                    <div className={`text-xs sm:text-sm font-medium ${isToday ? 'text-primary font-semibold' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}`}>
+                  <div className="mb-2.5 sm:mb-3 text-center">
+                    <div className={`text-[10px] sm:text-xs font-medium ${isToday ? 'text-primary font-semibold' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}`}>
                       {weekDays[day.getDay()]}
                     </div>
-                    <div className={`text-xl sm:text-2xl font-bold ${isToday ? 'text-primary' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}`}>
+                    <div className={`text-lg sm:text-xl font-bold ${isToday ? 'text-primary' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}`}>
                       {day.getDate()}
                     </div>
-                    <div className="text-xs text-muted-foreground mt-0.5 sm:mt-1">
+                    <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
                       {monthNames[day.getMonth()]} {day.getFullYear()}
                     </div>
                   </div>
 
                   {/* Appointments */}
-                  <div className="space-y-2 sm:space-y-3">
+                  <div className="space-y-1.5 sm:space-y-2">
                     {appointments.map((apt) => (
-                      <div key={apt.id} className={`text-sm p-2.5 sm:p-3 rounded-lg ${apt.color} cursor-pointer hover:opacity-80 transition-opacity shadow-sm`}>
-                        <div className="font-semibold text-xs sm:text-sm mb-1">{apt.time}</div>
-                        <div className="font-medium text-xs sm:text-sm mb-1">{apt.title}</div>
-                        <div className="text-xs opacity-75">{apt.patient}</div>
+                      <div key={apt.id} className={`text-sm p-2 sm:p-2.5 rounded-md ${apt.color} cursor-pointer hover:opacity-80 transition-opacity shadow-sm`}>
+                        <div className="font-semibold text-[10px] sm:text-xs mb-0.5 sm:mb-1">{apt.time}</div>
+                        <div className="font-medium text-[10px] sm:text-xs mb-0.5 sm:mb-1">{apt.title}</div>
+                        <div className="text-[9px] sm:text-xs opacity-75">{apt.patient}</div>
                       </div>
                     ))}
                     {appointments.length === 0 && (
-                      <div className="text-sm text-muted-foreground text-center py-6 sm:py-8">
+                      <div className="text-xs sm:text-sm text-muted-foreground text-center py-5 sm:py-6">
                         Nenhum agendamento para este dia
                       </div>
                     )}
@@ -449,7 +449,7 @@ export default function Calendario() {
 
   return (
     <Layout>
-      <div className="flex flex-col lg:flex-row lg:space-x-6 space-y-3 lg:space-y-0 px-1 sm:px-2 md:px-0">
+      <div className="flex flex-col lg:flex-row lg:space-x-6 space-y-2 lg:space-y-0 px-0 sm:px-2 md:px-0">
         {/* Sidebar com lista de agendas - Desktop */}
         <div className="hidden lg:block lg:w-80 lg:flex-shrink-0">
           <CalendarAgendasList 
@@ -463,8 +463,8 @@ export default function Calendario() {
           />
         </div>
 
-        {/* Mini Calendário Mobile - Sem padding extra */}
-        <div className="lg:hidden -mx-1 sm:mx-0">
+        {/* Mini Calendário Mobile - Compacto */}
+        <div className="lg:hidden">
           <CalendarAgendasList 
             isConnected={isConnected} 
             onDateSelect={handleMiniCalendarDateSelect}
@@ -472,89 +472,87 @@ export default function Calendario() {
         </div>
         
         {/* Conteúdo principal */}
-        <div className="flex-1 min-w-0">
-          <div className="space-y-3 md:space-y-6">
+        <div className="flex-1 min-w-0 px-1 sm:px-0">
+          <div className="space-y-2 md:space-y-4">
             {/* Header */}
-            <div className="flex flex-col space-y-3 md:space-y-0 md:flex-row md:items-center md:justify-between gap-3">
-              {/* View Toggle - Primeira linha mobile, esquerda desktop */}
-              <div className="flex items-center gap-1 bg-muted rounded-lg p-1 w-full sm:w-auto">
-                <Button
-                  variant={viewMode === 'month' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('month')}
-                  className="h-8 flex-1 sm:flex-initial sm:px-3"
-                >
-                  <Grid3X3 className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Mês</span>
-                </Button>
-                <Button
-                  variant={viewMode === 'week' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('week')}
-                  className="h-8 flex-1 sm:flex-initial sm:px-3"
-                >
-                  <CalendarDays className="w-4 h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Semana</span>
-                </Button>
+            <div className="flex flex-col space-y-2 md:space-y-0 md:flex-row md:items-center md:justify-between gap-2 md:gap-3">
+              {/* View Toggle e Navigation - Combinados em mobile */}
+              <div className="flex items-center gap-1.5 w-full md:w-auto">
+                {/* View Toggle */}
+                <div className="flex items-center gap-0.5 bg-muted rounded-lg p-0.5 sm:p-1">
+                  <Button
+                    variant={viewMode === 'month' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('month')}
+                    className="h-7 sm:h-8 px-2 sm:px-3"
+                  >
+                    <Grid3X3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-1" />
+                    <span className="hidden sm:inline text-xs sm:text-sm">Mês</span>
+                  </Button>
+                  <Button
+                    variant={viewMode === 'week' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('week')}
+                    className="h-7 sm:h-8 px-2 sm:px-3"
+                  >
+                    <CalendarDays className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-1" />
+                    <span className="hidden sm:inline text-xs sm:text-sm">Semana</span>
+                  </Button>
+                </div>
+
+                {/* Navigation */}
+                <div className="flex items-center gap-1 sm:gap-1.5 flex-1 justify-center md:justify-start">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => viewMode === 'month' ? navigateMonth('prev') : navigateWeek('prev')}
+                    className="flex-shrink-0 h-7 sm:h-8 w-7 sm:w-8 p-0"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </Button>
+                  <h2 className="text-xs sm:text-sm md:text-lg font-semibold min-w-[120px] sm:min-w-[140px] md:min-w-[180px] text-center truncate px-1">
+                    {viewMode === 'month' 
+                      ? `${monthNames[currentMonth]} ${currentYear}`
+                      : getWeekRangeText(getWeekStart(currentWeek))
+                    }
+                  </h2>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => viewMode === 'month' ? navigateMonth('next') : navigateWeek('next')}
+                    className="flex-shrink-0 h-7 sm:h-8 w-7 sm:w-8 p-0"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </Button>
+                </div>
               </div>
 
-              {/* Navigation - Segunda linha mobile, centro desktop */}
-              <div className="flex items-center gap-1.5 sm:gap-2 justify-center">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => viewMode === 'month' ? navigateMonth('prev') : navigateWeek('prev')}
-                  className="flex-shrink-0 h-8 px-2 sm:px-3"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <h2 className="text-sm sm:text-base md:text-xl font-semibold min-w-[150px] sm:min-w-[180px] md:min-w-[200px] text-center truncate px-1 sm:px-2">
-                  {viewMode === 'month' 
-                    ? `${monthNames[currentMonth]} ${currentYear}`
-                    : getWeekRangeText(getWeekStart(currentWeek))
-                  }
-                </h2>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => viewMode === 'month' ? navigateMonth('next') : navigateWeek('next')}
-                  className="flex-shrink-0 h-8 px-2 sm:px-3"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
-
-              {/* Status da conexão Google Calendar - Terceira linha mobile, direita desktop */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              {/* Status da conexão Google Calendar */}
+              <div className="flex items-center gap-1.5 sm:gap-2 justify-center md:justify-end">
                 {isConnected ? (
                   <>
-                    <div className="flex items-center gap-2 justify-center sm:justify-start">
-                      <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs whitespace-nowrap">
-                        <Calendar className="w-3 h-3 mr-1" />
-                        <span className="hidden sm:inline">Google Calendar Conectado</span>
-                        <span className="sm:hidden">Conectado</span>
-                      </Badge>
-                      <button
-                        onClick={handleRefresh}
-                        disabled={isLoading || isRefreshing}
-                        title="Recarregar calendário"
-                        className="inline-flex items-center justify-center rounded-md border border-red-200 bg-transparent px-2 sm:px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-600 hover:border-red-600 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-                      >
-                        <RefreshCw className={`w-4 h-4 ${(isLoading || isRefreshing) ? 'animate-spin' : ''}`} />
-                      </button>
-                    </div>
-                    <p className="text-xs text-muted-foreground text-center sm:text-left hidden sm:block">
-                      Última atualização: {lastUpdate.toLocaleTimeString('pt-BR')}
-                    </p>
+                    <Badge variant="secondary" className="bg-green-100 text-green-800 text-[10px] sm:text-xs whitespace-nowrap px-1.5 sm:px-2">
+                      <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
+                      <span className="hidden sm:inline">Google Calendar Conectado</span>
+                      <span className="sm:hidden">Conectado</span>
+                    </Badge>
+                    <button
+                      onClick={handleRefresh}
+                      disabled={isLoading || isRefreshing}
+                      title="Recarregar calendário"
+                      className="inline-flex items-center justify-center rounded-md border border-red-200 bg-transparent w-7 h-7 sm:w-8 sm:h-8 text-sm font-medium text-red-600 hover:bg-red-600 hover:border-red-600 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${(isLoading || isRefreshing) ? 'animate-spin' : ''}`} />
+                    </button>
                   </>
                 ) : (
                   <Button
                     variant="outline"
                     onClick={connect}
-                    className="flex items-center justify-center gap-2 w-full sm:w-auto"
+                    className="flex items-center justify-center gap-1.5 h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3"
                     size="sm"
                   >
-                    <Calendar className="w-4 h-4" />
+                    <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <span className="hidden sm:inline">Conectar Google Calendar</span>
                     <span className="sm:hidden">Conectar</span>
                   </Button>
@@ -564,11 +562,11 @@ export default function Calendario() {
         </div>
 
         {/* Calendar */}
-        <div className="bg-card rounded-lg md:rounded-2xl shadow-soft border border-border mt-3 md:mt-6 overflow-hidden">
+        <div className="bg-card rounded-md sm:rounded-lg md:rounded-2xl shadow-soft border border-border mt-2 md:mt-4 overflow-hidden">
           {/* Week days header */}
           <div className="grid grid-cols-7 border-b border-border">
             {weekDays.map((day) => (
-              <div key={day} className="p-1.5 sm:p-2 md:p-4 text-center text-[10px] sm:text-xs md:text-sm font-medium text-muted-foreground bg-muted/30">
+              <div key={day} className="py-1 sm:py-1.5 md:py-3 text-center text-[9px] sm:text-[10px] md:text-sm font-medium text-muted-foreground bg-muted/30">
                 {day}
               </div>
             ))}
