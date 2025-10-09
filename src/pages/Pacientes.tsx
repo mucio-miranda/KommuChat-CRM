@@ -290,6 +290,9 @@ export default function Pacientes() {
   }, [loadData]);
 
   const filteredPatients = sortPatients(patients.filter(patient => {
+    // Filtrar pacientes com setdata vazia (null)
+    const hasSetdata = patient.setdata !== null && patient.setdata !== undefined && patient.setdata !== '';
+    
     const matchesSearch = patient.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          patient.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          patient.telefone?.includes(searchTerm);
@@ -299,7 +302,7 @@ export default function Pacientes() {
     
     const matchesFonte = fonteFilter === "todas" || patient.fonte === fonteFilter;
     
-    return matchesSearch && matchesStatus && matchesFonte;
+    return hasSetdata && matchesSearch && matchesStatus && matchesFonte;
   }));
 
   if (loading) {
