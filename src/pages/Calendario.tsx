@@ -307,7 +307,7 @@ export default function Calendario() {
     // Empty cells for days before the first day of the month
     for (let i = 0; i < firstDay; i++) {
       days.push(
-        <div key={`empty-${i}`} className="h-48 border border-border/20"></div>
+        <div key={`empty-${i}`} className="h-20 md:h-32 lg:h-48 border border-border/20"></div>
       );
     }
 
@@ -319,22 +319,22 @@ export default function Calendario() {
       days.push(
         <div 
           key={day} 
-          className={`h-48 border border-border/20 p-2 bg-card relative transition-colors hover:bg-muted/20 cursor-pointer ${isToday ? 'bg-primary/5' : ''}`}
+          className={`h-20 md:h-32 lg:h-48 border border-border/20 p-1 md:p-2 bg-card relative transition-colors hover:bg-muted/20 cursor-pointer ${isToday ? 'bg-primary/5' : ''}`}
           onClick={() => handleDateClick(day)}
         >
-          <div className={`text-sm font-medium mb-2 ${isToday ? 'text-primary font-semibold' : 'text-foreground'}`}>
+          <div className={`text-xs md:text-sm font-medium mb-1 md:mb-2 ${isToday ? 'text-primary font-semibold' : 'text-foreground'}`}>
             {day}
           </div>
-          <div className="space-y-1 overflow-hidden">
+          <div className="space-y-0.5 md:space-y-1 overflow-hidden">
             {appointments.slice(0, 2).map((apt, index) => (
-              <div key={`${apt.id}-${index}`} className={`text-xs p-1 rounded ${apt.color} truncate`}>
-                <div className="font-medium text-xs">{apt.time}</div>
-                <div className="truncate text-xs">{apt.title}</div>
+              <div key={`${apt.id}-${index}`} className={`text-[10px] md:text-xs p-0.5 md:p-1 rounded ${apt.color} truncate`}>
+                <div className="font-medium">{apt.time}</div>
+                <div className="truncate hidden md:block">{apt.title}</div>
               </div>
             ))}
             {appointments.length > 2 && (
-              <div className="text-xs text-muted-foreground font-medium mt-1">
-                +{appointments.length - 2} consultas
+              <div className="text-[10px] md:text-xs text-muted-foreground font-medium mt-0.5 md:mt-1">
+                +{appointments.length - 2}
               </div>
             )}
           </div>
@@ -352,36 +352,37 @@ export default function Calendario() {
       const today = new Date();
 
       return (
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid grid-cols-7 gap-0.5 md:gap-1">
           {weekDates.map((day, index) => {
             const appointments = getAppointmentsForDate(day);
             const isToday = day.toDateString() === today.toDateString();
             const isCurrentMonth = day.getMonth() === currentMonth && day.getFullYear() === currentYear;
 
             return (
-              <div key={index} className={`min-h-[600px] border border-border/20 p-3 bg-card relative transition-colors hover:bg-muted/20 ${isToday ? 'bg-primary/5' : ''}`}>
+              <div key={index} className={`min-h-[300px] md:min-h-[400px] lg:min-h-[600px] border border-border/20 p-1.5 md:p-3 bg-card relative transition-colors hover:bg-muted/20 ${isToday ? 'bg-primary/5' : ''}`}>
                 {/* Header do dia */}
-                <div className="mb-3">
-                  <div className={`text-sm font-medium ${isToday ? 'text-primary font-semibold' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}`}>
+                <div className="mb-2 md:mb-3">
+                  <div className={`text-[10px] md:text-sm font-medium ${isToday ? 'text-primary font-semibold' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}`}>
                     {weekDays[day.getDay()]}
                   </div>
-                  <div className={`text-lg font-bold ${isToday ? 'text-primary' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}`}>
+                  <div className={`text-sm md:text-lg font-bold ${isToday ? 'text-primary' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}`}>
                     {day.getDate()}
                   </div>
                 </div>
 
                 {/* Appointments */}
-                <div className="space-y-3">
+                <div className="space-y-1.5 md:space-y-3">
                   {appointments.map((apt) => (
-                    <div key={apt.id} className={`text-sm p-3 rounded-lg ${apt.color} cursor-pointer hover:opacity-80 transition-opacity shadow-sm`}>
-                      <div className="font-semibold text-sm mb-1">{apt.time}</div>
-                      <div className="font-medium text-sm mb-1">{apt.title}</div>
-                      <div className="text-xs opacity-75">{apt.patient}</div>
+                    <div key={apt.id} className={`text-xs md:text-sm p-1.5 md:p-3 rounded-lg ${apt.color} cursor-pointer hover:opacity-80 transition-opacity shadow-sm`}>
+                      <div className="font-semibold text-[10px] md:text-sm mb-0.5 md:mb-1">{apt.time}</div>
+                      <div className="font-medium text-[10px] md:text-sm mb-0.5 md:mb-1 truncate">{apt.title}</div>
+                      <div className="text-[9px] md:text-xs opacity-75 truncate hidden md:block">{apt.patient}</div>
                     </div>
                   ))}
                   {appointments.length === 0 && (
-                    <div className="text-sm text-muted-foreground text-center py-8">
-                      Nenhum agendamento
+                    <div className="text-[10px] md:text-sm text-muted-foreground text-center py-4 md:py-8">
+                      <span className="hidden md:inline">Nenhum agendamento</span>
+                      <span className="md:hidden">-</span>
                     </div>
                   )}
                 </div>
@@ -393,9 +394,9 @@ export default function Calendario() {
     } catch (error) {
       console.error('Erro na renderização semanal:', error);
       return (
-        <div className="p-8 text-center">
-          <p className="text-red-500">Erro ao carregar visualização semanal</p>
-          <p className="text-sm text-muted-foreground mt-2">{error.message}</p>
+        <div className="p-4 md:p-8 text-center">
+          <p className="text-red-500 text-sm md:text-base">Erro ao carregar visualização semanal</p>
+          <p className="text-xs md:text-sm text-muted-foreground mt-2">{error.message}</p>
         </div>
       );
     }
@@ -403,9 +404,9 @@ export default function Calendario() {
 
   return (
     <Layout>
-      <div className="flex space-x-6">
-        {/* Sidebar com lista de agendas */}
-        <div className="w-80 flex-shrink-0">
+      <div className="flex flex-col lg:flex-row lg:space-x-6 space-y-4 lg:space-y-0 px-2 md:px-0">
+        {/* Sidebar com lista de agendas - Oculta no mobile */}
+        <div className="hidden lg:block lg:w-80 lg:flex-shrink-0">
           <CalendarAgendasList 
             isConnected={isConnected} 
             onDateSelect={handleMiniCalendarDateSelect}
@@ -416,44 +417,53 @@ export default function Calendario() {
             appointments={getAllFilteredAppointments}
           />
         </div>
+
+        {/* Busca Mobile - Visível apenas no mobile */}
+        <div className="lg:hidden">
+          <SearchConsultation 
+            onSearch={setSearchQuery}
+            appointments={getAllFilteredAppointments}
+          />
+        </div>
         
         {/* Conteúdo principal */}
-        <div className="flex-1">
-          <div className="space-y-8">
+        <div className="flex-1 min-w-0">
+          <div className="space-y-4 md:space-y-8">
             {/* Header */}
-            <div className="flex items-center justify-between">
-              {/* View Toggle - Esquerda */}
-              <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+            <div className="flex flex-col space-y-4 md:space-y-0 md:flex-row md:items-center md:justify-between">
+              {/* View Toggle - Primeira linha mobile, esquerda desktop */}
+              <div className="flex items-center gap-1 bg-muted rounded-lg p-1 w-full md:w-auto">
                 <Button
                   variant={viewMode === 'month' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setViewMode('month')}
-                  className="h-8 px-3"
+                  className="h-8 flex-1 md:flex-initial md:px-3"
                 >
-                  <Grid3X3 className="w-4 h-4 mr-1" />
-                  Mês
+                  <Grid3X3 className="w-4 h-4 md:mr-1" />
+                  <span className="hidden sm:inline">Mês</span>
                 </Button>
                 <Button
                   variant={viewMode === 'week' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setViewMode('week')}
-                  className="h-8 px-3"
+                  className="h-8 flex-1 md:flex-initial md:px-3"
                 >
-                  <CalendarDays className="w-4 h-4 mr-1" />
-                  Semana
+                  <CalendarDays className="w-4 h-4 md:mr-1" />
+                  <span className="hidden sm:inline">Semana</span>
                 </Button>
               </div>
 
-              {/* Navigation - Centro */}
-              <div className="flex items-center gap-2">
+              {/* Navigation - Segunda linha mobile, centro desktop */}
+              <div className="flex items-center gap-2 justify-center">
                 <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={() => viewMode === 'month' ? navigateMonth('prev') : navigateWeek('prev')}
+                  className="flex-shrink-0"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
-                <h2 className="text-xl font-semibold min-w-[200px] text-center">
+                <h2 className="text-base md:text-xl font-semibold min-w-[180px] md:min-w-[200px] text-center truncate px-2">
                   {viewMode === 'month' 
                     ? `${monthNames[currentMonth]} ${currentYear}`
                     : getWeekRangeText(getWeekStart(currentWeek))
@@ -463,45 +473,45 @@ export default function Calendario() {
                   variant="outline" 
                   size="sm" 
                   onClick={() => viewMode === 'month' ? navigateMonth('next') : navigateWeek('next')}
+                  className="flex-shrink-0"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               </div>
 
-              {/* Status da conexão Google Calendar - Direita */}
-              <div className="flex items-center gap-2">
+              {/* Status da conexão Google Calendar - Terceira linha mobile, direita desktop */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 {isConnected ? (
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="bg-green-100 text-green-800">
-                      <Calendar className="w-3 h-3 mr-1" />
-                      Google Calendar Conectado
-                    </Badge>
-                    {/* Informação da última atualização */}
-                    <p className="text-xs text-muted-foreground mr-2">
+                  <>
+                    <div className="flex items-center gap-2 justify-center sm:justify-start">
+                      <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
+                        <Calendar className="w-3 h-3 mr-1" />
+                        <span className="hidden sm:inline">Google Calendar Conectado</span>
+                        <span className="sm:hidden">Conectado</span>
+                      </Badge>
+                      <button
+                        onClick={handleRefresh}
+                        disabled={isLoading || isRefreshing}
+                        title="Recarregar calendário"
+                        className="inline-flex items-center justify-center rounded-md border border-red-200 bg-transparent px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-600 hover:border-red-600 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                      >
+                        <RefreshCw className={`w-4 h-4 ${(isLoading || isRefreshing) ? 'animate-spin' : ''}`} />
+                      </button>
+                    </div>
+                    <p className="text-xs text-muted-foreground text-center sm:text-left">
                       Última atualização: {lastUpdate.toLocaleTimeString('pt-BR')}
                     </p>
-                    <button
-                      onClick={handleRefresh}
-                      disabled={isLoading || isRefreshing}
-                      title="Recarregar calendário"
-                      className="inline-flex items-center justify-center rounded-md border border-red-200 bg-transparent px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-600 hover:border-red-600 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-                    >
-                      <RefreshCw className={`w-4 h-4 ${(isLoading || isRefreshing) ? 'animate-spin' : ''}`} />
-                    </button>
-                    {isRefreshing && (
-                      <span className="text-xs text-primary font-medium animate-pulse">
-                        Recarregando...
-                      </span>
-                    )}
-                  </div>
+                  </>
                 ) : (
                   <Button
                     variant="outline"
                     onClick={connect}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 w-full sm:w-auto"
+                    size="sm"
                   >
                     <Calendar className="w-4 h-4" />
-                    Conectar Google Calendar
+                    <span className="hidden sm:inline">Conectar Google Calendar</span>
+                    <span className="sm:hidden">Conectar</span>
                   </Button>
                 )}
               </div>
@@ -509,11 +519,11 @@ export default function Calendario() {
         </div>
 
         {/* Calendar */}
-        <div className="bg-card rounded-2xl shadow-soft border border-border mt-6">
+        <div className="bg-card rounded-lg md:rounded-2xl shadow-soft border border-border mt-4 md:mt-6 overflow-hidden">
           {/* Week days header */}
           <div className="grid grid-cols-7 border-b border-border">
             {weekDays.map((day) => (
-              <div key={day} className="p-4 text-center font-medium text-muted-foreground bg-muted/30">
+              <div key={day} className="p-2 md:p-4 text-center text-xs md:text-sm font-medium text-muted-foreground bg-muted/30">
                 {day}
               </div>
             ))}
@@ -530,24 +540,24 @@ export default function Calendario() {
         </div>
 
         {/* Legend */}
-        <div className="flex flex-wrap gap-4 items-center text-sm">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap gap-2 md:gap-4 items-center text-xs md:text-sm justify-center md:justify-start">
+          <div className="flex items-center gap-1 md:gap-2">
             <div className="w-3 h-3 rounded bg-primary/20 border border-primary/30"></div>
             <span className="text-muted-foreground">Consulta Rotina</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 md:gap-2">
             <div className="w-3 h-3 rounded bg-primary/30 border border-primary/40"></div>
             <span className="text-muted-foreground">Primeira Consulta</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 md:gap-2">
             <div className="w-3 h-3 rounded bg-muted border border-border"></div>
             <span className="text-muted-foreground">Retorno</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 md:gap-2">
             <div className="w-3 h-3 rounded bg-destructive/20 border border-destructive/30"></div>
             <span className="text-muted-foreground">Emergência</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 md:gap-2">
             <div className="w-3 h-3 rounded bg-primary/15 border border-primary/25"></div>
             <span className="text-muted-foreground">Eventos Google Calendar</span>
           </div>
