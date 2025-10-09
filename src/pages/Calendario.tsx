@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, Plus, Calendar, RefreshCw, Grid3X3, CalendarDays } from "lucide-react";
 import { useGoogleCalendar } from "@/contexts/GoogleCalendarContextSimple";
 import { GoogleCalendarEvent } from "@/lib/google-calendar-hybrid";
-import { GoogleCalendarSetup } from "@/components/GoogleCalendarSetup";
 import { CalendarAgendasList } from "@/components/CalendarAgendasList";
 import { SearchConsultation } from "@/components/SearchConsultation";
 
@@ -597,12 +596,52 @@ export default function Calendario() {
           )}
         </div>
 
-        {/* Google Calendar Setup/Status */}
-        <GoogleCalendarSetup 
-          onConnect={connect}
-          onDisconnect={disconnect}
-          isConnected={isConnected}
-        />
+        {/* Google Calendar Status */}
+        {!isConnected ? (
+          <Card className="shadow-soft">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Calendar className="w-5 h-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">Google Calendar não conectado</p>
+                    <p className="text-xs text-muted-foreground">Use: clinicanutrivida.kommuchat@gmail.com</p>
+                  </div>
+                </div>
+                <Button 
+                  onClick={connect}
+                  size="sm"
+                  className="h-8 px-3"
+                >
+                  <Calendar className="w-4 h-4 mr-1" />
+                  Conectar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="shadow-soft">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Calendar className="w-5 h-5 text-green-600" />
+                  <div>
+                    <p className="text-sm font-medium">Google Calendar conectado</p>
+                    <p className="text-xs text-muted-foreground">clinicanutrivida.kommuchat@gmail.com</p>
+                  </div>
+                </div>
+                <Button 
+                  onClick={disconnect}
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3"
+                >
+                  Desconectar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         </div>
       </div>
