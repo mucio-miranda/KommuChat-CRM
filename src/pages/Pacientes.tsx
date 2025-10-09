@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import { 
   Search, 
   Plus, 
-  RefreshCw
+  RefreshCw,
+  ChevronUp,
+  ChevronDown
 } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Layout } from "@/components/Layout";
@@ -51,6 +53,11 @@ export default function Pacientes() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [isNewPatientModalOpen, setIsNewPatientModalOpen] = useState(false);
+  
+  // Estados para ordenação
+  const [sortField, setSortField] = useState<string>("");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  
   const { toast } = useToast();
   const { user } = useAuth();
   const { read: supabase, config: supabaseConfig, write: supabaseWrite } = useSupabase();
@@ -208,6 +215,56 @@ export default function Pacientes() {
     }
   }, [supabase, supabaseWrite, supabaseConfig, user, toast]);
 
+  // Função para ordenar pacientes
+  const sortPatients = (patients: Patient[]): Patient[] => {
+    if (!sortField) return patients;
+
+    return [...patients].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortField) {
+        case 'nome':
+          aValue = a.nome?.toLowerCase() || '';
+          bValue = b.nome?.toLowerCase() || '';
+          break;
+        case 'contato':
+          // Ordenar por email ou telefone (alfanumérica)
+          aValue = (a.email || a.telefone || '').toLowerCase();
+          bValue = (b.email || b.telefone || '').toLowerCase();
+          break;
+        case 'fonte':
+          // Ordenar por fonte (IA/Humano)
+          aValue = a.fonte;
+          bValue = b.fonte;
+          break;
+        case 'data':
+          // Ordenar por data de atualização
+          aValue = new Date(a.setdata || a.updated_at || a.created_at || '').getTime();
+          bValue = new Date(b.setdata || b.updated_at || b.created_at || '').getTime();
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
+  // Função para lidar com clique na coluna
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      // Se clicou na mesma coluna, alternar direção
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Se clicou em coluna diferente, definir nova coluna e direção padrão
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
   // Carregamento inicial
   useEffect(() => {
     loadData();
@@ -223,7 +280,7 @@ export default function Pacientes() {
     return () => clearInterval(interval);
   }, [loadData]);
 
-  const filteredPatients = patients.filter(patient => {
+  const filteredPatients = sortPatients(patients.filter(patient => {
     const matchesSearch = patient.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          patient.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          patient.telefone?.includes(searchTerm);
@@ -234,7 +291,7 @@ export default function Pacientes() {
     const matchesFonte = fonteFilter === "todas" || patient.fonte === fonteFilter;
     
     return matchesSearch && matchesStatus && matchesFonte;
-  });
+  }));
 
   if (loading) {
     return (
@@ -355,11 +412,59 @@ export default function Pacientes() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">Paciente</th>
-                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">Contato</th>
+                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">
+                    <button
+                      onClick={() => handleSort('nome')}
+                      className="flex items-center gap-1 hover:text-foreground transition-colors"
+                    >
+                      Paciente
+                      {sortField === 'nome' && (
+                        sortDirection === 'asc' ? 
+                          <ChevronUp className="w-4 h-4" /> : 
+                          <ChevronDown className="w-4 h-4" />
+                      )}
+                    </button>
+                  </th>
+                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">
+                    <button
+                      onClick={() => handleSort('contato')}
+                      className="flex items-center gap-1 hover:text-foreground transition-colors"
+                    >
+                      Contato
+                      {sortField === 'contato' && (
+                        sortDirection === 'asc' ? 
+                          <ChevronUp className="w-4 h-4" /> : 
+                          <ChevronDown className="w-4 h-4" />
+                      )}
+                    </button>
+                  </th>
                   <th className="text-left py-3 px-2 font-medium text-muted-foreground">Status</th>
-                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">Fonte</th>
-                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">Última Atualização</th>
+                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">
+                    <button
+                      onClick={() => handleSort('fonte')}
+                      className="flex items-center gap-1 hover:text-foreground transition-colors"
+                    >
+                      Fonte
+                      {sortField === 'fonte' && (
+                        sortDirection === 'asc' ? 
+                          <ChevronUp className="w-4 h-4" /> : 
+                          <ChevronDown className="w-4 h-4" />
+                      )}
+                    </button>
+                  </th>
+                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">
+                    <button
+                      onClick={() => handleSort('data')}
+                      className="flex items-center gap-1 hover:text-foreground transition-colors"
+                    >
+                      Última Atualização
+                      {sortField === 'data' && (
+                        sortDirection === 'asc' ? 
+                          <ChevronUp className="w-4 h-4" /> : 
+                          <ChevronDown className="w-4 h-4" />
+                      )}
+                    </button>
+                  </th>
                 </tr>
               </thead>
               <tbody>
