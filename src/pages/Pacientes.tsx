@@ -260,12 +260,12 @@ export default function Pacientes() {
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6 px-2 md:px-0">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Pacientes</h1>
-          <p className="text-muted-foreground mt-1">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex-1">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Pacientes</h1>
+          <p className="text-sm md:text-base text-muted-foreground mt-1">
             Gerencie todos os seus pacientes
           </p>
           <p className="text-xs text-muted-foreground mt-1">
@@ -273,7 +273,7 @@ export default function Pacientes() {
           </p>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <Button
             variant="outline"
             size="sm"
@@ -282,19 +282,19 @@ export default function Pacientes() {
             className="flex items-center gap-2"
           >
             <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            {isRefreshing ? 'Atualizando...' : 'Atualizar'}
+            <span className="hidden sm:inline">{isRefreshing ? 'Atualizando...' : 'Atualizar'}</span>
           </Button>
-          <Button onClick={() => setIsNewPatientModalOpen(true)}>
+          <Button onClick={() => setIsNewPatientModalOpen(true)} size="sm" className="md:size-default">
             <Plus className="w-4 h-4" />
-            Novo Paciente
+            <span className="hidden sm:inline ml-1">Novo Paciente</span>
           </Button>
         </div>
       </div>
 
       {/* Filters */}
       <Card className="shadow-soft">
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
+        <CardContent className="p-4 md:p-6">
+          <div className="flex flex-col gap-3 md:gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input 
@@ -305,39 +305,41 @@ export default function Pacientes() {
               />
             </div>
             
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filtrar por status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os status</SelectItem>
-                <SelectItem value="novo">Novo</SelectItem>
-                <SelectItem value="followup">Follow-up</SelectItem>
-                <SelectItem value="atende_humano">Atendimento Humano</SelectItem>
-                <SelectItem value="topoucall">Agendado</SelectItem>
-                <SelectItem value="atendimentofinal">Concluído</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Filtrar por status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os status</SelectItem>
+                  <SelectItem value="novo">Novo</SelectItem>
+                  <SelectItem value="followup">Follow-up</SelectItem>
+                  <SelectItem value="atende_humano">Atendimento Humano</SelectItem>
+                  <SelectItem value="topoucall">Agendado</SelectItem>
+                  <SelectItem value="atendimentofinal">Concluído</SelectItem>
+                </SelectContent>
+              </Select>
 
-            <Select value={fonteFilter} onValueChange={setFonteFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filtrar por fonte" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas as fontes</SelectItem>
-                <SelectItem value="ia">Adicionado por IA</SelectItem>
-                <SelectItem value="humano">Adicionado por Humano</SelectItem>
-              </SelectContent>
-            </Select>
+              <Select value={fonteFilter} onValueChange={setFonteFilter}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Filtrar por fonte" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas as fontes</SelectItem>
+                  <SelectItem value="ia">Adicionado por IA</SelectItem>
+                  <SelectItem value="humano">Adicionado por Humano</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Results */}
       <Card className="shadow-soft">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>
+        <CardHeader className="p-4 md:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <CardTitle className="text-lg md:text-xl">
               {filteredPatients.length} paciente{filteredPatients.length !== 1 ? 's' : ''} encontrado{filteredPatients.length !== 1 ? 's' : ''}
             </CardTitle>
             
@@ -349,8 +351,9 @@ export default function Pacientes() {
           </div>
         </CardHeader>
         
-        <CardContent>
-          <div className="overflow-x-auto">
+        <CardContent className="p-0 md:p-6">
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
@@ -400,6 +403,48 @@ export default function Pacientes() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden divide-y divide-border">
+            {filteredPatients.map((patient) => (
+              <div 
+                key={patient.id} 
+                className="p-4 hover:bg-muted/30 transition-smooth"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-foreground truncate">
+                        {patient.nome || "Nome não informado"}
+                      </div>
+                      <div className="text-sm text-muted-foreground truncate mt-0.5">
+                        {patient.email || "Email não informado"}
+                      </div>
+                    </div>
+                    <Badge 
+                      variant={patient.fonte === 'ia' ? 'default' : 'secondary'}
+                      className="text-xs flex-shrink-0"
+                    >
+                      {patient.fonte === 'ia' ? 'IA' : 'Humano'}
+                    </Badge>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-muted-foreground font-mono">
+                      {formatPhone(patient.telefone)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2">
+                    <StatusBadge status={getPatientStatus(patient)} />
+                    <div className="text-xs text-muted-foreground">
+                      {formatDate(patient.setdata || patient.updated_at || patient.created_at)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
           
           {filteredPatients.length === 0 && (
