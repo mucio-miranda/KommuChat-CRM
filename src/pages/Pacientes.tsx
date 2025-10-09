@@ -243,6 +243,15 @@ export default function Pacientes() {
           aValue = new Date(a.setdata || a.updated_at || a.created_at || '').getTime();
           bValue = new Date(b.setdata || b.updated_at || b.created_at || '').getTime();
           break;
+        case 'status':
+          // Ordenar por status
+          const statusA = getPatientStatus(a);
+          const statusB = getPatientStatus(b);
+          // Definir ordem dos status
+          const statusOrder = ['novo', 'followup', 'atende_humano', 'topoucall', 'atendimentofinal'];
+          aValue = statusOrder.indexOf(statusA);
+          bValue = statusOrder.indexOf(statusB);
+          break;
         default:
           return 0;
       }
@@ -448,7 +457,24 @@ export default function Pacientes() {
                       )}
                     </button>
                   </th>
-                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">Status</th>
+                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">
+                    <button
+                      onClick={() => handleSort('status')}
+                      className="flex items-center gap-1 hover:text-foreground transition-colors"
+                    >
+                      Status
+                      {sortField === 'status' ? (
+                        sortDirection === 'asc' ? 
+                          <ChevronUp className="w-4 h-4" /> : 
+                          <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <div className="flex flex-col">
+                          <ChevronUp className="w-3 h-3 opacity-30" />
+                          <ChevronDown className="w-3 h-3 opacity-30 -mt-1" />
+                        </div>
+                      )}
+                    </button>
+                  </th>
                   <th className="text-left py-3 px-2 font-medium text-muted-foreground">
                     <button
                       onClick={() => handleSort('fonte')}
