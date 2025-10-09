@@ -134,7 +134,11 @@ const Index = () => {
 
   const metrics = useMemo(() => {
     const list = sorted;
-    const total = list.length;
+    // Filtrar pacientes com setdata vazia (null) para o total de atendimentos
+    const listWithSetdata = list.filter(r => {
+      return r.setdata !== null && r.setdata !== undefined && r.setdata !== '';
+    });
+    const total = listWithSetdata.length;
     
     // Buscar consultas do dia atual na coluna data_agendamento
     // Usar fuso horário do Brasil (UTC-3)
@@ -159,7 +163,7 @@ const Index = () => {
       return !isNaN(data.getTime()) && r.data_agendamento.trim() !== '';
     }).length;
     
-    // Calcular taxa de conversão: Consultas Agendadas / Atendimentos Realizados
+    // Calcular taxa de conversão: Consultas Agendadas / Atendimentos Realizados (com setdata válida)
     const conversao = total ? Math.round((consultasAgendadas / total) * 100) : 0;
 
     // Contar atendimentos por humano (onde atende_humano === 'true')
