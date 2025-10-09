@@ -539,30 +539,6 @@ export default function Calendario() {
           )}
         </div>
 
-        {/* Legend */}
-        <div className="flex flex-wrap gap-2 md:gap-4 items-center text-xs md:text-sm justify-center md:justify-start">
-          <div className="flex items-center gap-1 md:gap-2">
-            <div className="w-3 h-3 rounded bg-primary/20 border border-primary/30"></div>
-            <span className="text-muted-foreground">Consulta Rotina</span>
-          </div>
-          <div className="flex items-center gap-1 md:gap-2">
-            <div className="w-3 h-3 rounded bg-primary/30 border border-primary/40"></div>
-            <span className="text-muted-foreground">Primeira Consulta</span>
-          </div>
-          <div className="flex items-center gap-1 md:gap-2">
-            <div className="w-3 h-3 rounded bg-muted border border-border"></div>
-            <span className="text-muted-foreground">Retorno</span>
-          </div>
-          <div className="flex items-center gap-1 md:gap-2">
-            <div className="w-3 h-3 rounded bg-destructive/20 border border-destructive/30"></div>
-            <span className="text-muted-foreground">Emergência</span>
-          </div>
-          <div className="flex items-center gap-1 md:gap-2">
-            <div className="w-3 h-3 rounded bg-primary/15 border border-primary/25"></div>
-            <span className="text-muted-foreground">Eventos Google Calendar</span>
-          </div>
-        </div>
-
         {/* Google Calendar Setup/Status */}
         <GoogleCalendarSetup 
           onConnect={connect}
