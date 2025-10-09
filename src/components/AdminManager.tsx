@@ -80,7 +80,7 @@ export function AdminCredentialsManager() {
   const [credentials, setCredentials] = useState({
     client_id: '',
     client_secret: '',
-    redirect_uri: 'http://localhost:8080/auth/google/callback',
+    redirect_uri: 'https://chat.kommu.com.br/auth/google/callback',
     calendar_id: ''
   });
 
@@ -169,7 +169,7 @@ export function AdminCredentialsManager() {
       setCredentials({
         client_id: '',
         client_secret: '',
-        redirect_uri: 'http://localhost:8080/auth/google/callback',
+        redirect_uri: 'https://chat.kommu.com.br/auth/google/callback',
         calendar_id: ''
       });
       setSelectedCliente(null);
@@ -214,7 +214,7 @@ export function AdminCredentialsManager() {
       setCredentials({
         client_id: '',
         client_secret: '',
-        redirect_uri: 'http://localhost:8080/auth/google/callback',
+        redirect_uri: 'https://chat.kommu.com.br/auth/google/callback',
         calendar_id: ''
       });
       setSelectedCliente(null);
@@ -312,7 +312,7 @@ export function AdminCredentialsManager() {
     setCredentials({
       client_id: '',
       client_secret: '',
-      redirect_uri: 'http://localhost:8080/auth/google/callback',
+      redirect_uri: 'https://chat.kommu.com.br/auth/google/callback',
       calendar_id: ''
     });
     setShowCreateDialog(true);
@@ -326,7 +326,7 @@ export function AdminCredentialsManager() {
       setCredentials({
         client_id: 'mock-client-id',
         client_secret: 'mock-client-secret',
-        redirect_uri: 'http://localhost:8080/auth/google/callback',
+        redirect_uri: 'https://chat.kommu.com.br/auth/google/callback',
         calendar_id: 'primary'
       });
       setShowEditDialog(true);
@@ -604,7 +604,7 @@ export function AdminCredentialsManager() {
                 id="redirect_uri"
                 value={credentials.redirect_uri}
                 onChange={(e) => setCredentials(prev => ({ ...prev, redirect_uri: e.target.value }))}
-                placeholder="http://localhost:8080/auth/google/callback"
+                placeholder="https://chat.kommu.com.br/auth/google/callback"
               />
             </div>
             
