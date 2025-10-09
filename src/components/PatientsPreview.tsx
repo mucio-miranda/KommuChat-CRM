@@ -187,10 +187,14 @@ export function PatientsPreview() {
     });
     
     const filtered = patients.filter(patient => {
+      // Filtrar pacientes com setdata vazia (null)
+      const hasSetdata = patient.setdata !== null && patient.setdata !== undefined && patient.setdata !== '';
+      
       const matchesSearch = patient.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            patient.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            patient.telefone?.includes(searchTerm);
-      return matchesSearch;
+      
+      return hasSetdata && matchesSearch;
     });
     
     console.log('✅ PATIENTS PREVIEW - Pacientes filtrados:', filtered.length);
