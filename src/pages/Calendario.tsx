@@ -352,89 +352,44 @@ export default function Calendario() {
       const today = new Date();
 
       return (
-        <>
-          {/* Desktop - Visão semanal completa (7 dias) */}
-          <div className="hidden lg:grid lg:grid-cols-7 gap-1">
-            {weekDates.map((day, index) => {
-              const appointments = getAppointmentsForDate(day);
-              const isToday = day.toDateString() === today.toDateString();
-              const isCurrentMonth = day.getMonth() === currentMonth && day.getFullYear() === currentYear;
+        <div className="grid grid-cols-7 gap-0.5 md:gap-1">
+          {weekDates.map((day, index) => {
+            const appointments = getAppointmentsForDate(day);
+            const isToday = day.toDateString() === today.toDateString();
+            const isCurrentMonth = day.getMonth() === currentMonth && day.getFullYear() === currentYear;
 
-              return (
-                <div key={index} className={`min-h-[600px] border border-border/20 p-3 bg-card relative transition-colors hover:bg-muted/20 ${isToday ? 'bg-primary/5' : ''}`}>
-                  {/* Header do dia */}
-                  <div className="mb-3">
-                    <div className={`text-sm font-medium ${isToday ? 'text-primary font-semibold' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}`}>
-                      {weekDays[day.getDay()]}
-                    </div>
-                    <div className={`text-lg font-bold ${isToday ? 'text-primary' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}`}>
-                      {day.getDate()}
-                    </div>
+            return (
+              <div key={index} className={`min-h-[250px] sm:min-h-[350px] md:min-h-[450px] lg:min-h-[600px] border border-border/20 p-1 sm:p-1.5 md:p-2 lg:p-3 bg-card relative transition-colors hover:bg-muted/20 ${isToday ? 'bg-primary/5' : ''}`}>
+                {/* Header do dia */}
+                <div className="mb-1 sm:mb-2 md:mb-3">
+                  <div className={`text-[9px] sm:text-[10px] md:text-sm font-medium ${isToday ? 'text-primary font-semibold' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}`}>
+                    {weekDays[day.getDay()]}
                   </div>
-
-                  {/* Appointments */}
-                  <div className="space-y-3">
-                    {appointments.map((apt) => (
-                      <div key={apt.id} className={`text-sm p-3 rounded-lg ${apt.color} cursor-pointer hover:opacity-80 transition-opacity shadow-sm`}>
-                        <div className="font-semibold text-sm mb-1">{apt.time}</div>
-                        <div className="font-medium text-sm mb-1 truncate">{apt.title}</div>
-                        <div className="text-xs opacity-75 truncate">{apt.patient}</div>
-                      </div>
-                    ))}
-                    {appointments.length === 0 && (
-                      <div className="text-sm text-muted-foreground text-center py-8">
-                        Nenhum agendamento
-                      </div>
-                    )}
+                  <div className={`text-xs sm:text-sm md:text-lg font-bold ${isToday ? 'text-primary' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}`}>
+                    {day.getDate()}
                   </div>
                 </div>
-              );
-            })}
-          </div>
 
-          {/* Mobile - Visão de 1 dia apenas */}
-          <div className="lg:hidden px-1">
-            {(() => {
-              const day = currentWeek;
-              const appointments = getAppointmentsForDate(day);
-              const isToday = day.toDateString() === today.toDateString();
-              const isCurrentMonth = day.getMonth() === currentMonth && day.getFullYear() === currentYear;
-
-              return (
-                <div className={`min-h-[250px] border border-border/20 p-2.5 sm:p-3 bg-card rounded-md sm:rounded-lg ${isToday ? 'bg-primary/5' : ''}`}>
-                  {/* Header do dia */}
-                  <div className="mb-2.5 sm:mb-3 text-center">
-                    <div className={`text-[10px] sm:text-xs font-medium ${isToday ? 'text-primary font-semibold' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}`}>
-                      {weekDays[day.getDay()]}
+                {/* Appointments */}
+                <div className="space-y-1 sm:space-y-1.5 md:space-y-2 lg:space-y-3">
+                  {appointments.map((apt) => (
+                    <div key={apt.id} className={`text-xs md:text-sm p-1 sm:p-1.5 md:p-2 lg:p-3 rounded ${apt.color} cursor-pointer hover:opacity-80 transition-opacity shadow-sm`}>
+                      <div className="font-semibold text-[9px] sm:text-[10px] md:text-sm mb-0.5 sm:mb-1 truncate">{apt.time}</div>
+                      <div className="font-medium text-[9px] sm:text-[10px] md:text-sm mb-0.5 sm:mb-1 truncate">{apt.title}</div>
+                      <div className="text-[8px] sm:text-[9px] md:text-xs opacity-75 truncate hidden sm:block">{apt.patient}</div>
                     </div>
-                    <div className={`text-lg sm:text-xl font-bold ${isToday ? 'text-primary' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}`}>
-                      {day.getDate()}
+                  ))}
+                  {appointments.length === 0 && (
+                    <div className="text-[9px] sm:text-[10px] md:text-sm text-muted-foreground text-center py-3 sm:py-4 md:py-6 lg:py-8">
+                      <span className="hidden sm:inline">Nenhum agendamento</span>
+                      <span className="sm:hidden">-</span>
                     </div>
-                    <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
-                      {monthNames[day.getMonth()]} {day.getFullYear()}
-                    </div>
-                  </div>
-
-                  {/* Appointments */}
-                  <div className="space-y-1.5 sm:space-y-2">
-                    {appointments.map((apt) => (
-                      <div key={apt.id} className={`text-sm p-2 sm:p-2.5 rounded-md ${apt.color} cursor-pointer hover:opacity-80 transition-opacity shadow-sm`}>
-                        <div className="font-semibold text-[10px] sm:text-xs mb-0.5 sm:mb-1">{apt.time}</div>
-                        <div className="font-medium text-[10px] sm:text-xs mb-0.5 sm:mb-1">{apt.title}</div>
-                        <div className="text-[9px] sm:text-xs opacity-75">{apt.patient}</div>
-                      </div>
-                    ))}
-                    {appointments.length === 0 && (
-                      <div className="text-xs sm:text-sm text-muted-foreground text-center py-5 sm:py-6">
-                        Nenhum agendamento para este dia
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </div>
-              );
-            })()}
-          </div>
-        </>
+              </div>
+            );
+          })}
+        </div>
       );
     } catch (error) {
       console.error('Erro na renderização semanal:', error);
@@ -460,14 +415,6 @@ export default function Calendario() {
             className="mt-4"
             onSearch={setSearchQuery}
             appointments={getAllFilteredAppointments}
-          />
-        </div>
-
-        {/* Mini Calendário Mobile - Compacto */}
-        <div className="lg:hidden">
-          <CalendarAgendasList 
-            isConnected={isConnected} 
-            onDateSelect={handleMiniCalendarDateSelect}
           />
         </div>
         
