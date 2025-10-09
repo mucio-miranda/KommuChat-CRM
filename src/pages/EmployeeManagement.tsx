@@ -250,41 +250,42 @@ const EmployeeManagement: React.FC = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Gerenciamento de Funcionários</h1>
-          <p className="text-muted-foreground">
+      <div className="container mx-auto px-2 sm:px-4 md:px-6 py-4 md:py-6 space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
+        <div className="flex-1">
+          <h1 className="text-2xl md:text-3xl font-bold">Gerenciamento de Funcionários</h1>
+          <p className="text-sm md:text-base text-muted-foreground mt-1">
             Gerencie os funcionários da sua clínica
           </p>
         </div>
         
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto" size="sm">
               <UserPlus className="w-4 h-4 mr-2" />
               Novo Funcionário
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-[95vw] sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Criar Novo Funcionário</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-lg md:text-xl">Criar Novo Funcionário</DialogTitle>
+              <DialogDescription className="text-sm">
                 Preencha os dados do novo funcionário
               </DialogDescription>
             </DialogHeader>
             
-            <form onSubmit={handleCreateEmployee} className="space-y-4">
+            <form onSubmit={handleCreateEmployee} className="space-y-3 md:space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="username" className="text-sm">Username</Label>
                 <Input
                   id="username"
                   value={newEmployee.username}
                   onChange={(e) => handleUsernameChange(e.target.value)}
                   placeholder="usuario123"
                   required
+                  className="text-sm"
                 />
-                <div className="text-sm text-muted-foreground">
+                <div className="text-xs md:text-sm text-muted-foreground">
                   <strong>Preview:</strong> {generateUsername(newEmployee.username) || 'Digite um username'}
                   <br />
                   <span className="text-xs">O nome da clínica será adicionado automaticamente ao final</span>
@@ -292,18 +293,19 @@ const EmployeeManagement: React.FC = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="nome">Nome Completo</Label>
+                <Label htmlFor="nome" className="text-sm">Nome Completo</Label>
                 <Input
                   id="nome"
                   value={newEmployee.nome}
                   onChange={(e) => setNewEmployee({ ...newEmployee, nome: e.target.value })}
                   placeholder="João Silva"
                   required
+                  className="text-sm"
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="text-sm">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -311,11 +313,12 @@ const EmployeeManagement: React.FC = () => {
                   onChange={(e) => setNewEmployee({ ...newEmployee, email: e.target.value })}
                   placeholder="joao.silva@clinica.com"
                   required
+                  className="text-sm"
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="password">Senha</Label>
+                <Label htmlFor="password" className="text-sm">Senha</Label>
                 <Input
                   id="password"
                   type="password"
@@ -323,27 +326,28 @@ const EmployeeManagement: React.FC = () => {
                   onChange={(e) => setNewEmployee({ ...newEmployee, password: e.target.value })}
                   placeholder="Senha segura"
                   required
+                  className="text-sm"
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="role">Função</Label>
+                <Label htmlFor="role" className="text-sm">Função</Label>
                 <select
                   id="role"
                   value={newEmployee.role}
                   onChange={(e) => setNewEmployee({ ...newEmployee, role: e.target.value })}
-                  className="w-full p-2 border rounded-md"
+                  className="w-full p-2 border rounded-md text-sm"
                 >
                   <option value="funcionario">Funcionário</option>
                   <option value="admin_clinica">Admin da Clínica</option>
                 </select>
               </div>
               
-              <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:space-x-2 pt-2">
+                <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)} className="w-full sm:w-auto text-sm">
                   Cancelar
                 </Button>
-                <Button type="submit">Criar Funcionário</Button>
+                <Button type="submit" className="w-full sm:w-auto text-sm">Criar Funcionário</Button>
               </div>
             </form>
           </DialogContent>
@@ -374,32 +378,34 @@ const EmployeeManagement: React.FC = () => {
         ) : (
           employees.map((employee) => (
             <Card key={employee.id}>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      {employee.nome}
+              <CardHeader className="p-4 md:p-6">
+                <div className="flex flex-col sm:flex-row sm:justify-between gap-3 sm:gap-4">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="flex flex-wrap items-center gap-2 text-base md:text-lg">
+                      <span className="truncate">{employee.nome}</span>
                       {employee.id === user?.id && (
-                        <Badge variant="destructive">
+                        <Badge variant="destructive" className="text-xs">
                           Admin Atual
                         </Badge>
                       )}
-                      <Badge variant={employee.ativo ? "default" : "secondary"}>
+                      <Badge variant={employee.ativo ? "default" : "secondary"} className="text-xs">
                         {employee.ativo ? "Ativo" : "Inativo"}
                       </Badge>
                     </CardTitle>
-                    <CardDescription>
-                      @{employee.username} • {employee.email}
+                    <CardDescription className="mt-1.5 text-xs md:text-sm">
+                      <div className="truncate">@{employee.username}</div>
+                      <div className="truncate">{employee.email}</div>
                     </CardDescription>
                   </div>
                   
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-shrink-0">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleToggleEmployeeStatus(employee.id, employee.ativo)}
                       disabled={employee.id === user?.id}
                       title={employee.id === user?.id ? "Não é possível desativar o usuário admin atual" : ""}
+                      className="flex-1 sm:flex-initial text-xs"
                     >
                       {employee.ativo ? "Desativar" : "Ativar"}
                     </Button>
@@ -410,6 +416,7 @@ const EmployeeManagement: React.FC = () => {
                       onClick={() => handleDeleteEmployee(employee.id)}
                       disabled={employee.id === user?.id}
                       title={employee.id === user?.id ? "Não é possível excluir o usuário admin atual" : ""}
+                      className="px-2 sm:px-3"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -417,8 +424,8 @@ const EmployeeManagement: React.FC = () => {
                 </div>
               </CardHeader>
               
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+              <CardContent className="p-4 md:p-6 pt-0">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 text-xs md:text-sm">
                   <div>
                     <span className="font-medium">Função:</span> {employee.role}
                   </div>
