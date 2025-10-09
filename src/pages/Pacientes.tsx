@@ -418,10 +418,15 @@ export default function Pacientes() {
                       className="flex items-center gap-1 hover:text-foreground transition-colors"
                     >
                       Paciente
-                      {sortField === 'nome' && (
+                      {sortField === 'nome' ? (
                         sortDirection === 'asc' ? 
                           <ChevronUp className="w-4 h-4" /> : 
                           <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <div className="flex flex-col">
+                          <ChevronUp className="w-3 h-3 opacity-30" />
+                          <ChevronDown className="w-3 h-3 opacity-30 -mt-1" />
+                        </div>
                       )}
                     </button>
                   </th>
@@ -431,10 +436,15 @@ export default function Pacientes() {
                       className="flex items-center gap-1 hover:text-foreground transition-colors"
                     >
                       Contato
-                      {sortField === 'contato' && (
+                      {sortField === 'contato' ? (
                         sortDirection === 'asc' ? 
                           <ChevronUp className="w-4 h-4" /> : 
                           <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <div className="flex flex-col">
+                          <ChevronUp className="w-3 h-3 opacity-30" />
+                          <ChevronDown className="w-3 h-3 opacity-30 -mt-1" />
+                        </div>
                       )}
                     </button>
                   </th>
@@ -445,10 +455,15 @@ export default function Pacientes() {
                       className="flex items-center gap-1 hover:text-foreground transition-colors"
                     >
                       Fonte
-                      {sortField === 'fonte' && (
+                      {sortField === 'fonte' ? (
                         sortDirection === 'asc' ? 
                           <ChevronUp className="w-4 h-4" /> : 
                           <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <div className="flex flex-col">
+                          <ChevronUp className="w-3 h-3 opacity-30" />
+                          <ChevronDown className="w-3 h-3 opacity-30 -mt-1" />
+                        </div>
                       )}
                     </button>
                   </th>
@@ -458,10 +473,15 @@ export default function Pacientes() {
                       className="flex items-center gap-1 hover:text-foreground transition-colors"
                     >
                       Última Atualização
-                      {sortField === 'data' && (
+                      {sortField === 'data' ? (
                         sortDirection === 'asc' ? 
                           <ChevronUp className="w-4 h-4" /> : 
                           <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <div className="flex flex-col">
+                          <ChevronUp className="w-3 h-3 opacity-30" />
+                          <ChevronDown className="w-3 h-3 opacity-30 -mt-1" />
+                        </div>
                       )}
                     </button>
                   </th>
