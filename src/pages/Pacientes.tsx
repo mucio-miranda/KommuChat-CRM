@@ -292,42 +292,42 @@ export default function Pacientes() {
       </div>
 
       {/* Filters */}
-      <Card className="shadow-soft">
-        <CardContent className="p-3 sm:p-4 md:p-6">
+      <Card className="shadow-soft border-0 sm:border">
+        <CardContent className="p-2.5 sm:p-4 md:p-6">
           <div className="flex flex-col gap-2 sm:gap-3 md:gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-muted-foreground w-3.5 h-3.5" />
               <Input 
-                placeholder="Buscar..." 
-                className="pl-8 sm:pl-10 h-9 sm:h-10 text-sm"
+                placeholder="Buscar paciente..." 
+                className="pl-8 h-8 sm:h-9 md:h-10 text-xs sm:text-sm border-muted-foreground/20 focus-visible:ring-1"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 md:gap-4">
+            <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 sm:gap-3 md:gap-4">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-48 h-9 sm:h-10 text-sm">
+                <SelectTrigger className="w-full sm:w-48 h-8 sm:h-9 md:h-10 text-xs sm:text-sm border-muted-foreground/20">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="novo">Novo</SelectItem>
-                  <SelectItem value="followup">Follow-up</SelectItem>
-                  <SelectItem value="atende_humano">Atend. Humano</SelectItem>
-                  <SelectItem value="topoucall">Agendado</SelectItem>
-                  <SelectItem value="atendimentofinal">Concluído</SelectItem>
+                  <SelectItem value="todos" className="text-xs sm:text-sm">Todos</SelectItem>
+                  <SelectItem value="novo" className="text-xs sm:text-sm">Novo</SelectItem>
+                  <SelectItem value="followup" className="text-xs sm:text-sm">Follow-up</SelectItem>
+                  <SelectItem value="atende_humano" className="text-xs sm:text-sm">Atend. Humano</SelectItem>
+                  <SelectItem value="topoucall" className="text-xs sm:text-sm">Agendado</SelectItem>
+                  <SelectItem value="atendimentofinal" className="text-xs sm:text-sm">Concluído</SelectItem>
                 </SelectContent>
               </Select>
 
               <Select value={fonteFilter} onValueChange={setFonteFilter}>
-                <SelectTrigger className="w-full sm:w-48 h-9 sm:h-10 text-sm">
+                <SelectTrigger className="w-full sm:w-48 h-8 sm:h-9 md:h-10 text-xs sm:text-sm border-muted-foreground/20">
                   <SelectValue placeholder="Fonte" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todas">Todas</SelectItem>
-                  <SelectItem value="ia">IA</SelectItem>
-                  <SelectItem value="humano">Humano</SelectItem>
+                  <SelectItem value="todas" className="text-xs sm:text-sm">Todas</SelectItem>
+                  <SelectItem value="ia" className="text-xs sm:text-sm">IA</SelectItem>
+                  <SelectItem value="humano" className="text-xs sm:text-sm">Humano</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -336,18 +336,16 @@ export default function Pacientes() {
       </Card>
 
       {/* Results */}
-      <Card className="shadow-soft">
-        <CardHeader className="p-3 sm:p-4 md:p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2">
-            <CardTitle className="text-base sm:text-lg md:text-xl">
+      <Card className="shadow-soft border-0 sm:border">
+        <CardHeader className="p-2.5 sm:p-4 md:p-6 pb-2 sm:pb-4">
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle className="text-sm sm:text-base md:text-lg font-semibold">
               {filteredPatients.length} paciente{filteredPatients.length !== 1 ? 's' : ''}
             </CardTitle>
             
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-[10px] sm:text-xs">
-                Total: {patients.length}
-              </Badge>
-            </div>
+            <Badge variant="outline" className="text-[10px] sm:text-xs h-5 sm:h-6">
+              Total: {patients.length}
+            </Badge>
           </div>
         </CardHeader>
         
@@ -406,39 +404,42 @@ export default function Pacientes() {
           </div>
 
           {/* Mobile Card View */}
-          <div className="md:hidden divide-y divide-border">
+          <div className="md:hidden">
             {filteredPatients.map((patient) => (
               <div 
                 key={patient.id} 
-                className="p-3 sm:p-4 hover:bg-muted/30 transition-smooth"
+                className="border-b border-border/50 last:border-0 p-2.5 sm:p-3 hover:bg-muted/20 transition-colors active:bg-muted/40"
               >
-                <div className="space-y-2 sm:space-y-2.5">
+                <div className="space-y-1.5 sm:space-y-2">
+                  {/* Nome e Badge */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm sm:text-base text-foreground truncate">
+                      <div className="font-semibold text-xs sm:text-sm text-foreground truncate leading-tight">
                         {patient.nome || "Nome não informado"}
-                      </div>
-                      <div className="text-xs sm:text-sm text-muted-foreground truncate mt-0.5">
-                        {patient.email || "Email não informado"}
                       </div>
                     </div>
                     <Badge 
                       variant={patient.fonte === 'ia' ? 'default' : 'secondary'}
-                      className="text-[10px] sm:text-xs flex-shrink-0 h-5"
+                      className="text-[9px] sm:text-[10px] flex-shrink-0 h-4 sm:h-5 px-1.5 sm:px-2"
                     >
                       {patient.fonte === 'ia' ? 'IA' : 'Humano'}
                     </Badge>
                   </div>
 
-                  <div className="flex items-center gap-2 text-xs sm:text-sm">
-                    <span className="text-muted-foreground font-mono">
+                  {/* Email e Telefone */}
+                  <div className="space-y-0.5">
+                    <div className="text-[10px] sm:text-xs text-muted-foreground truncate">
+                      {patient.email || "Email não informado"}
+                    </div>
+                    <div className="text-[10px] sm:text-xs text-muted-foreground font-mono">
                       {formatPhone(patient.telefone)}
-                    </span>
+                    </div>
                   </div>
 
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                  {/* Status e Data */}
+                  <div className="flex items-center justify-between gap-2 pt-0.5">
                     <StatusBadge status={getPatientStatus(patient)} />
-                    <div className="text-[10px] sm:text-xs text-muted-foreground">
+                    <div className="text-[9px] sm:text-[10px] text-muted-foreground whitespace-nowrap">
                       {formatDate(patient.setdata || patient.updated_at || patient.created_at)}
                     </div>
                   </div>
