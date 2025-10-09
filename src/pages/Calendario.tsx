@@ -484,7 +484,15 @@ export default function Calendario() {
                   <Button
                     variant={viewMode === 'month' ? 'default' : 'ghost'}
                     size="sm"
-                    onClick={() => setViewMode('month')}
+                    onClick={() => {
+                      setViewMode('month');
+                      // No mobile, voltar para o mês atual
+                      if (window.innerWidth < 768) {
+                        const today = new Date();
+                        setCurrentMonth(today.getMonth());
+                        setCurrentYear(today.getFullYear());
+                      }
+                    }}
                     className="h-7 sm:h-8 px-2 sm:px-3"
                   >
                     <Grid3X3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-1" />
@@ -493,7 +501,13 @@ export default function Calendario() {
                   <Button
                     variant={viewMode === 'week' ? 'default' : 'ghost'}
                     size="sm"
-                    onClick={() => setViewMode('week')}
+                    onClick={() => {
+                      setViewMode('week');
+                      // No mobile, voltar para o dia atual
+                      if (window.innerWidth < 768) {
+                        setCurrentWeek(new Date());
+                      }
+                    }}
                     className="h-7 sm:h-8 px-2 sm:px-3"
                   >
                     <CalendarDays className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-1" />
