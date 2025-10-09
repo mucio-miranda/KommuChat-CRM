@@ -337,9 +337,9 @@ const EmployeeManagement: React.FC = () => {
                   value={newEmployee.role}
                   onChange={(e) => setNewEmployee({ ...newEmployee, role: e.target.value })}
                   className="w-full p-2 border rounded-md text-sm"
+                  disabled
                 >
                   <option value="funcionario">Funcionário</option>
-                  <option value="admin_clinica">Admin da Clínica</option>
                 </select>
               </div>
               
