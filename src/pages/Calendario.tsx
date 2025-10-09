@@ -28,7 +28,8 @@ export default function Calendario() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [searchQuery, setSearchQuery] = useState("");
-  const { isConnected, isLoading, events, connect, disconnect, refreshEvents, forceRefreshToken } = useGoogleCalendar();
+  const [connectedCalendarName, setConnectedCalendarName] = useState<string>("");
+  const { isConnected, isLoading, events, connect, disconnect, refreshEvents, forceRefreshToken, getCalendarList } = useGoogleCalendar();
 
   const getDaysInMonth = (month: number, year: number) => {
     return new Date(year, month + 1, 0).getDate();
@@ -255,6 +256,30 @@ export default function Calendario() {
       setLastUpdate(new Date());
     }
   }, [events]);
+
+  // Buscar nome do calendário conectado
+  useEffect(() => {
+    const loadCalendarName = async () => {
+      if (isConnected) {
+        try {
+          const calendars = await getCalendarList();
+          const primaryCalendar = calendars.find(cal => cal.primary === true);
+          if (primaryCalendar) {
+            setConnectedCalendarName(primaryCalendar.summary || 'Calendário Principal');
+          } else if (calendars.length > 0) {
+            setConnectedCalendarName(calendars[0].summary || 'Calendário');
+          }
+        } catch (error) {
+          console.error('Erro ao carregar nome do calendário:', error);
+          setConnectedCalendarName('Calendário Conectado');
+        }
+      } else {
+        setConnectedCalendarName('');
+      }
+    };
+
+    loadCalendarName();
+  }, [isConnected, getCalendarList]);
 
   // Refresh automático de tokens a cada 5 minutos (antes da expiração de 1 hora)
   useEffect(() => {
@@ -627,7 +652,9 @@ export default function Calendario() {
                   <Calendar className="w-5 h-5 text-green-600" />
                   <div>
                     <p className="text-sm font-medium">Google Calendar conectado</p>
-                    <p className="text-xs text-muted-foreground">clinicanutrivida.kommuchat@gmail.com</p>
+                    <p className="text-xs text-muted-foreground">
+                      {connectedCalendarName || 'clinicanutrivida.kommuchat@gmail.com'}
+                    </p>
                   </div>
                 </div>
                 <Button 
