@@ -30,3 +30,5 @@ ALTER TABLE pacientes_manuais DISABLE ROW LEVEL SECURITY;
 
 
 
+
+

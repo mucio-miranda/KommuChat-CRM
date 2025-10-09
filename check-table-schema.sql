@@ -54,3 +54,5 @@ WHERE table_name = 'pacientes_manuais';
 
 
 
+
+
