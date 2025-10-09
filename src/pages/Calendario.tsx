@@ -307,7 +307,7 @@ export default function Calendario() {
     // Empty cells for days before the first day of the month
     for (let i = 0; i < firstDay; i++) {
       days.push(
-        <div key={`empty-${i}`} className="h-20 md:h-32 lg:h-48 border border-border/20"></div>
+        <div key={`empty-${i}`} className="h-16 sm:h-20 md:h-28 lg:h-40 border border-border/20"></div>
       );
     }
 
@@ -319,22 +319,22 @@ export default function Calendario() {
       days.push(
         <div 
           key={day} 
-          className={`h-20 md:h-32 lg:h-48 border border-border/20 p-1 md:p-2 bg-card relative transition-colors hover:bg-muted/20 cursor-pointer ${isToday ? 'bg-primary/5' : ''}`}
+          className={`h-16 sm:h-20 md:h-28 lg:h-40 border border-border/20 p-0.5 sm:p-1 md:p-2 bg-card relative transition-colors hover:bg-muted/20 cursor-pointer ${isToday ? 'bg-primary/5' : ''}`}
           onClick={() => handleDateClick(day)}
         >
-          <div className={`text-xs md:text-sm font-medium mb-1 md:mb-2 ${isToday ? 'text-primary font-semibold' : 'text-foreground'}`}>
+          <div className={`text-[10px] sm:text-xs md:text-sm font-medium mb-0.5 sm:mb-1 md:mb-2 ${isToday ? 'text-primary font-semibold' : 'text-foreground'}`}>
             {day}
           </div>
           <div className="space-y-0.5 md:space-y-1 overflow-hidden">
-            {appointments.slice(0, 2).map((apt, index) => (
-              <div key={`${apt.id}-${index}`} className={`text-[10px] md:text-xs p-0.5 md:p-1 rounded ${apt.color} truncate`}>
-                <div className="font-medium">{apt.time}</div>
+            {appointments.slice(0, 1).map((apt, index) => (
+              <div key={`${apt.id}-${index}`} className={`text-[9px] sm:text-[10px] md:text-xs p-0.5 rounded ${apt.color} truncate`}>
+                <div className="font-medium truncate">{apt.time}</div>
                 <div className="truncate hidden md:block">{apt.title}</div>
               </div>
             ))}
-            {appointments.length > 2 && (
-              <div className="text-[10px] md:text-xs text-muted-foreground font-medium mt-0.5 md:mt-1">
-                +{appointments.length - 2}
+            {appointments.length > 1 && (
+              <div className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground font-medium">
+                +{appointments.length - 1}
               </div>
             )}
           </div>
@@ -392,49 +392,47 @@ export default function Calendario() {
             })}
           </div>
 
-          {/* Mobile - Visão de 1 dia apenas, centralizado */}
-          <div className="lg:hidden flex justify-center">
-            <div className="w-full max-w-md">
-              {(() => {
-                const day = currentWeek;
-                const appointments = getAppointmentsForDate(day);
-                const isToday = day.toDateString() === today.toDateString();
-                const isCurrentMonth = day.getMonth() === currentMonth && day.getFullYear() === currentYear;
+          {/* Mobile - Visão de 1 dia apenas */}
+          <div className="lg:hidden">
+            {(() => {
+              const day = currentWeek;
+              const appointments = getAppointmentsForDate(day);
+              const isToday = day.toDateString() === today.toDateString();
+              const isCurrentMonth = day.getMonth() === currentMonth && day.getFullYear() === currentYear;
 
-                return (
-                  <div className={`min-h-[400px] border border-border/20 p-4 bg-card rounded-lg ${isToday ? 'bg-primary/5' : ''}`}>
-                    {/* Header do dia */}
-                    <div className="mb-4 text-center">
-                      <div className={`text-sm font-medium ${isToday ? 'text-primary font-semibold' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}`}>
-                        {weekDays[day.getDay()]}
-                      </div>
-                      <div className={`text-2xl font-bold ${isToday ? 'text-primary' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}`}>
-                        {day.getDate()}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {monthNames[day.getMonth()]} {day.getFullYear()}
-                      </div>
+              return (
+                <div className={`min-h-[300px] border border-border/20 p-3 sm:p-4 bg-card rounded-lg ${isToday ? 'bg-primary/5' : ''}`}>
+                  {/* Header do dia */}
+                  <div className="mb-3 sm:mb-4 text-center">
+                    <div className={`text-xs sm:text-sm font-medium ${isToday ? 'text-primary font-semibold' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}`}>
+                      {weekDays[day.getDay()]}
                     </div>
-
-                    {/* Appointments */}
-                    <div className="space-y-3">
-                      {appointments.map((apt) => (
-                        <div key={apt.id} className={`text-sm p-3 rounded-lg ${apt.color} cursor-pointer hover:opacity-80 transition-opacity shadow-sm`}>
-                          <div className="font-semibold text-sm mb-1">{apt.time}</div>
-                          <div className="font-medium text-sm mb-1">{apt.title}</div>
-                          <div className="text-xs opacity-75">{apt.patient}</div>
-                        </div>
-                      ))}
-                      {appointments.length === 0 && (
-                        <div className="text-sm text-muted-foreground text-center py-8">
-                          Nenhum agendamento para este dia
-                        </div>
-                      )}
+                    <div className={`text-xl sm:text-2xl font-bold ${isToday ? 'text-primary' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}`}>
+                      {day.getDate()}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5 sm:mt-1">
+                      {monthNames[day.getMonth()]} {day.getFullYear()}
                     </div>
                   </div>
-                );
-              })()}
-            </div>
+
+                  {/* Appointments */}
+                  <div className="space-y-2 sm:space-y-3">
+                    {appointments.map((apt) => (
+                      <div key={apt.id} className={`text-sm p-2.5 sm:p-3 rounded-lg ${apt.color} cursor-pointer hover:opacity-80 transition-opacity shadow-sm`}>
+                        <div className="font-semibold text-xs sm:text-sm mb-1">{apt.time}</div>
+                        <div className="font-medium text-xs sm:text-sm mb-1">{apt.title}</div>
+                        <div className="text-xs opacity-75">{apt.patient}</div>
+                      </div>
+                    ))}
+                    {appointments.length === 0 && (
+                      <div className="text-sm text-muted-foreground text-center py-6 sm:py-8">
+                        Nenhum agendamento para este dia
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </>
       );
@@ -451,7 +449,7 @@ export default function Calendario() {
 
   return (
     <Layout>
-      <div className="flex flex-col lg:flex-row lg:space-x-6 space-y-4 lg:space-y-0 px-2 md:px-0">
+      <div className="flex flex-col lg:flex-row lg:space-x-6 space-y-3 lg:space-y-0 px-1 sm:px-2 md:px-0">
         {/* Sidebar com lista de agendas - Desktop */}
         <div className="hidden lg:block lg:w-80 lg:flex-shrink-0">
           <CalendarAgendasList 
@@ -465,54 +463,52 @@ export default function Calendario() {
           />
         </div>
 
-        {/* Mini Calendário Mobile - Centralizado */}
-        <div className="lg:hidden flex justify-center">
-          <div className="w-full max-w-md">
-            <CalendarAgendasList 
-              isConnected={isConnected} 
-              onDateSelect={handleMiniCalendarDateSelect}
-            />
-          </div>
+        {/* Mini Calendário Mobile - Sem padding extra */}
+        <div className="lg:hidden -mx-1 sm:mx-0">
+          <CalendarAgendasList 
+            isConnected={isConnected} 
+            onDateSelect={handleMiniCalendarDateSelect}
+          />
         </div>
         
         {/* Conteúdo principal */}
         <div className="flex-1 min-w-0">
-          <div className="space-y-4 md:space-y-8">
+          <div className="space-y-3 md:space-y-6">
             {/* Header */}
-            <div className="flex flex-col space-y-4 md:space-y-0 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col space-y-3 md:space-y-0 md:flex-row md:items-center md:justify-between gap-3">
               {/* View Toggle - Primeira linha mobile, esquerda desktop */}
-              <div className="flex items-center gap-1 bg-muted rounded-lg p-1 w-full md:w-auto">
+              <div className="flex items-center gap-1 bg-muted rounded-lg p-1 w-full sm:w-auto">
                 <Button
                   variant={viewMode === 'month' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setViewMode('month')}
-                  className="h-8 flex-1 md:flex-initial md:px-3"
+                  className="h-8 flex-1 sm:flex-initial sm:px-3"
                 >
-                  <Grid3X3 className="w-4 h-4 md:mr-1" />
+                  <Grid3X3 className="w-4 h-4 sm:mr-1" />
                   <span className="hidden sm:inline">Mês</span>
                 </Button>
                 <Button
                   variant={viewMode === 'week' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setViewMode('week')}
-                  className="h-8 flex-1 md:flex-initial md:px-3"
+                  className="h-8 flex-1 sm:flex-initial sm:px-3"
                 >
-                  <CalendarDays className="w-4 h-4 md:mr-1" />
+                  <CalendarDays className="w-4 h-4 sm:mr-1" />
                   <span className="hidden sm:inline">Semana</span>
                 </Button>
               </div>
 
               {/* Navigation - Segunda linha mobile, centro desktop */}
-              <div className="flex items-center gap-2 justify-center">
+              <div className="flex items-center gap-1.5 sm:gap-2 justify-center">
                 <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={() => viewMode === 'month' ? navigateMonth('prev') : navigateWeek('prev')}
-                  className="flex-shrink-0"
+                  className="flex-shrink-0 h-8 px-2 sm:px-3"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
-                <h2 className="text-base md:text-xl font-semibold min-w-[180px] md:min-w-[200px] text-center truncate px-2">
+                <h2 className="text-sm sm:text-base md:text-xl font-semibold min-w-[150px] sm:min-w-[180px] md:min-w-[200px] text-center truncate px-1 sm:px-2">
                   {viewMode === 'month' 
                     ? `${monthNames[currentMonth]} ${currentYear}`
                     : getWeekRangeText(getWeekStart(currentWeek))
@@ -522,7 +518,7 @@ export default function Calendario() {
                   variant="outline" 
                   size="sm" 
                   onClick={() => viewMode === 'month' ? navigateMonth('next') : navigateWeek('next')}
-                  className="flex-shrink-0"
+                  className="flex-shrink-0 h-8 px-2 sm:px-3"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </Button>
@@ -533,7 +529,7 @@ export default function Calendario() {
                 {isConnected ? (
                   <>
                     <div className="flex items-center gap-2 justify-center sm:justify-start">
-                      <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
+                      <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs whitespace-nowrap">
                         <Calendar className="w-3 h-3 mr-1" />
                         <span className="hidden sm:inline">Google Calendar Conectado</span>
                         <span className="sm:hidden">Conectado</span>
@@ -542,12 +538,12 @@ export default function Calendario() {
                         onClick={handleRefresh}
                         disabled={isLoading || isRefreshing}
                         title="Recarregar calendário"
-                        className="inline-flex items-center justify-center rounded-md border border-red-200 bg-transparent px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-600 hover:border-red-600 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                        className="inline-flex items-center justify-center rounded-md border border-red-200 bg-transparent px-2 sm:px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-600 hover:border-red-600 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
                       >
                         <RefreshCw className={`w-4 h-4 ${(isLoading || isRefreshing) ? 'animate-spin' : ''}`} />
                       </button>
                     </div>
-                    <p className="text-xs text-muted-foreground text-center sm:text-left">
+                    <p className="text-xs text-muted-foreground text-center sm:text-left hidden sm:block">
                       Última atualização: {lastUpdate.toLocaleTimeString('pt-BR')}
                     </p>
                   </>
@@ -555,7 +551,7 @@ export default function Calendario() {
                   <Button
                     variant="outline"
                     onClick={connect}
-                    className="flex items-center gap-2 w-full sm:w-auto"
+                    className="flex items-center justify-center gap-2 w-full sm:w-auto"
                     size="sm"
                   >
                     <Calendar className="w-4 h-4" />
@@ -568,11 +564,11 @@ export default function Calendario() {
         </div>
 
         {/* Calendar */}
-        <div className="bg-card rounded-lg md:rounded-2xl shadow-soft border border-border mt-4 md:mt-6 overflow-hidden">
+        <div className="bg-card rounded-lg md:rounded-2xl shadow-soft border border-border mt-3 md:mt-6 overflow-hidden">
           {/* Week days header */}
           <div className="grid grid-cols-7 border-b border-border">
             {weekDays.map((day) => (
-              <div key={day} className="p-2 md:p-4 text-center text-xs md:text-sm font-medium text-muted-foreground bg-muted/30">
+              <div key={day} className="p-1.5 sm:p-2 md:p-4 text-center text-[10px] sm:text-xs md:text-sm font-medium text-muted-foreground bg-muted/30">
                 {day}
               </div>
             ))}
