@@ -253,7 +253,7 @@ const EmployeeManagement: React.FC = () => {
       <div className="container mx-auto px-2 sm:px-4 md:px-6 py-4 md:py-6 space-y-4 md:space-y-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
         <div className="flex-1">
-          <h1 className="text-2xl md:text-3xl font-bold">Gerenciamento de Funcionários</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">Gerenciamento de Usuários</h1>
           <p className="text-sm md:text-base text-muted-foreground mt-1">
             Gerencie os funcionários da sua clínica
           </p>
