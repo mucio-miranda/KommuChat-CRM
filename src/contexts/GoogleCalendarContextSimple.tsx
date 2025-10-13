@@ -98,6 +98,35 @@ export function GoogleCalendarProvider({ children }: { children: React.ReactNode
     }
   }, [selectedCalendars]);
 
+  // ⭐ REFRESH GLOBAL - Renovação automática de tokens a cada 5 minutos em TODAS as páginas
+  useEffect(() => {
+    if (!isConnected) {
+      return; // Só executar se estiver conectado
+    }
+
+    console.log('🔄 GLOBAL - Configurando refresh automático de tokens (funciona em todas as páginas)...');
+    
+    const interval = setInterval(async () => {
+      try {
+        console.log('🔄 GLOBAL - Renovando token automaticamente em background...');
+        const success = await forceRefreshToken();
+        
+        if (success) {
+          console.log('✅ GLOBAL - Token renovado com sucesso (válido por mais 1 hora)');
+        } else {
+          console.log('ℹ️ GLOBAL - Token ainda válido, não precisou renovar');
+        }
+      } catch (error) {
+        console.error('❌ GLOBAL - Erro no refresh automático:', error);
+      }
+    }, 5 * 60 * 1000); // 5 minutos
+
+    return () => {
+      console.log('🧹 GLOBAL - Limpando interval de refresh automático');
+      clearInterval(interval);
+    };
+  }, [isConnected, forceRefreshToken]);
+
   useEffect(() => {
     // Aguardar o AuthContext terminar de carregar
     if (authLoading) {

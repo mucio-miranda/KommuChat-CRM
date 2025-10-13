@@ -8,6 +8,7 @@ import { useGoogleCalendar } from "@/contexts/GoogleCalendarContextSimple";
 import { GoogleCalendarEvent } from "@/lib/google-calendar-hybrid";
 import { CalendarAgendasList } from "@/components/CalendarAgendasList";
 import { SearchConsultation } from "@/components/SearchConsultation";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Removidos eventos mock - apenas eventos reais do Google Calendar serão exibidos
 
@@ -30,6 +31,7 @@ export default function Calendario() {
   const [searchQuery, setSearchQuery] = useState("");
   const [connectedCalendarName, setConnectedCalendarName] = useState<string>("");
   const { isConnected, isLoading, events, connect, disconnect, refreshEvents, forceRefreshToken, getCalendarList } = useGoogleCalendar();
+  const { user } = useAuth();
 
   const getDaysInMonth = (month: number, year: number) => {
     return new Date(year, month + 1, 0).getDate();
@@ -281,36 +283,8 @@ export default function Calendario() {
     loadCalendarName();
   }, [isConnected, getCalendarList]);
 
-  // Refresh automático de tokens a cada 5 minutos (antes da expiração de 1 hora)
-  useEffect(() => {
-    if (!isConnected) {
-      return; // Só executar se estiver conectado
-    }
-
-    console.log('🔄 CALENDÁRIO - Configurando refresh automático de tokens...');
-    
-    const interval = setInterval(async () => {
-      try {
-        console.log('🔄 CALENDÁRIO - Iniciando refresh automático de tokens...');
-        const tokenRefreshed = await forceRefreshToken();
-        
-        if (tokenRefreshed) {
-          console.log('✅ CALENDÁRIO - Token renovado automaticamente com sucesso');
-          // Atualizar timestamp da última atualização
-          setLastUpdate(new Date());
-        } else {
-          console.log('ℹ️ CALENDÁRIO - Token não precisou ser renovado');
-        }
-      } catch (error) {
-        console.error('❌ CALENDÁRIO - Erro no refresh automático de tokens:', error);
-      }
-    }, 5 * 60 * 1000); // 5 minutos
-
-    return () => {
-      console.log('🧹 CALENDÁRIO - Limpando interval de refresh automático de tokens');
-      clearInterval(interval);
-    };
-  }, [isConnected, forceRefreshToken]);
+  // ⭐ REFRESH GLOBAL movido para GoogleCalendarContextSimple.tsx
+  // Agora o token é renovado automaticamente em TODAS as páginas do sistema, não apenas aqui
 
   // Obter todas as consultas filtradas para o componente de busca
   const getAllFilteredAppointments = useMemo(() => {
@@ -630,7 +604,9 @@ export default function Calendario() {
                   <Calendar className="w-5 h-5 text-muted-foreground" />
                   <div>
                     <p className="text-sm font-medium">Google Calendar não conectado</p>
-                    <p className="text-xs text-muted-foreground">Use: clinicanutrivida.kommuchat@gmail.com</p>
+                    <p className="text-xs text-muted-foreground">
+                      Use: {user?.email || 'seu-email@exemplo.com'}
+                    </p>
                   </div>
                 </div>
                 <Button 
@@ -653,7 +629,7 @@ export default function Calendario() {
                   <div>
                     <p className="text-sm font-medium">Google Calendar conectado</p>
                     <p className="text-xs text-muted-foreground">
-                      {connectedCalendarName || 'clinicanutrivida.kommuchat@gmail.com'}
+                      {connectedCalendarName || user?.email || 'Calendário conectado'}
                     </p>
                   </div>
                 </div>
