@@ -5,9 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, Plus, Calendar, RefreshCw, Grid3X3, CalendarDays } from "lucide-react";
 import { useGoogleCalendar } from "@/contexts/GoogleCalendarContextSimple";
-import { GoogleCalendarEvent } from "@/lib/google-calendar-hybrid";
+import { GoogleCalendarEvent } from "@/types/google-calendar";
 import { CalendarAgendasList } from "@/components/CalendarAgendasList";
 import { SearchConsultation } from "@/components/SearchConsultation";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabaseCrm } from "@/lib/supabase-crm";
 
 // Removidos eventos mock - apenas eventos reais do Google Calendar serão exibidos
 
@@ -29,7 +31,9 @@ export default function Calendario() {
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [searchQuery, setSearchQuery] = useState("");
   const [connectedCalendarName, setConnectedCalendarName] = useState<string>("");
+  const [clienteEmail, setClienteEmail] = useState<string>("");
   const { isConnected, isLoading, events, connect, disconnect, refreshEvents, forceRefreshToken, getCalendarList } = useGoogleCalendar();
+  const { user } = useAuth();
 
   const getDaysInMonth = (month: number, year: number) => {
     return new Date(year, month + 1, 0).getDate();
@@ -187,7 +191,7 @@ export default function Calendario() {
   const getAppointmentsForDate = (date: Date) => {
     // Apenas eventos reais do Google Calendar
     const googleAppointments = convertGoogleEventsToAppointments(events);
-    return googleAppointments.filter(apt => {
+    const dateAppointments = googleAppointments.filter(apt => {
       // Para eventos do Google Calendar, usar a data real do evento
       if (apt.googleEvent) {
         const eventDate = apt.googleEvent.start.dateTime ? new Date(apt.googleEvent.start.dateTime) : new Date(apt.googleEvent.start.date || '');
@@ -256,6 +260,29 @@ export default function Calendario() {
       setLastUpdate(new Date());
     }
   }, [events]);
+
+  // Buscar dados do cliente
+  useEffect(() => {
+    const loadClienteData = async () => {
+      if (user?.cliente_id && supabaseCrm) {
+        try {
+          const { data, error } = await supabaseCrm
+            .from('clientes')
+            .select('email')
+            .eq('id', user.cliente_id)
+            .single();
+
+          if (!error && data) {
+            setClienteEmail(data.email);
+          }
+        } catch (error) {
+          console.error('Erro ao carregar dados do cliente:', error);
+        }
+      }
+    };
+
+    loadClienteData();
+  }, [user]);
 
   // Buscar nome do calendário conectado
   useEffect(() => {
@@ -630,7 +657,9 @@ export default function Calendario() {
                   <Calendar className="w-5 h-5 text-muted-foreground" />
                   <div>
                     <p className="text-sm font-medium">Google Calendar não conectado</p>
-                    <p className="text-xs text-muted-foreground">Use: clinicanutrivida.kommuchat@gmail.com</p>
+                    <p className="text-xs text-muted-foreground">
+                      {clienteEmail ? `Use: ${clienteEmail}` : 'Configure o email da clínica'}
+                    </p>
                   </div>
                 </div>
                 <Button 
@@ -653,7 +682,7 @@ export default function Calendario() {
                   <div>
                     <p className="text-sm font-medium">Google Calendar conectado</p>
                     <p className="text-xs text-muted-foreground">
-                      {connectedCalendarName || 'clinicanutrivida.kommuchat@gmail.com'}
+                      {connectedCalendarName || clienteEmail || 'Calendário Conectado'}
                     </p>
                   </div>
                 </div>
