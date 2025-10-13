@@ -1,22 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabaseClientManager } from './supabase-client-manager';
 
-// Configurações do Supabase CRM (para credenciais Google)
-const supabaseUrl = import.meta.env.VITE_CRM_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_CRM_SUPABASE_ANON_KEY;
+// Usar cliente singleton para evitar múltiplas instâncias
+const supabase = supabaseClientManager.getCrmClient();
 
-console.log('🔍 Shared Google Credentials Supabase Config - URL:', supabaseUrl);
-console.log('🔍 Shared Google Credentials Supabase Config - Key:', supabaseAnonKey ? 'Presente' : 'Ausente');
-
-let supabase = null;
-
-if (supabaseUrl && supabaseAnonKey && 
-    supabaseUrl !== 'your_crm_supabase_project_url' && 
-    supabaseAnonKey !== 'your_crm_supabase_anon_key') {
-  supabase = createClient(supabaseUrl, supabaseAnonKey);
-  console.log('✅ Shared Google Credentials Supabase Client criado');
-} else {
-  console.warn('❌ Configurações do Supabase CRM não encontradas - credenciais Google não funcionarão');
-}
+console.log('🔍 Shared Google Credentials Supabase Config - Client:', supabase ? 'Criado (singleton)' : 'Não disponível');
 
 export { supabase };
 
