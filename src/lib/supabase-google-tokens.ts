@@ -1,9 +1,16 @@
-import { supabaseClientManager } from './supabase-client-manager';
+import { createClient } from '@supabase/supabase-js';
 
-// Usar cliente singleton para evitar múltiplas instâncias
-const supabase = supabaseClientManager.getTokensClient();
+// Configurações do Supabase - usar projeto CRM para tokens
+const supabaseUrl = import.meta.env.VITE_CRM_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_CRM_SUPABASE_ANON_KEY;
 
-console.log('🔍 Google Tokens Supabase Config - Client:', supabase ? 'Criado (singleton)' : 'Não disponível');
+let supabase = null;
+
+if (supabaseUrl && supabaseAnonKey) {
+  supabase = createClient(supabaseUrl, supabaseAnonKey);
+} else {
+  console.warn('Configurações do Supabase CRM não encontradas - usando fallback');
+}
 
 export { supabase };
 
@@ -84,25 +91,29 @@ export class SupabaseGoogleTokensService {
         updated_at: new Date().toISOString(),
       };
 
-      // Usar o cliente Supabase diretamente
-      if (!supabase) {
-        throw new Error('Cliente Supabase não disponível');
+      // Usar fetch diretamente para evitar problemas com o cliente Supabase
+      const response = await fetch(`${supabaseUrl}/rest/v1/google_calendar_tokens`, {
+        method: 'POST',
+        headers: {
+          'apikey': supabaseAnonKey,
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify(tokenData)
+      });
+
+      console.log('📡 Status da resposta:', response.status);
+
+      if (response.ok) {
+        console.log('✅ Tokens salvos com sucesso');
+        return tokenData as GoogleTokens;
+      } else {
+        const errorText = await response.text();
+        console.error('❌ Erro na resposta:', errorText);
+        throw new Error(`Erro ao salvar tokens: ${response.status} ${response.statusText}`);
       }
-
-      const { data, error } = await supabase
-        .from('google_calendar_tokens')
-        .insert(tokenData)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('❌ Erro ao salvar tokens:', error);
-        throw new Error(`Erro ao salvar tokens: ${error.message}`);
-      }
-
-      console.log('✅ Tokens salvos com sucesso');
-      return data;
-
     } catch (error) {
       console.error('❌ Erro ao salvar tokens no Supabase:', error);
       throw error;
@@ -115,28 +126,32 @@ export class SupabaseGoogleTokensService {
       const userId = this.getCurrentUser();
       console.log('🔍 Buscando tokens no Supabase para usuário:', userId);
 
-      // Usar o cliente Supabase diretamente
-      if (!supabase) {
-        throw new Error('Cliente Supabase não disponível');
-      }
+      // Usar fetch diretamente para evitar problemas com o cliente Supabase
+      const response = await fetch(`${supabaseUrl}/rest/v1/google_calendar_tokens?select=*&user_id=eq.${encodeURIComponent(userId)}`, {
+        method: 'GET',
+        headers: {
+          'apikey': supabaseAnonKey,
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
 
-      const { data, error } = await supabase
-        .from('google_calendar_tokens')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
+      console.log('📡 Status da resposta:', response.status);
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('❌ Erro ao buscar tokens:', error);
-        throw new Error(`Erro ao buscar tokens: ${error.message}`);
-      }
-
-      if (data) {
-        console.log('✅ Tokens encontrados:', data);
-        return data;
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.length > 0) {
+          console.log('✅ Tokens encontrados:', data[0]);
+          return data[0];
+        } else {
+          console.log('ℹ️ Nenhum token encontrado para o usuário');
+          return null;
+        }
       } else {
-        console.log('ℹ️ Nenhum token encontrado para o usuário');
-        return null;
+        const errorText = await response.text();
+        console.error('❌ Erro na resposta:', errorText);
+        throw new Error(`Erro ao buscar tokens: ${response.status} ${response.statusText}`);
       }
     } catch (error) {
       console.error('❌ Erro ao buscar tokens do Supabase:', error);
@@ -150,23 +165,27 @@ export class SupabaseGoogleTokensService {
       const userId = this.getCurrentUser();
       console.log('🗑️ Deletando tokens do Supabase para usuário:', userId);
 
-      // Usar o cliente Supabase diretamente
-      if (!supabase) {
-        throw new Error('Cliente Supabase não disponível');
+      // Usar fetch diretamente para evitar problemas com o cliente Supabase
+      const response = await fetch(`${supabaseUrl}/rest/v1/google_calendar_tokens?user_id=eq.${encodeURIComponent(userId)}`, {
+        method: 'DELETE',
+        headers: {
+          'apikey': supabaseAnonKey,
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      console.log('📡 Status da resposta:', response.status);
+
+      if (response.ok) {
+        console.log('✅ Tokens deletados com sucesso');
+        return true;
+      } else {
+        const errorText = await response.text();
+        console.error('❌ Erro na resposta:', errorText);
+        throw new Error(`Erro ao deletar tokens: ${response.status} ${response.statusText}`);
       }
-
-      const { error } = await supabase
-        .from('google_calendar_tokens')
-        .delete()
-        .eq('user_id', userId);
-
-      if (error) {
-        console.error('❌ Erro ao deletar tokens:', error);
-        throw new Error(`Erro ao deletar tokens: ${error.message}`);
-      }
-
-      console.log('✅ Tokens deletados com sucesso');
-      return true;
     } catch (error) {
       console.error('❌ Erro ao deletar tokens do Supabase:', error);
       throw error;

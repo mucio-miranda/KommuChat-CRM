@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useAuth } from './AuthContext';
 import { googleCalendarServiceHybrid } from '@/lib/google-calendar-hybrid';
 import { GoogleCalendarEvent } from '@/types/google-calendar';
 import { sharedGoogleCredentialsService } from '@/lib/google-service.ts';
 import { supabaseGoogleTokensService } from '@/lib/supabase-google-tokens';
+import { useAuth } from './AuthContext';
 
 interface GoogleCalendarContextType {
   isConnected: boolean;
@@ -27,10 +27,7 @@ export function GoogleCalendarProvider({ children }: { children: React.ReactNode
   const [events, setEvents] = useState<GoogleCalendarEvent[]>([]);
   const [selectedCalendars, setSelectedCalendars] = useState<string[]>([]);
   const [lastUserId, setLastUserId] = useState<string | null>(null);
-  
-  // Verificação de segurança para evitar erro de inicialização
-  const authData = useAuth();
-  const { user, loading: authLoading } = authData || { user: null, loading: true };
+  const { user, loading: authLoading } = useAuth();
 
   // Função para salvar estado da conexão no localStorage (ULTRA-PERSISTENTE)
   const saveConnectionState = (connected: boolean) => {
@@ -174,14 +171,10 @@ export function GoogleCalendarProvider({ children }: { children: React.ReactNode
         setLastUserId(currentUserId);
         
         // Definir cliente_id antes de verificar autenticação
-        if (user?.cliente_id) {
+        if (user.cliente_id) {
           console.log('🏢 Definindo cliente_id para Google Calendar:', user.cliente_id);
-          try {
-            sharedGoogleCredentialsService.setCurrentCliente(user.cliente_id);
-            supabaseGoogleTokensService.setCurrentUser(user.cliente_id);
-          } catch (error) {
-            console.warn('⚠️ Erro ao definir cliente_id:', error);
-          }
+          sharedGoogleCredentialsService.setCurrentCliente(user.cliente_id);
+          supabaseGoogleTokensService.setCurrentUser(user.cliente_id);
         }
         
         // Verificar se há estado de conexão salvo (ULTRA-PERSISTENTE)
@@ -247,14 +240,10 @@ export function GoogleCalendarProvider({ children }: { children: React.ReactNode
       }
 
       // Definir cliente_id antes de conectar
-      if (user?.cliente_id) {
+      if (user.cliente_id) {
         console.log('🏢 Definindo cliente_id para conexão:', user.cliente_id);
-        try {
-          sharedGoogleCredentialsService.setCurrentCliente(user.cliente_id);
-          supabaseGoogleTokensService.setCurrentUser(user.cliente_id);
-        } catch (error) {
-          console.warn('⚠️ Erro ao definir cliente_id para conexão:', error);
-        }
+        sharedGoogleCredentialsService.setCurrentCliente(user.cliente_id);
+        supabaseGoogleTokensService.setCurrentUser(user.cliente_id);
       }
 
       // Limpar dados antigos antes de iniciar nova conexão

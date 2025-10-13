@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +8,7 @@ import { useGoogleCalendar } from "@/contexts/GoogleCalendarContextSimple";
 import { GoogleCalendarEvent } from "@/lib/google-calendar-hybrid";
 import { CalendarAgendasList } from "@/components/CalendarAgendasList";
 import { SearchConsultation } from "@/components/SearchConsultation";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Removidos eventos mock - apenas eventos reais do Google Calendar serão exibidos
 

@@ -1,9 +1,24 @@
-import { supabaseClientManager } from './supabase-client-manager';
+import { createClient } from '@supabase/supabase-js'
 
-// Usar cliente singleton para evitar múltiplas instâncias
-export const supabaseCrm = supabaseClientManager.getCrmClient();
+// Configuração para o projeto CRM-KommuChat (para salvar usuários/clientes)
+const crmSupabaseUrl = import.meta.env.VITE_CRM_SUPABASE_URL
+const crmSupabaseAnonKey = import.meta.env.VITE_CRM_SUPABASE_ANON_KEY
 
-console.log('🔍 CRM Supabase Config - Client:', supabaseCrm ? 'Criado (singleton)' : 'Não disponível');
+console.log('🔍 CRM Supabase Config - URL:', crmSupabaseUrl);
+console.log('🔍 CRM Supabase Config - Key presente:', !!crmSupabaseAnonKey);
+
+// Criar cliente Supabase CRM apenas se as credenciais estiverem configuradas
+const isValidCrmConfig = crmSupabaseUrl && crmSupabaseAnonKey && 
+  crmSupabaseUrl !== 'your_crm_supabase_project_url' && 
+  crmSupabaseAnonKey !== 'your_crm_supabase_anon_key';
+
+console.log('🔍 CRM Supabase Config - isValid:', isValidCrmConfig);
+
+export const supabaseCrm = isValidCrmConfig 
+  ? createClient(crmSupabaseUrl, crmSupabaseAnonKey)
+  : null;
+
+console.log('🔍 CRM Supabase Config - Client:', supabaseCrm);
 
 // Tipos para o CRM KOMMUchat
 export interface Cliente {
