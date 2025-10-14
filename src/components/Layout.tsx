@@ -16,6 +16,7 @@ import {
 
 interface LayoutProps {
   children: React.ReactNode;
+  defaultSidebarOpen?: boolean; // Nova prop para controlar o estado inicial da sidebar
 }
 
 // Componente interno para o botão de toggle da sidebar
@@ -42,7 +43,7 @@ function SidebarToggleButton() {
   );
 }
 
-export function Layout({ children }: LayoutProps) {
+export function Layout({ children, defaultSidebarOpen = true }: LayoutProps) {
   const { user, signOut, isVisitor } = useAuth();
 
   const handleSignOut = async () => {
@@ -54,7 +55,7 @@ export function Layout({ children }: LayoutProps) {
   };
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={defaultSidebarOpen}>
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
         

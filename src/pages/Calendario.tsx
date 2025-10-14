@@ -508,7 +508,7 @@ export default function Calendario() {
   };
 
   return (
-    <Layout>
+    <Layout defaultSidebarOpen={false}>
       <div className="flex flex-col lg:flex-row lg:space-x-6 space-y-2 lg:space-y-0 px-0 sm:px-2 md:px-0">
         {/* Sidebar com lista de agendas - Desktop */}
         <div className="hidden lg:block lg:w-80 lg:flex-shrink-0">
