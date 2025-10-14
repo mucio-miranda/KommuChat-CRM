@@ -508,24 +508,27 @@ export default function Calendario() {
   };
 
   return (
-    <Layout defaultSidebarOpen={false}>
-      <div className="flex flex-col lg:flex-row lg:space-x-6 space-y-2 lg:space-y-0 px-0 sm:px-2 md:px-0">
-        {/* Sidebar com lista de agendas - Desktop */}
-        <div className="hidden lg:block lg:w-80 lg:flex-shrink-0">
-          <CalendarAgendasList 
-            isConnected={isConnected} 
-            onDateSelect={handleMiniCalendarDateSelect}
-          />
-          <SearchConsultation 
-            className="mt-4"
-            onSearch={setSearchQuery}
-            appointments={getAllFilteredAppointments}
-          />
-        </div>
-        
+    <Layout>
+      <div className="space-y-6">
         {/* Conteúdo principal */}
-        <div className="flex-1 min-w-0 px-1 sm:px-0">
-          <div className="space-y-2 md:space-y-4">
+        <div className="space-y-3 md:space-y-5 px-1 sm:px-2 md:px-0">
+          <div className="flex flex-col lg:flex-row lg:space-x-6 space-y-2 lg:space-y-0">
+            {/* Sidebar com lista de agendas - Desktop */}
+            <div className="hidden lg:block lg:w-80 lg:flex-shrink-0">
+              <CalendarAgendasList 
+                isConnected={isConnected} 
+                onDateSelect={handleMiniCalendarDateSelect}
+              />
+              <SearchConsultation 
+                className="mt-4"
+                onSearch={setSearchQuery}
+                appointments={getAllFilteredAppointments}
+              />
+            </div>
+            
+            {/* Conteúdo principal */}
+            <div className="flex-1 min-w-0">
+              <div className="space-y-2 md:space-y-4">
             {/* Header */}
             <div className="flex flex-col space-y-2 md:space-y-0 md:flex-row md:items-center md:justify-between gap-2 md:gap-3">
               {/* View Toggle e Navigation - Combinados em mobile */}
@@ -625,80 +628,81 @@ export default function Calendario() {
                 )}
               </div>
             </div>
-        </div>
 
-        {/* Calendar */}
-        <div className="bg-card rounded-md sm:rounded-lg md:rounded-2xl shadow-soft border border-border mt-2 md:mt-4 overflow-hidden">
-          {/* Week days header */}
-          <div className="grid grid-cols-7 border-b border-border">
-            {weekDays.map((day) => (
-              <div key={day} className="py-1 sm:py-1.5 md:py-3 text-center text-[9px] sm:text-[10px] md:text-sm font-medium text-muted-foreground bg-muted/30">
-                {day}
+            {/* Calendar */}
+            <div className="bg-card rounded-md sm:rounded-lg md:rounded-2xl shadow-soft border border-border mt-2 md:mt-4 overflow-hidden">
+              {/* Week days header */}
+              <div className="grid grid-cols-7 border-b border-border">
+                {weekDays.map((day) => (
+                  <div key={day} className="py-1 sm:py-1.5 md:py-3 text-center text-[9px] sm:text-[10px] md:text-sm font-medium text-muted-foreground bg-muted/30">
+                    {day}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          {/* Calendar grid */}
-          {viewMode === 'month' ? (
-            <div className="grid grid-cols-7">
-              {renderCalendarDays()}
+              {/* Calendar grid */}
+              {viewMode === 'month' ? (
+                <div className="grid grid-cols-7">
+                  {renderCalendarDays()}
+                </div>
+              ) : (
+                renderWeeklyView()
+              )}
             </div>
-          ) : (
-            renderWeeklyView()
-          )}
-        </div>
 
-        {/* Google Calendar Status */}
-        {!isConnected ? (
-          <Card className="shadow-soft">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Calendar className="w-5 h-5 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">Google Calendar não conectado</p>
-                    <p className="text-xs text-muted-foreground">
-                      {clienteEmail ? `Use: ${clienteEmail}` : 'Configure o email da clínica'}
-                    </p>
+            {/* Google Calendar Status */}
+            {!isConnected ? (
+              <Card className="shadow-soft">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Calendar className="w-5 h-5 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm font-medium">Google Calendar não conectado</p>
+                        <p className="text-xs text-muted-foreground">
+                          {clienteEmail ? `Use: ${clienteEmail}` : 'Configure o email da clínica'}
+                        </p>
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={connect}
+                      size="sm"
+                      className="h-8 px-3"
+                    >
+                      <Calendar className="w-4 h-4 mr-1" />
+                      Conectar
+                    </Button>
                   </div>
-                </div>
-                <Button 
-                  onClick={connect}
-                  size="sm"
-                  className="h-8 px-3"
-                >
-                  <Calendar className="w-4 h-4 mr-1" />
-                  Conectar
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="shadow-soft">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Calendar className="w-5 h-5 text-green-600" />
-                  <div>
-                    <p className="text-sm font-medium">Google Calendar conectado</p>
-                    <p className="text-xs text-muted-foreground">
-                      {connectedCalendarName || clienteEmail || 'Calendário Conectado'}
-                    </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="shadow-soft">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Calendar className="w-5 h-5 text-green-600" />
+                      <div>
+                        <p className="text-sm font-medium">Google Calendar conectado</p>
+                        <p className="text-xs text-muted-foreground">
+                          {connectedCalendarName || clienteEmail || 'Calendário Conectado'}
+                        </p>
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={disconnect}
+                      variant="outline"
+                      size="sm"
+                      className="h-8 px-3"
+                    >
+                      Desconectar
+                    </Button>
                   </div>
-                </div>
-                <Button 
-                  onClick={disconnect}
-                  variant="outline"
-                  size="sm"
-                  className="h-8 px-3"
-                >
-                  Desconectar
-                </Button>
+                </CardContent>
+              </Card>
+            )}
               </div>
-            </CardContent>
-          </Card>
-        )}
-
+            </div>
+          </div>
         </div>
       </div>
     </Layout>
