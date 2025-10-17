@@ -8,7 +8,7 @@ import { Label } from '../components/ui/label';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Badge } from '../components/ui/badge';
-import { Trash2, UserPlus, Eye, Edit } from 'lucide-react';
+import { Trash2, UserPlus, Eye, EyeOff, Edit } from 'lucide-react';
 import { Layout } from '../components/Layout';
 
 interface Employee {
@@ -32,6 +32,7 @@ const EmployeeManagement: React.FC = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [clienteNome, setClienteNome] = useState<string>('');
+  const [showPassword, setShowPassword] = useState(false);
 
   // Debug logs
   console.log('🔍 EmployeeManagement - Usuário atual:', user);
@@ -69,6 +70,11 @@ const EmployeeManagement: React.FC = () => {
     // Remover espaços automaticamente
     const cleanValue = value.replace(/\s/g, '');
     setNewEmployee({ ...newEmployee, username: cleanValue });
+  };
+
+  // Função para alternar visibilidade da senha
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   useEffect(() => {
@@ -319,15 +325,28 @@ const EmployeeManagement: React.FC = () => {
               
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-sm">Senha</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={newEmployee.password}
-                  onChange={(e) => setNewEmployee({ ...newEmployee, password: e.target.value })}
-                  placeholder="Senha segura"
-                  required
-                  className="text-sm"
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={newEmployee.password}
+                    onChange={(e) => setNewEmployee({ ...newEmployee, password: e.target.value })}
+                    placeholder="Senha segura"
+                    required
+                    className="text-sm pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={togglePasswordVisibility}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </div>
               
               <div className="space-y-2">
