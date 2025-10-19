@@ -91,7 +91,7 @@ export function NewPatientModal({ isOpen, onClose, onPatientAdded }: NewPatientM
       telefone: formData.telefone.trim() || null,
       status: formData.status,
       observacoes: formData.observacoes.trim() || null,
-      cliente_id: user.id,
+      cliente_id: user.cliente_id, // CORRIGIDO: usar cliente_id em vez de user.id
       user_id: user.id,
       user_email: user.email
     });
@@ -107,7 +107,7 @@ export function NewPatientModal({ isOpen, onClose, onPatientAdded }: NewPatientM
           telefone: formData.telefone.trim() || null,
           status: formData.status,
           observacoes: formData.observacoes.trim() || null,
-          cliente_id: user.id
+          cliente_id: user.cliente_id // CORRIGIDO: usar cliente_id em vez de user.id
         }])
         .select();
 

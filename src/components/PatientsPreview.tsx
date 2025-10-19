@@ -28,7 +28,7 @@ interface Patient {
   nome: string;
   email: string;
   telefone: string;
-  chatid: string;
+  chatid?: string;
   status: string;
   setdata?: string;
   followup?: string;
@@ -38,6 +38,7 @@ interface Patient {
   atende_humano?: string;
   created_at?: string;
   updated_at?: string;
+  fonte: 'ia' | 'humano'; // Fonte dos dados: IA ou Humano
 }
 
 export function PatientsPreview() {
@@ -124,36 +125,69 @@ export function PatientsPreview() {
 
       console.log('🎯 PACIENTES PREVIEW - Carregando dados da tabela:', tableName);
 
-      const { data, error } = await supabase
+      // 1. Carregar pacientes da IA
+      const { data: iaData, error: iaError } = await supabase
         .from(tableName)
         .select('*');
 
-      if (error) {
-        console.error('Erro ao buscar pacientes:', error);
-        return;
-      }
-
-      if (data) {
-        console.log('✅ PACIENTES PREVIEW - Dados carregados:', data.length, 'registros da tabela', tableName);
+      let iaPatients = [];
+      if (iaError) {
+        console.error('Erro ao buscar pacientes IA:', iaError);
+      } else if (iaData) {
+        // Adicionar fonte IA aos dados
+        iaPatients = iaData.map(patient => ({
+          ...patient,
+          fonte: 'ia' as const,
+          status: getPatientStatus({ ...patient, fonte: 'ia' })
+        }));
         
-        // Ordenar por data de atualização (mais recente primeiro)
-        const sortedData = data.sort((a, b) => {
-          const dateA = a.updated_at || a.created_at || '';
-          const dateB = b.updated_at || b.created_at || '';
-          return new Date(dateB).getTime() - new Date(dateA).getTime();
-        });
-
         // Remover duplicatas baseado no chatid
-        const uniquePatients = sortedData.filter((patient, index, self) => 
+        iaPatients = iaPatients.filter((patient, index, self) => 
           index === self.findIndex(p => p.chatid === patient.chatid)
         );
-
-        console.log('✅ PACIENTES PREVIEW - Pacientes únicos:', uniquePatients.length);
-        setPatients(uniquePatients.slice(0, 10)); // Limitar a 10 para o preview
         
-        if (isAutoRefresh) {
-          console.log('✅ PACIENTES PREVIEW - Refresh automático concluído');
+        console.log('✅ PACIENTES PREVIEW - Dados IA carregados:', iaPatients.length, 'registros');
+      }
+
+      // 2. Carregar pacientes manuais (se usuário logado)
+      let manualPatients = [];
+      if (user) {
+        console.log('🎯 PACIENTES PREVIEW - Carregando pacientes manuais...');
+        
+        const { data: manualData, error: manualError } = await supabaseConfig
+          .from('pacientes_manuais')
+          .select('*')
+          .eq('cliente_id', user.cliente_id);
+
+        if (manualError) {
+          console.error('Erro ao buscar pacientes manuais:', manualError);
+        } else if (manualData) {
+          // Adicionar fonte humano aos dados
+          manualPatients = manualData.map(patient => ({
+            ...patient,
+            fonte: 'humano' as const,
+            status: patient.status || 'novo'
+          }));
+          
+          console.log('✅ PACIENTES PREVIEW - Dados manuais carregados:', manualPatients.length, 'registros');
         }
+      }
+
+      // 3. Unificar e ordenar dados
+      const allPatients = [...iaPatients, ...manualPatients];
+      
+      // Ordenar por data de atualização (mais recente primeiro)
+      const sortedPatients = allPatients.sort((a, b) => {
+        const dateA = a.updated_at || a.created_at || '';
+        const dateB = b.updated_at || b.created_at || '';
+        return new Date(dateB).getTime() - new Date(dateA).getTime();
+      });
+
+      console.log('✅ PACIENTES PREVIEW - Total de pacientes:', sortedPatients.length);
+      setPatients(sortedPatients.slice(0, 10)); // Limitar a 10 para o preview
+      
+      if (isAutoRefresh) {
+        console.log('✅ PACIENTES PREVIEW - Refresh automático concluído');
       }
     } catch (error) {
       console.error('Erro ao buscar pacientes:', error);
@@ -187,14 +221,17 @@ export function PatientsPreview() {
     });
     
     const filtered = patients.filter(patient => {
-      // Filtrar pacientes com setdata vazia (null)
+      // Filtrar pacientes da IA que não têm setdata preenchida
+      // Mas incluir pacientes manuais independente do setdata
       const hasSetdata = patient.setdata !== null && patient.setdata !== undefined && patient.setdata !== '';
+      const isManualPatient = patient.fonte === 'humano';
+      const passesSetdataFilter = isManualPatient || hasSetdata;
       
       const matchesSearch = patient.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            patient.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            patient.telefone?.includes(searchTerm);
       
-      return hasSetdata && matchesSearch;
+      return passesSetdataFilter && matchesSearch;
     });
     
     console.log('✅ PATIENTS PREVIEW - Pacientes filtrados:', filtered.length);

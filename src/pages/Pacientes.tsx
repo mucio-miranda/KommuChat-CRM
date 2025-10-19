@@ -4,7 +4,8 @@ import {
   Plus, 
   RefreshCw,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  Trash2
 } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Layout } from "@/components/Layout";
@@ -20,6 +21,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useSupabase } from "@/hooks/useSupabase";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -57,6 +68,10 @@ export default function Pacientes() {
   // Estados para ordenação
   const [sortField, setSortField] = useState<string>("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  
+  // Estados para exclusão
+  const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
   const { toast } = useToast();
   const { user } = useAuth();
@@ -165,7 +180,7 @@ export default function Pacientes() {
         const { data: manualData, error: manualError } = await supabaseWrite
           .from('pacientes_manuais')
           .select('*')
-          .eq('cliente_id', user.id);
+          .eq('cliente_id', user.cliente_id); // CORRIGIDO: usar cliente_id em vez de user.id
 
         if (manualError) {
           console.error('Erro ao buscar pacientes manuais:', manualError);
@@ -214,6 +229,65 @@ export default function Pacientes() {
       setIsRefreshing(false);
     }
   }, [supabase, supabaseWrite, supabaseConfig, user, toast]);
+
+  // Função para abrir diálogo de confirmação de exclusão
+  const handleDeletePatient = (patient: Patient) => {
+    if (patient.fonte !== 'humano') {
+      toast({
+        title: "Erro",
+        description: "Apenas pacientes criados manualmente podem ser excluídos",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setPatientToDelete(patient);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // Função para confirmar exclusão
+  const confirmDeletePatient = async () => {
+    if (!patientToDelete || !supabaseWrite || !user) {
+      return;
+    }
+
+    try {
+      const { error } = await supabaseWrite
+        .from('pacientes_manuais')
+        .delete()
+        .eq('id', patientToDelete.id)
+        .eq('cliente_id', user.cliente_id); // Garantir que só exclui pacientes do próprio usuário
+
+      if (error) {
+        console.error('Erro ao excluir paciente:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível excluir o paciente",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Paciente excluído com sucesso!",
+      });
+
+      // Recarregar dados
+      loadData();
+
+    } catch (error) {
+      console.error('Erro ao excluir paciente:', error);
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao excluir paciente",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setPatientToDelete(null);
+    }
+  };
 
   // Função para ordenar pacientes
   const sortPatients = (patients: Patient[]): Patient[] => {
@@ -290,8 +364,11 @@ export default function Pacientes() {
   }, [loadData]);
 
   const filteredPatients = sortPatients(patients.filter(patient => {
-    // Filtrar pacientes com setdata vazia (null)
+    // Filtrar pacientes da IA que não têm setdata preenchida
+    // Mas incluir pacientes manuais independente do setdata
     const hasSetdata = patient.setdata !== null && patient.setdata !== undefined && patient.setdata !== '';
+    const isManualPatient = patient.fonte === 'humano';
+    const passesSetdataFilter = isManualPatient || hasSetdata;
     
     const matchesSearch = patient.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          patient.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -302,7 +379,7 @@ export default function Pacientes() {
     
     const matchesFonte = fonteFilter === "todas" || patient.fonte === fonteFilter;
     
-    return hasSetdata && matchesSearch && matchesStatus && matchesFonte;
+    return passesSetdataFilter && matchesSearch && matchesStatus && matchesFonte;
   }));
 
   if (loading) {
@@ -514,6 +591,9 @@ export default function Pacientes() {
                       )}
                     </button>
                   </th>
+                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">
+                    Ações
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -550,6 +630,19 @@ export default function Pacientes() {
                           {formatDate(patient.setdata || patient.updated_at || patient.created_at)}
                         </div>
                       </div>
+                    </td>
+                    <td className="py-4 px-2">
+                      {patient.fonte === 'humano' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeletePatient(patient)}
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          title="Excluir paciente"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -593,8 +686,21 @@ export default function Pacientes() {
                   {/* Status e Data */}
                   <div className="flex items-center justify-between gap-2 pt-0.5">
                     <StatusBadge status={getPatientStatus(patient)} />
-                    <div className="text-[9px] sm:text-[10px] text-muted-foreground whitespace-nowrap">
-                      {formatDate(patient.setdata || patient.updated_at || patient.created_at)}
+                    <div className="flex items-center gap-2">
+                      <div className="text-[9px] sm:text-[10px] text-muted-foreground whitespace-nowrap">
+                        {formatDate(patient.setdata || patient.updated_at || patient.created_at)}
+                      </div>
+                      {patient.fonte === 'humano' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeletePatient(patient)}
+                          className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          title="Excluir paciente"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -619,6 +725,30 @@ export default function Pacientes() {
         onClose={() => setIsNewPatientModalOpen(false)}
         onPatientAdded={() => loadData(false)}
       />
+
+      {/* Diálogo de Confirmação de Exclusão */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o paciente <strong>{patientToDelete?.nome}</strong>?
+              <br />
+              <br />
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeletePatient}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 }
