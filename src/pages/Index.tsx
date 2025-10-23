@@ -17,7 +17,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSupabase } from "@/hooks/useSupabase";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
-import { convertToBrazilDateString, getTodayBrazilString, filterByToday } from "@/lib/date-utils";
+import { convertToBrazilDateString, getTodayBrazilString, filterByToday, filterByCurrentMonth } from "@/lib/date-utils";
 
 // Tipagem mínima da tabela
 type Row = {
@@ -155,6 +155,11 @@ const Index = () => {
     
     console.log('✅ ATENDIMENTOS HOJE - Resultado:', atendimentosHoje);
     
+    // Contar agendamentos do mês atual na coluna data_agendamento
+    const agendamentosMesAtual = filterByCurrentMonth(list, 'data_agendamento').length;
+    
+    console.log('✅ AGENDAMENTOS MÊS ATUAL - Resultado:', agendamentosMesAtual);
+    
     // Contar registros com data_agendamento preenchida
     const consultasAgendadas = list.filter(r => {
       if (!r.data_agendamento) return false;
@@ -172,12 +177,12 @@ const Index = () => {
     }).length;
 
     return [
-      { title: "Atendimentos Realizados", value: String(total), change: "", changeType: "positive" as const, icon: Users },
-      { title: "Consultas Hoje", value: String(consultasHoje), change: "", changeType: "positive" as const, icon: Calendar },
-      { title: "Atendimentos Hoje", value: String(atendimentosHoje), change: "", changeType: "positive" as const, icon: MessageCircle },
-      { title: "Consultas Agendadas", value: String(consultasAgendadas), change: "", changeType: "positive" as const, icon: CheckCircle },
+      { title: "Atendimentos por IA", value: String(total), change: "", changeType: "positive" as const, icon: MessageCircle },
+      { title: "Agendamentos Hoje", value: String(consultasHoje), change: "", changeType: "positive" as const, icon: Calendar },
+      { title: "Contatos Hoje", value: String(atendimentosHoje), change: "", changeType: "positive" as const, icon: MessageCircle },
+      { title: "Agendamentos por IA", value: String(consultasAgendadas), change: "", changeType: "positive" as const, icon: CheckCircle },
       { title: "Taxa de Conversão", value: `${conversao}%`, change: "", changeType: "positive" as const, icon: TrendingUp },
-      { title: "Atendimento por Humano", value: String(atendimentosHumano), change: "", changeType: "positive" as const, icon: UserCheck },
+      { title: "Agendamentos no Mês", value: String(agendamentosMesAtual), change: "", changeType: "positive" as const, icon: Calendar },
     ];
   }, [sorted]);
 

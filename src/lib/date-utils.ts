@@ -77,6 +77,41 @@ export function filterByToday<T extends Record<string, any>>(
   });
 }
 
+/**
+ * Filtra registros pelo mês atual no fuso do Brasil
+ * @param records - Array de registros
+ * @param dateField - Campo que contém a data
+ * @returns Array filtrado
+ */
+export function filterByCurrentMonth<T extends Record<string, any>>(
+  records: T[], 
+  dateField: keyof T
+): T[] {
+  const hoje = new Date();
+  const hojeBrasil = new Date(hoje.toLocaleString("en-US", {timeZone: "America/Sao_Paulo"}));
+  const currentYear = hojeBrasil.getFullYear();
+  const currentMonth = hojeBrasil.getMonth();
+  
+  return records.filter(record => {
+    const dateString = record[dateField];
+    if (!dateString) return false;
+    
+    try {
+      const recordDate = new Date(dateString);
+      if (isNaN(recordDate.getTime())) return false;
+      
+      // Converter para o fuso do Brasil
+      const recordDateBrasil = new Date(recordDate.toLocaleString("en-US", {timeZone: "America/Sao_Paulo"}));
+      
+      return recordDateBrasil.getFullYear() === currentYear && 
+             recordDateBrasil.getMonth() === currentMonth;
+    } catch (error) {
+      console.warn('⚠️ Erro ao processar data:', dateString, error);
+      return false;
+    }
+  });
+}
+
 
 
 
