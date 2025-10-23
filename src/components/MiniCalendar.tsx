@@ -73,27 +73,27 @@ export function MiniCalendar({ selectedDate, onDateSelect, className }: MiniCale
 
   return (
     <Card className={cn("w-full", className)}>
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-1.5">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium">
+          <CardTitle className="text-xs font-medium">
             {monthNames[currentMonth]}, {currentYear}
           </CardTitle>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 w-6 p-0 hover:bg-muted"
+              className="h-5 w-5 p-0 hover:bg-muted"
               onClick={() => navigateMonth('prev')}
             >
-              <ChevronLeft className="h-3 w-3" />
+              <ChevronLeft className="h-2.5 w-2.5" />
             </Button>
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 w-6 p-0 hover:bg-muted"
+              className="h-5 w-5 p-0 hover:bg-muted"
               onClick={() => navigateMonth('next')}
             >
-              <ChevronRight className="h-3 w-3" />
+              <ChevronRight className="h-2.5 w-2.5" />
             </Button>
           </div>
         </div>
@@ -101,7 +101,7 @@ export function MiniCalendar({ selectedDate, onDateSelect, className }: MiniCale
       
       <CardContent className="pt-0">
         {/* Week days header */}
-        <div className="grid grid-cols-7 gap-0.5 mb-1">
+        <div className="grid grid-cols-7 gap-0.5 mb-0.5">
           {weekDays.map((day) => (
             <div key={day} className="text-xs text-muted-foreground text-center py-0.5">
               {day}
@@ -113,7 +113,7 @@ export function MiniCalendar({ selectedDate, onDateSelect, className }: MiniCale
         <div className="grid grid-cols-7 gap-0.5">
           {calendarDays.map((day, index) => {
             if (day === null) {
-              return <div key={index} className="h-5" />;
+              return <div key={index} className="h-4" />;
             }
             
             return (
@@ -122,7 +122,7 @@ export function MiniCalendar({ selectedDate, onDateSelect, className }: MiniCale
                 variant="ghost"
                 size="sm"
                 className={cn(
-                  "h-5 w-5 p-0 text-xs font-normal rounded-full",
+                  "h-4 w-4 p-0 text-xs font-normal rounded-full",
                   isToday(day) && "bg-red-500 text-white hover:bg-red-600",
                   isSelected(day) && !isToday(day) && "bg-primary/20 text-primary hover:bg-primary/30",
                   !isToday(day) && !isSelected(day) && "hover:bg-muted"

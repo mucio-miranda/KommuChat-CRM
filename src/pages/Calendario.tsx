@@ -512,9 +512,9 @@ export default function Calendario() {
       <div className="space-y-6">
         {/* Conteúdo principal */}
         <div className="space-y-3 md:space-y-5 px-1 sm:px-2 md:px-0">
-          <div className="flex flex-col lg:flex-row lg:space-x-6 space-y-2 lg:space-y-0">
+          <div className="flex flex-col lg:flex-row lg:space-x-4 xl:space-x-6 space-y-2 lg:space-y-0">
             {/* Sidebar com lista de agendas - Desktop */}
-            <div className="hidden lg:block lg:w-80 lg:flex-shrink-0">
+            <div className="hidden lg:block lg:w-64 xl:w-72 lg:flex-shrink-0">
               <CalendarAgendasList 
                 isConnected={isConnected} 
                 onDateSelect={handleMiniCalendarDateSelect}
@@ -547,7 +547,7 @@ export default function Calendario() {
                         setCurrentYear(today.getFullYear());
                       }
                     }}
-                    className="h-7 sm:h-8 px-2 sm:px-3"
+                    className="h-6 sm:h-7 lg:h-8 px-2 sm:px-3"
                   >
                     <Grid3X3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-1" />
                     <span className="hidden sm:inline text-xs sm:text-sm">Mês</span>
@@ -562,7 +562,7 @@ export default function Calendario() {
                         setCurrentWeek(new Date());
                       }
                     }}
-                    className="h-7 sm:h-8 px-2 sm:px-3"
+                    className="h-6 sm:h-7 lg:h-8 px-2 sm:px-3"
                   >
                     <CalendarDays className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-1" />
                     <span className="hidden sm:inline text-xs sm:text-sm">Semana</span>
@@ -575,11 +575,11 @@ export default function Calendario() {
                     variant="outline" 
                     size="sm" 
                     onClick={() => viewMode === 'month' ? navigateMonth('prev') : navigateWeek('prev')}
-                    className="flex-shrink-0 h-7 sm:h-8 w-7 sm:w-8 p-0"
+                    className="flex-shrink-0 h-6 sm:h-7 lg:h-8 w-6 sm:w-7 lg:w-8 p-0"
                   >
                     <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </Button>
-                  <h2 className="text-xs sm:text-sm md:text-lg font-semibold min-w-[120px] sm:min-w-[140px] md:min-w-[180px] text-center truncate px-1">
+                  <h2 className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold min-w-[100px] sm:min-w-[120px] md:min-w-[140px] lg:min-w-[160px] text-center truncate px-1">
                     {viewMode === 'month' 
                       ? `${monthNames[currentMonth]} ${currentYear}`
                       : getWeekRangeText(getWeekStart(currentWeek))
@@ -589,7 +589,7 @@ export default function Calendario() {
                     variant="outline" 
                     size="sm" 
                     onClick={() => viewMode === 'month' ? navigateMonth('next') : navigateWeek('next')}
-                    className="flex-shrink-0 h-7 sm:h-8 w-7 sm:w-8 p-0"
+                    className="flex-shrink-0 h-6 sm:h-7 lg:h-8 w-6 sm:w-7 lg:w-8 p-0"
                   >
                     <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </Button>
@@ -597,33 +597,33 @@ export default function Calendario() {
               </div>
 
               {/* Status da conexão Google Calendar */}
-              <div className="flex items-center gap-1.5 sm:gap-2 justify-center md:justify-end">
+              <div className="flex items-center gap-1 sm:gap-1.5 justify-center md:justify-end">
                 {isConnected ? (
                   <>
-                    <Badge variant="secondary" className="bg-green-100 text-green-800 text-[10px] sm:text-xs whitespace-nowrap px-1.5 sm:px-2">
-                      <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
-                      <span className="hidden sm:inline">Google Calendar Conectado</span>
-                      <span className="sm:hidden">Conectado</span>
+                    <Badge variant="secondary" className="bg-green-100 text-green-800 text-[9px] sm:text-[10px] lg:text-xs whitespace-nowrap px-1 sm:px-1.5 lg:px-2">
+                      <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5" />
+                      <span className="hidden lg:inline">Google Calendar Conectado</span>
+                      <span className="lg:hidden">Conectado</span>
                     </Badge>
                     <button
                       onClick={handleRefresh}
                       disabled={isLoading || isRefreshing}
                       title="Recarregar calendário"
-                      className="inline-flex items-center justify-center rounded-md border border-red-200 bg-transparent w-7 h-7 sm:w-8 sm:h-8 text-sm font-medium text-red-600 hover:bg-red-600 hover:border-red-600 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                      className="inline-flex items-center justify-center rounded-md border border-red-200 bg-transparent w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 text-sm font-medium text-red-600 hover:bg-red-600 hover:border-red-600 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
                     >
-                      <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${(isLoading || isRefreshing) ? 'animate-spin' : ''}`} />
+                      <RefreshCw className={`w-3 h-3 sm:w-3.5 sm:h-3.5 lg:w-4 lg:h-4 ${(isLoading || isRefreshing) ? 'animate-spin' : ''}`} />
                     </button>
                   </>
                 ) : (
                   <Button
                     variant="outline"
                     onClick={connect}
-                    className="flex items-center justify-center gap-1.5 h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3"
+                    className="flex items-center justify-center gap-1 h-6 sm:h-7 lg:h-8 text-xs sm:text-sm px-2 sm:px-3"
                     size="sm"
                   >
-                    <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    <span className="hidden sm:inline">Conectar Google Calendar</span>
-                    <span className="sm:hidden">Conectar</span>
+                    <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 lg:w-4 lg:h-4" />
+                    <span className="hidden lg:inline">Conectar Google Calendar</span>
+                    <span className="lg:hidden">Conectar</span>
                   </Button>
                 )}
               </div>
@@ -708,3 +708,4 @@ export default function Calendario() {
     </Layout>
   );
 }
+  

@@ -86,53 +86,48 @@ export function CalendarAgendasList({ isConnected, onDateSelect }: CalendarAgend
 
   return (
     <div>
-      {/* Título da seção */}
-      <div className="mb-4">
-        <h1 className="text-3xl font-bold text-foreground">Calendário</h1>
-      </div>
-      
       <Card className="mb-4">
       <CardContent className="p-0">
         <Button
           variant="ghost"
-          className="w-full justify-between p-3 text-left font-medium"
+          className="w-full justify-between p-2.5 text-left font-medium"
           onClick={() => setIsExpanded(!isExpanded)}
         >
-          <span>Minhas Agendas</span>
+          <span className="text-sm">Minhas Agendas</span>
           {isExpanded ? (
-            <ChevronDown className="h-4 w-4" />
+            <ChevronDown className="h-3.5 w-3.5" />
           ) : (
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-3.5 w-3.5" />
           )}
         </Button>
         
         {isExpanded && (
-          <div className="px-3 pb-3">
+          <div className="px-2.5 pb-2.5">
             {isLoading ? (
-              <div className="text-sm text-muted-foreground py-2">
+              <div className="text-xs text-muted-foreground py-1.5">
                 Carregando agendas...
               </div>
             ) : (
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {calendars.map((calendar) => {
                   const isSelected = selectedCalendars.includes(calendar.id);
                   return (
                     <div
                       key={calendar.id}
-                      className="flex items-center space-x-2 py-1 cursor-pointer hover:bg-muted/50 rounded px-2"
+                      className="flex items-center space-x-1.5 py-1 cursor-pointer hover:bg-muted/50 rounded px-1.5"
                       onClick={() => handleCalendarToggle(calendar.id, !isSelected)}
                     >
-                      <div className="flex items-center justify-center w-4 h-4 border border-gray-300 rounded">
+                      <div className="flex items-center justify-center w-3.5 h-3.5 border border-gray-300 rounded">
                         {isSelected && (
-                          <Check className="h-3 w-3 text-primary" />
+                          <Check className="h-2.5 w-2.5 text-primary" />
                         )}
                       </div>
-                      <span className="text-sm text-foreground flex-1">
+                      <span className="text-xs text-foreground flex-1 truncate">
                         {calendar.summary}
                       </span>
                       {calendar.backgroundColor && (
                         <div
-                          className="w-3 h-3 rounded-full"
+                          className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                           style={{ backgroundColor: calendar.backgroundColor }}
                         />
                       )}
