@@ -146,7 +146,7 @@ export default function Automatizacoes() {
             Conexão WhatsApp
           </CardTitle>
           <CardDescription>
-            Conecte sua conta do WhatsApp para ativar as automações
+            Conecte sua conta do WhatsApp para ativar a Secretária Virtual KOMMUchat
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
