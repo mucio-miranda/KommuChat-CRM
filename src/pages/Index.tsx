@@ -180,7 +180,7 @@ const Index = () => {
       { title: "Atendimentos por IA", value: String(total), change: "", changeType: "positive" as const, icon: MessageCircle },
       { title: "Agendamentos Hoje", value: String(consultasHoje), change: "", changeType: "positive" as const, icon: Calendar },
       { title: "Contatos Hoje", value: String(atendimentosHoje), change: "", changeType: "positive" as const, icon: MessageCircle },
-      { title: "Agendamentos por IA", value: String(consultasAgendadas), change: "", changeType: "positive" as const, icon: CheckCircle },
+      { title: "Agendamentos por IA", value: String(consultasAgendadas), change: "", changeType: "positive" as const, icon: Calendar },
       { title: "Taxa de Conversão", value: `${conversao}%`, change: "", changeType: "positive" as const, icon: TrendingUp },
       { title: "Agendamentos no Mês", value: String(agendamentosMesAtual), change: "", changeType: "positive" as const, icon: Calendar },
     ];
