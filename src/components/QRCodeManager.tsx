@@ -82,12 +82,24 @@ export function QRCodeManager({ clienteId, clienteNome, onQRCodeUpdated }: QRCod
 
     setUploading(true);
     try {
+      // Mostrar toast de início
+      toast({
+        title: "Upload iniciado",
+        description: "Enviando QR code para o storage...",
+      });
+
       // 1. Upload para o storage
       const uploadResult = await uploadQRCodeToStorage(clienteId, selectedFile);
       
       if (!uploadResult) {
         throw new Error('Falha no upload para o storage');
       }
+
+      // Mostrar progresso
+      toast({
+        title: "Upload concluído",
+        description: "Salvando metadados no banco de dados...",
+      });
 
       // 2. Salvar metadados no banco
       const qrCodeId = await saveQRCodeToDatabase(
@@ -104,7 +116,7 @@ export function QRCodeManager({ clienteId, clienteNome, onQRCodeUpdated }: QRCod
 
       toast({
         title: "Sucesso",
-        description: "QR Code enviado com sucesso!",
+        description: "QR Code atualizado com sucesso!",
       });
 
       // Limpar formulário e fechar dialog
@@ -121,7 +133,7 @@ export function QRCodeManager({ clienteId, clienteNome, onQRCodeUpdated }: QRCod
       console.error('Erro no upload:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível fazer upload do QR code.",
+        description: "Não foi possível atualizar o QR code. Tente novamente.",
         variant: "destructive"
       });
     } finally {
@@ -197,14 +209,15 @@ export function QRCodeManager({ clienteId, clienteNome, onQRCodeUpdated }: QRCod
             <DialogTrigger asChild>
               <Button size="sm">
                 <Upload className="w-4 h-4 mr-2" />
-                Novo QR Code
+                Atualizar QR Code
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Upload de QR Code</DialogTitle>
+                <DialogTitle>Atualizar QR Code WhatsApp</DialogTitle>
                 <DialogDescription>
-                  Faça upload de um QR code do WhatsApp para {clienteNome}
+                  Faça upload de um novo QR code do WhatsApp para {clienteNome}. 
+                  O sistema manterá apenas o QR code mais recente.
                 </DialogDescription>
               </DialogHeader>
               
@@ -232,8 +245,9 @@ export function QRCodeManager({ clienteId, clienteNome, onQRCodeUpdated }: QRCod
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    O QR code será válido por 5 minutos após o upload. 
+                    O novo QR code substituirá completamente o anterior. 
                     Formatos aceitos: PNG, JPEG, JPG, GIF, WebP (máx. 5MB).
+                    Apenas o QR code mais recente será mantido.
                   </AlertDescription>
                 </Alert>
               </div>
@@ -246,12 +260,12 @@ export function QRCodeManager({ clienteId, clienteNome, onQRCodeUpdated }: QRCod
                   {uploading ? (
                     <>
                       <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      Enviando...
+                      Atualizando...
                     </>
                   ) : (
                     <>
                       <Upload className="w-4 h-4 mr-2" />
-                      Enviar
+                      Atualizar QR Code
                     </>
                   )}
                 </Button>
