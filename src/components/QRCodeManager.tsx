@@ -31,7 +31,7 @@ import {
   saveQRCodeToDatabase, 
   getClienteQRCodes, 
   deleteQRCode,
-  cleanupOldQRCodes,
+  updateClienteQRCodeConfig,
   WhatsAppQRCode 
 } from '@/lib/supabase-crm';
 
@@ -83,24 +83,12 @@ export function QRCodeManager({ clienteId, clienteNome, onQRCodeUpdated }: QRCod
 
     setUploading(true);
     try {
-      // Mostrar toast de início
-      toast({
-        title: "Upload iniciado",
-        description: "Enviando QR code para o storage...",
-      });
-
       // 1. Upload para o storage
       const uploadResult = await uploadQRCodeToStorage(clienteId, selectedFile);
       
       if (!uploadResult) {
         throw new Error('Falha no upload para o storage');
       }
-
-      // Mostrar progresso
-      toast({
-        title: "Upload concluído",
-        description: "Salvando metadados no banco de dados...",
-      });
 
       // 2. Salvar metadados no banco
       const qrCodeId = await saveQRCodeToDatabase(
@@ -115,17 +103,16 @@ export function QRCodeManager({ clienteId, clienteNome, onQRCodeUpdated }: QRCod
         throw new Error('Falha ao salvar metadados no banco');
       }
 
-      // 3. Limpar QR codes antigos (manter apenas o mais recente)
-      toast({
-        title: "Limpeza",
-        description: "Removendo QR codes antigos...",
-      });
+      // 3. Atualizar configuração do cliente
+      const configUpdated = await updateClienteQRCodeConfig(clienteId, uploadResult.url);
       
-      await cleanupOldQRCodes(clienteId, 1);
+      if (!configUpdated) {
+        console.warn('⚠️ Falha ao atualizar configuração do cliente');
+      }
 
       toast({
         title: "Sucesso",
-        description: "QR Code atualizado com sucesso!",
+        description: "QR Code enviado com sucesso!",
       });
 
       // Limpar formulário e fechar dialog
@@ -142,7 +129,7 @@ export function QRCodeManager({ clienteId, clienteNome, onQRCodeUpdated }: QRCod
       console.error('Erro no upload:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível atualizar o QR code. Tente novamente.",
+        description: "Não foi possível fazer upload do QR code.",
         variant: "destructive"
       });
     } finally {
@@ -218,15 +205,14 @@ export function QRCodeManager({ clienteId, clienteNome, onQRCodeUpdated }: QRCod
             <DialogTrigger asChild>
               <Button size="sm">
                 <Upload className="w-4 h-4 mr-2" />
-                Atualizar QR Code
+                Novo QR Code
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Atualizar QR Code WhatsApp</DialogTitle>
+                <DialogTitle>Upload de QR Code</DialogTitle>
                 <DialogDescription>
-                  Faça upload de um novo QR code do WhatsApp para {clienteNome}. 
-                  O sistema manterá apenas o QR code mais recente.
+                  Faça upload de um QR code do WhatsApp para {clienteNome}
                 </DialogDescription>
               </DialogHeader>
               
@@ -254,9 +240,8 @@ export function QRCodeManager({ clienteId, clienteNome, onQRCodeUpdated }: QRCod
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    O novo QR code substituirá completamente o anterior. 
+                    O QR code será válido por 5 minutos após o upload. 
                     Formatos aceitos: PNG, JPEG, JPG, GIF, WebP (máx. 5MB).
-                    Apenas o QR code mais recente será mantido.
                   </AlertDescription>
                 </Alert>
               </div>
@@ -269,12 +254,12 @@ export function QRCodeManager({ clienteId, clienteNome, onQRCodeUpdated }: QRCod
                   {uploading ? (
                     <>
                       <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      Atualizando...
+                      Enviando...
                     </>
                   ) : (
                     <>
                       <Upload className="w-4 h-4 mr-2" />
-                      Atualizar QR Code
+                      Enviar
                     </>
                   )}
                 </Button>

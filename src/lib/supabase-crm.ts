@@ -200,69 +200,37 @@ export const hasClienteSavedQRCode = async (
   return qrCodeUrl !== null && qrCodeUrl !== '';
 };
 
-// Função para limpar QR codes antigos do storage
-export const cleanupOldQRCodes = async (
+// Função para atualizar configuração do QR code do cliente
+export const updateClienteQRCodeConfig = async (
   clienteId: string,
-  keepLatest: number = 1
-): Promise<void> => {
+  qrCodeUrl: string
+): Promise<boolean> => {
   if (!supabaseCrm) {
     console.warn('Supabase CRM não configurado');
-    return;
+    return false;
   }
 
   try {
-    // Buscar QR codes antigos do cliente (exceto os mais recentes)
-    const { data: oldQRCodes, error: fetchError } = await supabaseCrm
-      .from('whatsapp_qr_codes')
-      .select('id, file_name')
-      .eq('cliente_id', clienteId)
-      .order('created_at', { ascending: false })
-      .range(keepLatest, 999); // Pular os primeiros 'keepLatest' registros
+    // Atualizar ou inserir configuração do QR code
+    const { error } = await supabaseCrm
+      .from('configuracoes_cliente')
+      .upsert({
+        cliente_id: clienteId,
+        chave: 'whatsapp_qr_code_url',
+        valor: qrCodeUrl,
+        tipo: 'string',
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'cliente_id,chave'
+      });
 
-    if (fetchError) {
-      console.warn('⚠️ Erro ao buscar QR codes antigos:', fetchError);
-      return;
-    }
+    if (error) throw error;
 
-    if (!oldQRCodes || oldQRCodes.length === 0) {
-      console.log('✅ Nenhum QR code antigo para limpar');
-      return;
-    }
-
-    console.log(`🗑️ Removendo ${oldQRCodes.length} QR codes antigos para manter apenas ${keepLatest} mais recente(s)`);
-
-    // Deletar arquivos antigos do storage
-    const filesToDelete = oldQRCodes
-      .filter(qr => qr.file_name)
-      .map(qr => `cliente-${clienteId}/${qr.file_name}`);
-
-    if (filesToDelete.length > 0) {
-      const { error: storageError } = await supabaseCrm.storage
-        .from('qr-codes')
-        .remove(filesToDelete);
-
-      if (storageError) {
-        console.warn('⚠️ Erro ao deletar arquivos antigos do storage:', storageError);
-      } else {
-        console.log(`✅ ${filesToDelete.length} arquivos antigos removidos do storage`);
-      }
-    }
-
-    // Deletar registros antigos do banco
-    const idsToDelete = oldQRCodes.map(qr => qr.id);
-    const { error: deleteError } = await supabaseCrm
-      .from('whatsapp_qr_codes')
-      .delete()
-      .in('id', idsToDelete);
-
-    if (deleteError) {
-      console.warn('⚠️ Erro ao deletar registros antigos do banco:', deleteError);
-    } else {
-      console.log(`✅ ${idsToDelete.length} registros antigos removidos do banco`);
-    }
-
+    console.log('✅ Configuração do QR code atualizada:', qrCodeUrl);
+    return true;
   } catch (error) {
-    console.error('❌ Erro na limpeza de QR codes antigos:', error);
+    console.error('❌ Erro ao atualizar configuração do QR code:', error);
+    return false;
   }
 };
 
@@ -284,12 +252,12 @@ export const uploadQRCodeToStorage = async (
 
     console.log('📤 Fazendo upload do QR Code:', filePath);
 
-    // Upload para o storage (permitir substituição de arquivos existentes)
+    // Upload para o storage
     const { data: uploadData, error: uploadError } = await supabaseCrm.storage
       .from('qr-codes')
       .upload(filePath, file, {
         cacheControl: '3600',
-        upsert: true // Permitir substituição de arquivos existentes
+        upsert: false
       });
 
     if (uploadError) {
