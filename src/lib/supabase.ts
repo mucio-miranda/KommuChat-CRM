@@ -46,7 +46,7 @@ export interface Paciente {
   nome: string
   telefone: string
   chat_id: string
-  status: 'novo' | 'followup' | 'topoucall' | 'atende_humano' | 'atendimentofinal'
+  status: 'novo' | 'followup' | 'topoucall' | 'atendimentofinal' | 'cancelou_agendamento'
   cliente_id: string
   ultimo_contato: string
   created_at: string

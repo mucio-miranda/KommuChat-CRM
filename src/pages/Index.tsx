@@ -172,9 +172,10 @@ const Index = () => {
     const conversao = total ? Math.round((consultasAgendadas / total) * 100) : 0;
 
     // Contar atendimentos por humano (onde atende_humano === 'true')
-    const atendimentosHumano = list.filter(r => {
-      return r.atende_humano === 'true';
-    }).length;
+    // Comentado temporariamente - status atende_humano foi removido
+    // const atendimentosHumano = list.filter(r => {
+    //   return r.atende_humano === 'true';
+    // }).length;
 
     return [
       { title: "Atendimentos por IA", value: String(total), change: "", changeType: "positive" as const, icon: MessageCircle },

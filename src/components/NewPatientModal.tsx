@@ -239,9 +239,9 @@ export function NewPatientModal({ isOpen, onClose, onPatientAdded }: NewPatientM
               <SelectContent>
                 <SelectItem value="novo">Novo</SelectItem>
                 <SelectItem value="followup">Follow-up</SelectItem>
-                <SelectItem value="atende_humano">Atendimento Humano</SelectItem>
                 <SelectItem value="topoucall">Agendado</SelectItem>
                 <SelectItem value="atendimentofinal">Concluído</SelectItem>
+                <SelectItem value="cancelou_agendamento">Cancelou Agendamento</SelectItem>
               </SelectContent>
             </Select>
           </div>

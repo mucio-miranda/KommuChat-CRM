@@ -126,7 +126,7 @@ export default function Dashboard() {
     const consultasHoje = 0; // placeholder
     const concluidos = list.filter(r => r.atendimentofinal)?.length;
     const pendentesFollow = list.filter(r => r.followup)?.length;
-    const conversas = list.filter(r => r.atende_humano || r.topoucall)?.length;
+    const conversas = list.filter(r => r.topoucall)?.length;
     const conversao = total ? Math.round(((concluidos || 0) / total) * 100) : 0;
 
     return [

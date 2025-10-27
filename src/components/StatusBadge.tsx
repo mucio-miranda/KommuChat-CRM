@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 
-type PatientStatus = "followup" | "atende_humano" | "topoucall" | "atendimentofinal" | "novo";
+type PatientStatus = "followup" | "topoucall" | "atendimentofinal" | "cancelou_agendamento" | "novo";
 
 interface StatusBadgeProps {
   status: PatientStatus;
@@ -16,13 +16,13 @@ const statusConfig = {
     label: "Follow-up",
     className: "bg-primary/10 text-primary border-primary/20"
   },
-  atende_humano: {
-    label: "Atendimento Humano",
-    className: "bg-warning/10 text-warning border-warning/20"
-  },
   topoucall: {
     label: "Agendado",
     className: "bg-success/10 text-success border-success/20"
+  },
+  cancelou_agendamento: {
+    label: "Cancelou Agendamento",
+    className: "bg-red-100 text-red-800 border-red-200"
   },
   atendimentofinal: {
     label: "Concluído",

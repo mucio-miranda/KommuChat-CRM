@@ -1,23 +1,12 @@
   import { useState, useEffect, useCallback } from "react";
 import { 
   Search, 
-  Eye, 
-  Edit, 
-  Calendar as CalendarIcon,
-  CheckCircle,
-  MoreHorizontal,
   Users
 } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useSupabase } from "@/hooks/useSupabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -36,6 +25,7 @@ interface Patient {
   topoucall?: string;
   atendimentofinal?: string;
   atende_humano?: string;
+  data_agendamento?: string;
   created_at?: string;
   updated_at?: string;
   fonte: 'ia' | 'humano'; // Fonte dos dados: IA ou Humano
@@ -51,10 +41,22 @@ export function PatientsPreview() {
   const navigate = useNavigate();
 
   // Função para determinar o status baseado nos campos do Supabase
-  const getPatientStatus = (patient: Patient): "followup" | "atende_humano" | "topoucall" | "atendimentofinal" | "novo" => {
+  const getPatientStatus = (patient: Patient): "followup" | "topoucall" | "atendimentofinal" | "cancelou_agendamento" | "novo" => {
+    // Verificar se tem data_agendamento com ano 9999 (cancelou agendamento)
+    if (patient.data_agendamento) {
+      try {
+        const dataAgendamento = new Date(patient.data_agendamento);
+        const ano = dataAgendamento.getFullYear();
+        if (ano === 9999) {
+          return "cancelou_agendamento";
+        }
+      } catch (error) {
+        console.error('Erro ao processar data_agendamento:', error);
+      }
+    }
+    
     if (patient.atendimentofinal === "true") return "atendimentofinal";
     if (patient.topoucall === "true") return "topoucall";
-    if (patient.atende_humano === "true") return "atende_humano";
     if (patient.followup === "true") return "followup";
     if (patient.follow === "true") return "followup";
     return "novo";
@@ -329,32 +331,6 @@ export function PatientsPreview() {
                 
                 <div className="flex items-center gap-2 ml-3">
                   <StatusBadge status={getPatientStatus(patient)} />
-                  
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuItem onClick={() => navigate('/pacientes')}>
-                        <Eye className="w-4 h-4 mr-2" />
-                        Ver detalhes
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate('/pacientes')}>
-                        <Edit className="w-4 h-4 mr-2" />
-                        Editar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate('/calendario')}>
-                        <CalendarIcon className="w-4 h-4 mr-2" />
-                        Agendar
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
                 </div>
               </div>
             </div>

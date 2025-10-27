@@ -180,7 +180,20 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
     if (!rows || rows.length === 0) return [];
     
     return rows
-      .filter(row => row.data_agendamento && row.nome) // Apenas pacientes com agendamento e nome
+      .filter(row => {
+        // Apenas pacientes com agendamento e nome
+        if (!row.data_agendamento || !row.nome) return false;
+        
+        // Filtrar pacientes com ano "9999"
+        try {
+          const dataAgendamento = new Date(row.data_agendamento);
+          const ano = dataAgendamento.getFullYear();
+          return ano !== 9999;
+        } catch (error) {
+          console.error('Erro ao processar data:', error);
+          return false;
+        }
+      })
       .sort((a, b) => {
         // Ordenar por data_agendamento (mais recente primeiro)
         const dateA = new Date(a.data_agendamento);

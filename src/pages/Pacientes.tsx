@@ -49,6 +49,7 @@ interface Patient {
   topoucall?: string;
   atendimentofinal?: string;
   atende_humano?: string;
+  data_agendamento?: string;
   observacoes?: string;
   created_at?: string;
   updated_at?: string;
@@ -78,10 +79,22 @@ export default function Pacientes() {
   const { read: supabase, config: supabaseConfig, write: supabaseWrite } = useSupabase();
 
   // Função para determinar o status baseado nos campos do Supabase
-  const getPatientStatus = (patient: Patient): "followup" | "atende_humano" | "topoucall" | "atendimentofinal" | "novo" => {
+  const getPatientStatus = (patient: Patient): "followup" | "topoucall" | "atendimentofinal" | "cancelou_agendamento" | "novo" => {
+    // Verificar se tem data_agendamento com ano 9999 (cancelou agendamento)
+    if (patient.data_agendamento) {
+      try {
+        const dataAgendamento = new Date(patient.data_agendamento);
+        const ano = dataAgendamento.getFullYear();
+        if (ano === 9999) {
+          return "cancelou_agendamento";
+        }
+      } catch (error) {
+        console.error('Erro ao processar data_agendamento:', error);
+      }
+    }
+    
     if (patient.atendimentofinal === "true") return "atendimentofinal";
     if (patient.topoucall === "true") return "topoucall";
-    if (patient.atende_humano === "true") return "atende_humano";
     if (patient.followup === "true") return "followup";
     if (patient.follow === "true") return "followup";
     return "novo";
@@ -322,7 +335,7 @@ export default function Pacientes() {
           const statusA = getPatientStatus(a);
           const statusB = getPatientStatus(b);
           // Definir ordem dos status
-          const statusOrder = ['novo', 'followup', 'atende_humano', 'topoucall', 'atendimentofinal'];
+          const statusOrder = ['novo', 'followup', 'topoucall', 'atendimentofinal', 'cancelou_agendamento'];
           aValue = statusOrder.indexOf(statusA);
           bValue = statusOrder.indexOf(statusB);
           break;
@@ -460,9 +473,9 @@ export default function Pacientes() {
                   <SelectItem value="todos" className="text-xs sm:text-sm">Todos</SelectItem>
                   <SelectItem value="novo" className="text-xs sm:text-sm">Novo</SelectItem>
                   <SelectItem value="followup" className="text-xs sm:text-sm">Follow-up</SelectItem>
-                  <SelectItem value="atende_humano" className="text-xs sm:text-sm">Atend. Humano</SelectItem>
                   <SelectItem value="topoucall" className="text-xs sm:text-sm">Agendado</SelectItem>
                   <SelectItem value="atendimentofinal" className="text-xs sm:text-sm">Concluído</SelectItem>
+                  <SelectItem value="cancelou_agendamento" className="text-xs sm:text-sm">Cancelou Agendamento</SelectItem>
                 </SelectContent>
               </Select>
 
