@@ -31,6 +31,7 @@ import {
   saveQRCodeToDatabase, 
   getClienteQRCodes, 
   deleteQRCode,
+  cleanupOldQRCodes,
   WhatsAppQRCode 
 } from '@/lib/supabase-crm';
 
@@ -113,6 +114,14 @@ export function QRCodeManager({ clienteId, clienteNome, onQRCodeUpdated }: QRCod
       if (!qrCodeId) {
         throw new Error('Falha ao salvar metadados no banco');
       }
+
+      // 3. Limpar QR codes antigos (manter apenas o mais recente)
+      toast({
+        title: "Limpeza",
+        description: "Removendo QR codes antigos...",
+      });
+      
+      await cleanupOldQRCodes(clienteId, 1);
 
       toast({
         title: "Sucesso",

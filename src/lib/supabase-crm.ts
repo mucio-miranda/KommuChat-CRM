@@ -304,9 +304,6 @@ export const uploadQRCodeToStorage = async (
 
     console.log('✅ Upload realizado com sucesso:', publicUrl);
 
-    // Limpar QR codes antigos (manter apenas o mais recente)
-    await cleanupOldQRCodes(clienteId, 1);
-
     return {
       url: publicUrl,
       fileName: fileName
