@@ -207,10 +207,12 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
   const formatAppointmentDate = (dateString: string): string => {
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString('pt-BR', {
+      return date.toLocaleString('pt-BR', {
         day: '2-digit',
         month: '2-digit',
-        year: 'numeric'
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
       });
     } catch {
       return "Data inválida";
