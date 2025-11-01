@@ -553,6 +553,126 @@ export class GoogleCalendarServiceHybrid {
       console.error('Erro ao revogar token:', error);
     }
   }
+
+  // Criar evento no Google Calendar
+  async createEvent(event: Partial<GoogleCalendarEvent>, calendarId: string = DEFAULT_CALENDAR_ID): Promise<GoogleCalendarEvent> {
+    try {
+      // Verificar e renovar token se necessário
+      const tokenValid = await this.ensureValidToken();
+      if (!tokenValid) {
+        throw new Error('Token expirado - necessário nova autenticação');
+      }
+
+      if (!this.accessToken) {
+        throw new Error('Não autenticado');
+      }
+
+      console.log('➕ Criando evento no Google Calendar...');
+
+      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`;
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(event),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Erro ao criar evento:', errorText);
+        throw new Error(`Erro ao criar evento: ${response.status} ${response.statusText}`);
+      }
+
+      const createdEvent = await response.json();
+      console.log('✅ Evento criado com sucesso:', createdEvent.id);
+      return createdEvent;
+    } catch (error) {
+      console.error('❌ Erro ao criar evento:', error);
+      throw error;
+    }
+  }
+
+  // Atualizar evento no Google Calendar
+  async updateEvent(eventId: string, event: Partial<GoogleCalendarEvent>, calendarId: string = DEFAULT_CALENDAR_ID): Promise<GoogleCalendarEvent> {
+    try {
+      // Verificar e renovar token se necessário
+      const tokenValid = await this.ensureValidToken();
+      if (!tokenValid) {
+        throw new Error('Token expirado - necessário nova autenticação');
+      }
+
+      if (!this.accessToken) {
+        throw new Error('Não autenticado');
+      }
+
+      console.log('✏️ Atualizando evento no Google Calendar...', eventId);
+
+      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`;
+      
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(event),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Erro ao atualizar evento:', errorText);
+        throw new Error(`Erro ao atualizar evento: ${response.status} ${response.statusText}`);
+      }
+
+      const updatedEvent = await response.json();
+      console.log('✅ Evento atualizado com sucesso:', updatedEvent.id);
+      return updatedEvent;
+    } catch (error) {
+      console.error('❌ Erro ao atualizar evento:', error);
+      throw error;
+    }
+  }
+
+  // Deletar evento no Google Calendar
+  async deleteEvent(eventId: string, calendarId: string = DEFAULT_CALENDAR_ID): Promise<boolean> {
+    try {
+      // Verificar e renovar token se necessário
+      const tokenValid = await this.ensureValidToken();
+      if (!tokenValid) {
+        throw new Error('Token expirado - necessário nova autenticação');
+      }
+
+      if (!this.accessToken) {
+        throw new Error('Não autenticado');
+      }
+
+      console.log('🗑️ Deletando evento no Google Calendar...', eventId);
+
+      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`;
+      
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Erro ao deletar evento:', errorText);
+        throw new Error(`Erro ao deletar evento: ${response.status} ${response.statusText}`);
+      }
+
+      console.log('✅ Evento deletado com sucesso:', eventId);
+      return true;
+    } catch (error) {
+      console.error('❌ Erro ao deletar evento:', error);
+      throw error;
+    }
+  }
 }
 
 // Instância singleton

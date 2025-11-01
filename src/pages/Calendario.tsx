@@ -8,6 +8,7 @@ import { useGoogleCalendar } from "@/contexts/GoogleCalendarContextSimple";
 import { GoogleCalendarEvent } from "@/types/google-calendar";
 import { CalendarAgendasList } from "@/components/CalendarAgendasList";
 import { SearchConsultation } from "@/components/SearchConsultation";
+import { CreateEventModal } from "@/components/CreateEventModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabaseCrm } from "@/lib/supabase-crm";
 
@@ -32,6 +33,9 @@ export default function Calendario() {
   const [searchQuery, setSearchQuery] = useState("");
   const [connectedCalendarName, setConnectedCalendarName] = useState<string>("");
   const [clienteEmail, setClienteEmail] = useState<string>("");
+  const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
+  const [selectedDateForEvent, setSelectedDateForEvent] = useState<Date | undefined>();
+  const [selectedTimeForEvent, setSelectedTimeForEvent] = useState<string | undefined>();
   const { isConnected, isLoading, events, connect, disconnect, refreshEvents, forceRefreshToken, getCalendarList } = useGoogleCalendar();
   const { user } = useAuth();
 
@@ -213,6 +217,17 @@ export default function Calendario() {
     
     // Mudar para visualização semanal
     setViewMode('week');
+  };
+
+  const handleCreateEventClick = (date?: Date, time?: string) => {
+    setSelectedDateForEvent(date);
+    setSelectedTimeForEvent(time);
+    setIsCreateEventModalOpen(true);
+  };
+
+  const handleEventCreated = () => {
+    // Recarregar eventos após criar
+    refreshEvents();
   };
 
   const handleMiniCalendarDateSelect = (date: Date) => {
@@ -450,6 +465,15 @@ export default function Calendario() {
                         -
                       </div>
                     )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleCreateEventClick(day, undefined)}
+                      className="w-full mt-1.5 h-6 text-[9px] text-muted-foreground hover:text-foreground"
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Novo evento
+                    </Button>
                   </div>
                 </div>
               );
@@ -489,6 +513,15 @@ export default function Calendario() {
                         Nenhum agendamento
                       </div>
                     )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleCreateEventClick(day, undefined)}
+                      className="w-full mt-2 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Novo evento
+                    </Button>
                   </div>
                 </div>
               );
@@ -596,10 +629,20 @@ export default function Calendario() {
                 </div>
               </div>
 
-              {/* Status da conexão Google Calendar */}
+              {/* Status da conexão Google Calendar e Botão Criar Evento */}
               <div className="flex items-center gap-1 sm:gap-1.5 justify-center md:justify-end">
                 {isConnected ? (
                   <>
+                    <Button
+                      variant="default"
+                      onClick={() => handleCreateEventClick()}
+                      className="flex items-center justify-center gap-1 h-6 sm:h-7 lg:h-8 text-xs sm:text-sm px-2 sm:px-3"
+                      size="sm"
+                    >
+                      <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5 lg:w-4 lg:h-4" />
+                      <span className="hidden lg:inline">Novo Evento</span>
+                      <span className="lg:hidden">Novo</span>
+                    </Button>
                     <Badge variant="secondary" className="bg-green-100 text-green-800 text-[9px] sm:text-[10px] lg:text-xs whitespace-nowrap px-1 sm:px-1.5 lg:px-2">
                       <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5" />
                       <span className="hidden lg:inline">Google Calendar Conectado</span>
@@ -705,6 +748,15 @@ export default function Calendario() {
           </div>
         </div>
       </div>
+
+      {/* Modal de Criação de Evento */}
+      <CreateEventModal
+        isOpen={isCreateEventModalOpen}
+        onClose={() => setIsCreateEventModalOpen(false)}
+        onEventCreated={handleEventCreated}
+        initialDate={selectedDateForEvent}
+        initialTime={selectedTimeForEvent}
+      />
     </Layout>
   );
 }

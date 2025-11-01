@@ -17,6 +17,9 @@ interface GoogleCalendarContextType {
   setSelectedCalendars: (calendars: string[]) => void;
   getTokenInfo: () => { isValid: boolean; expiresAt?: Date; timeUntilExpiry?: number };
   forceRefreshToken: () => Promise<boolean>;
+  createEvent: (event: Partial<GoogleCalendarEvent>, calendarId?: string) => Promise<GoogleCalendarEvent>;
+  updateEvent: (eventId: string, event: Partial<GoogleCalendarEvent>, calendarId?: string) => Promise<GoogleCalendarEvent>;
+  deleteEvent: (eventId: string, calendarId?: string) => Promise<boolean>;
 }
 
 const GoogleCalendarContext = createContext<GoogleCalendarContextType | undefined>(undefined);
@@ -390,6 +393,54 @@ export function GoogleCalendarProvider({ children }: { children: React.ReactNode
     }
   };
 
+  // Criar evento
+  const createEvent = async (event: Partial<GoogleCalendarEvent>, calendarId?: string) => {
+    try {
+      setIsLoading(true);
+      const newEvent = await googleCalendarServiceHybrid.createEvent(event, calendarId);
+      // Recarregar eventos após criar
+      await refreshEvents();
+      return newEvent;
+    } catch (error) {
+      console.error('Erro ao criar evento:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Atualizar evento
+  const updateEvent = async (eventId: string, event: Partial<GoogleCalendarEvent>, calendarId?: string) => {
+    try {
+      setIsLoading(true);
+      const updatedEvent = await googleCalendarServiceHybrid.updateEvent(eventId, event, calendarId);
+      // Recarregar eventos após atualizar
+      await refreshEvents();
+      return updatedEvent;
+    } catch (error) {
+      console.error('Erro ao atualizar evento:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Deletar evento
+  const deleteEvent = async (eventId: string, calendarId?: string) => {
+    try {
+      setIsLoading(true);
+      await googleCalendarServiceHybrid.deleteEvent(eventId, calendarId);
+      // Recarregar eventos após deletar
+      await refreshEvents();
+      return true;
+    } catch (error) {
+      console.error('Erro ao deletar evento:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <GoogleCalendarContext.Provider value={{
       isConnected,
@@ -403,6 +454,9 @@ export function GoogleCalendarProvider({ children }: { children: React.ReactNode
       setSelectedCalendars,
       getTokenInfo,
       forceRefreshToken,
+      createEvent,
+      updateEvent,
+      deleteEvent,
     }}>
       {children}
     </GoogleCalendarContext.Provider>
