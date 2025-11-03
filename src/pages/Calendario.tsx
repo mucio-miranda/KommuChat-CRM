@@ -165,8 +165,12 @@ export default function Calendario() {
   };
 
   const getWeekStart = (date: Date) => {
-    // Para visualização de 5 dias, começar no dia atual
-    return new Date(date);
+    const start = new Date(date);
+    // Para visualização de 5 dias (Segunda a Sexta), ajustar para começar na segunda-feira
+    const dayOfWeek = start.getDay(); // 0 = domingo, 1 = segunda, etc.
+    const daysToSubtract = dayOfWeek === 0 ? -6 : dayOfWeek - 1; // Se domingo, volta 6 dias. Caso contrário, subtrai 1 para chegar à segunda
+    start.setDate(date.getDate() - daysToSubtract);
+    return start;
   };
 
   const getWeekEnd = (weekStart: Date) => {
@@ -682,7 +686,22 @@ export default function Calendario() {
                     </div>
                   ))}
                 </div>
-              ) : null}
+              ) : (
+                <>
+                  <div className="hidden md:grid md:grid-cols-5 border-b border-border">
+                    {weekDays.slice(1, 6).map((day) => (
+                      <div key={day} className="py-1 sm:py-1.5 md:py-3 text-center text-[9px] sm:text-[10px] md:text-sm font-medium text-muted-foreground bg-muted/30">
+                        {day}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="md:hidden">
+                    <div className="py-2 text-center text-xs font-medium text-muted-foreground bg-muted/30">
+                      Dias da Semana
+                    </div>
+                  </div>
+                </>
+              )}
 
               {/* Calendar grid */}
               {viewMode === 'month' ? (
