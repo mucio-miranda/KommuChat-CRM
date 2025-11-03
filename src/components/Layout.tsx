@@ -1,6 +1,6 @@
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
-import { Menu, LogOut, User, Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import { Menu, LogOut, User, Eye } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -31,11 +31,7 @@ function SidebarToggleButton() {
       className="hidden lg:flex h-7 w-7"
       title={state === "collapsed" ? "Expandir sidebar" : "Minimizar sidebar"}
     >
-      {state === "collapsed" ? (
-        <ChevronRight className="w-4 h-4" />
-      ) : (
-        <ChevronLeft className="w-4 h-4" />
-      )}
+      <Menu className="w-5 h-5" />
       <span className="sr-only">
         {state === "collapsed" ? "Expandir sidebar" : "Minimizar sidebar"}
       </span>
