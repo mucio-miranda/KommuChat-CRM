@@ -166,10 +166,8 @@ export default function Calendario() {
 
   const getWeekStart = (date: Date) => {
     const start = new Date(date);
-    // Para visualização de 5 dias (Segunda a Sexta), ajustar para começar na segunda-feira
-    const dayOfWeek = start.getDay(); // 0 = domingo, 1 = segunda, etc.
-    const daysToSubtract = dayOfWeek === 0 ? -6 : dayOfWeek - 1; // Se domingo, volta 6 dias. Caso contrário, subtrai 1 para chegar à segunda
-    start.setDate(date.getDate() - daysToSubtract);
+    // Ajustar para que os 5 dias comecem 2 dias antes da data atual
+    start.setDate(date.getDate() - 2);
     return start;
   };
 
@@ -678,30 +676,16 @@ export default function Calendario() {
             {/* Calendar */}
             <div className="bg-card rounded-md sm:rounded-lg md:rounded-2xl shadow-soft border border-border mt-2 md:mt-4 overflow-hidden">
               {/* Week days header */}
-              {viewMode === 'month' ? (
-                <div className="grid grid-cols-7 border-b border-border">
-                  {weekDays.map((day) => (
-                    <div key={day} className="py-1 sm:py-1.5 md:py-3 text-center text-[9px] sm:text-[10px] md:text-sm font-medium text-muted-foreground bg-muted/30">
-                      {day}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <>
-                  <div className="hidden md:grid md:grid-cols-5 border-b border-border">
-                    {weekDays.slice(1, 6).map((day) => (
-                      <div key={day} className="py-1 sm:py-1.5 md:py-3 text-center text-[9px] sm:text-[10px] md:text-sm font-medium text-muted-foreground bg-muted/30">
-                        {day}
-                      </div>
-                    ))}
+              <div className={`grid ${viewMode === 'week' ? 'grid-cols-5' : 'grid-cols-7'} border-b border-border`}>
+                {(viewMode === 'week' 
+                  ? getWeekDays(getWeekStart(currentWeek)).map(day => weekDays[day.getDay()])
+                  : weekDays
+                ).map((day, index) => (
+                  <div key={index} className="py-1 sm:py-1.5 md:py-3 text-center text-[9px] sm:text-[10px] md:text-sm font-medium text-muted-foreground bg-muted/30">
+                    {day}
                   </div>
-                  <div className="md:hidden">
-                    <div className="py-2 text-center text-xs font-medium text-muted-foreground bg-muted/30">
-                      Dias da Semana
-                    </div>
-                  </div>
-                </>
-              )}
+                ))}
+              </div>
 
               {/* Calendar grid */}
               {viewMode === 'month' ? (

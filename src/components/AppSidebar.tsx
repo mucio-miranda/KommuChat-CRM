@@ -75,10 +75,9 @@ export function AppSidebar() {
 
   return (
     <Sidebar className="gradient-kommu border-r border-sidebar-border">
-      <SidebarHeader className="p-4 border-b border-sidebar-border">
+      <SidebarHeader className="h-16 flex items-center px-4 pt-2 pb-0 border-b border-sidebar-border">
         <Logo 
-          size="md" 
-          className="w-full"
+          size="md"
         />
       </SidebarHeader>
 

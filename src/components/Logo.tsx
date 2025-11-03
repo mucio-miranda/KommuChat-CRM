@@ -7,7 +7,7 @@ interface LogoProps {
 
 const sizeClasses = {
   sm: "w-16 h-6",
-  md: "w-24 h-8", 
+  md: "w-40 h-14", 
   lg: "w-32 h-12",
   xl: "w-40 h-16"
 };
@@ -17,7 +17,7 @@ export function Logo({
   className
 }: LogoProps) {
   return (
-    <div className={cn("flex items-center justify-center", sizeClasses[size], className)}>
+    <div className={cn("flex items-center justify-start", sizeClasses[size], className)}>
       <img 
         src="/kommuchat_logo.svg" 
         alt="KommuChat Logo" 
