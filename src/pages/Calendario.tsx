@@ -147,16 +147,16 @@ export default function Calendario() {
   const navigateWeek = (direction: 'prev' | 'next') => {
     const newWeek = new Date(currentWeek);
     if (direction === 'prev') {
-      newWeek.setDate(newWeek.getDate() - 7);
+      newWeek.setDate(newWeek.getDate() - 5);
     } else {
-      newWeek.setDate(newWeek.getDate() + 7);
+      newWeek.setDate(newWeek.getDate() + 5);
     }
     setCurrentWeek(newWeek);
   };
 
   const getWeekDays = (weekStart: Date) => {
     const days = [];
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 5; i++) {
       const day = new Date(weekStart);
       day.setDate(weekStart.getDate() + i);
       days.push(day);
@@ -165,14 +165,13 @@ export default function Calendario() {
   };
 
   const getWeekStart = (date: Date) => {
-    const start = new Date(date);
-    start.setDate(date.getDate() - date.getDay());
-    return start;
+    // Para visualização de 5 dias, começar no dia atual
+    return new Date(date);
   };
 
   const getWeekEnd = (weekStart: Date) => {
     const end = new Date(weekStart);
-    end.setDate(weekStart.getDate() + 6);
+    end.setDate(weekStart.getDate() + 4);
     return end;
   };
 
@@ -480,8 +479,8 @@ export default function Calendario() {
             })}
           </div>
 
-          {/* Desktop - 7 dias */}
-          <div className="hidden md:grid md:grid-cols-7 gap-1">
+          {/* Desktop - 5 dias */}
+          <div className="hidden md:grid md:grid-cols-5 gap-1">
             {weekDates.map((day, index) => {
               const appointments = getAppointmentsForDate(day);
               const isToday = day.toDateString() === today.toDateString();
@@ -598,7 +597,7 @@ export default function Calendario() {
                     className="h-6 sm:h-7 lg:h-8 px-2 sm:px-3"
                   >
                     <CalendarDays className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-1" />
-                    <span className="hidden sm:inline text-xs sm:text-sm">Semana</span>
+                    <span className="hidden sm:inline text-xs sm:text-sm">Dias</span>
                   </Button>
                 </div>
 
@@ -675,13 +674,15 @@ export default function Calendario() {
             {/* Calendar */}
             <div className="bg-card rounded-md sm:rounded-lg md:rounded-2xl shadow-soft border border-border mt-2 md:mt-4 overflow-hidden">
               {/* Week days header */}
-              <div className="grid grid-cols-7 border-b border-border">
-                {weekDays.map((day) => (
-                  <div key={day} className="py-1 sm:py-1.5 md:py-3 text-center text-[9px] sm:text-[10px] md:text-sm font-medium text-muted-foreground bg-muted/30">
-                    {day}
-                  </div>
-                ))}
-              </div>
+              {viewMode === 'month' ? (
+                <div className="grid grid-cols-7 border-b border-border">
+                  {weekDays.map((day) => (
+                    <div key={day} className="py-1 sm:py-1.5 md:py-3 text-center text-[9px] sm:text-[10px] md:text-sm font-medium text-muted-foreground bg-muted/30">
+                      {day}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
 
               {/* Calendar grid */}
               {viewMode === 'month' ? (
