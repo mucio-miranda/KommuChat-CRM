@@ -147,16 +147,16 @@ export default function Calendario() {
   const navigateWeek = (direction: 'prev' | 'next') => {
     const newWeek = new Date(currentWeek);
     if (direction === 'prev') {
-      newWeek.setDate(newWeek.getDate() - 5);
+      newWeek.setDate(newWeek.getDate() - 7);
     } else {
-      newWeek.setDate(newWeek.getDate() + 5);
+      newWeek.setDate(newWeek.getDate() + 7);
     }
     setCurrentWeek(newWeek);
   };
 
   const getWeekDays = (weekStart: Date) => {
     const days = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 7; i++) {
       const day = new Date(weekStart);
       day.setDate(weekStart.getDate() + i);
       days.push(day);
@@ -166,14 +166,13 @@ export default function Calendario() {
 
   const getWeekStart = (date: Date) => {
     const start = new Date(date);
-    // Ajustar para que os 5 dias comecem 2 dias antes da data atual
-    start.setDate(date.getDate() - 2);
+    start.setDate(date.getDate() - date.getDay());
     return start;
   };
 
   const getWeekEnd = (weekStart: Date) => {
     const end = new Date(weekStart);
-    end.setDate(weekStart.getDate() + 4);
+    end.setDate(weekStart.getDate() + 6);
     return end;
   };
 
@@ -481,8 +480,8 @@ export default function Calendario() {
             })}
           </div>
 
-          {/* Desktop - 5 dias */}
-          <div className="hidden md:grid md:grid-cols-5 gap-1">
+          {/* Desktop - 7 dias */}
+          <div className="hidden md:grid md:grid-cols-7 gap-1">
             {weekDates.map((day, index) => {
               const appointments = getAppointmentsForDate(day);
               const isToday = day.toDateString() === today.toDateString();
@@ -558,6 +557,17 @@ export default function Calendario() {
                 onSearch={setSearchQuery}
                 appointments={getAllFilteredAppointments}
               />
+              {isConnected && (
+                <Button
+                  variant="default"
+                  onClick={() => handleCreateEventClick()}
+                  className="flex items-center justify-center gap-1 h-8 w-full mt-4 text-sm px-3"
+                  size="sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  Novo Evento
+                </Button>
+              )}
             </div>
             
             {/* Conteúdo principal */}
@@ -599,7 +609,7 @@ export default function Calendario() {
                     className="h-6 sm:h-7 lg:h-8 px-2 sm:px-3"
                   >
                     <CalendarDays className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-1" />
-                    <span className="hidden sm:inline text-xs sm:text-sm">Dias</span>
+                    <span className="hidden sm:inline text-xs sm:text-sm">Semana</span>
                   </Button>
                 </div>
 
@@ -630,19 +640,19 @@ export default function Calendario() {
                 </div>
               </div>
 
-              {/* Status da conexão Google Calendar e Botão Criar Evento */}
+              {/* Status da conexão Google Calendar */}
               <div className="flex items-center gap-1 sm:gap-1.5 justify-center md:justify-end">
                 {isConnected ? (
                   <>
+                    {/* Botão Novo Evento - Mobile/Tablet (Desktop está na sidebar) */}
                     <Button
                       variant="default"
                       onClick={() => handleCreateEventClick()}
-                      className="flex items-center justify-center gap-1 h-6 sm:h-7 lg:h-8 text-xs sm:text-sm px-2 sm:px-3"
+                      className="flex items-center justify-center gap-1 h-6 sm:h-7 lg:hidden text-xs sm:text-sm px-2 sm:px-3"
                       size="sm"
                     >
                       <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5 lg:w-4 lg:h-4" />
-                      <span className="hidden lg:inline">Novo Evento</span>
-                      <span className="lg:hidden">Novo</span>
+                      <span>Novo</span>
                     </Button>
                     <Badge variant="secondary" className="bg-green-100 text-green-800 text-[9px] sm:text-[10px] lg:text-xs whitespace-nowrap px-1 sm:px-1.5 lg:px-2">
                       <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5" />
@@ -676,12 +686,9 @@ export default function Calendario() {
             {/* Calendar */}
             <div className="bg-card rounded-md sm:rounded-lg md:rounded-2xl shadow-soft border border-border mt-2 md:mt-4 overflow-hidden">
               {/* Week days header */}
-              <div className={`grid ${viewMode === 'week' ? 'grid-cols-5' : 'grid-cols-7'} border-b border-border`}>
-                {(viewMode === 'week' 
-                  ? getWeekDays(getWeekStart(currentWeek)).map(day => weekDays[day.getDay()])
-                  : weekDays
-                ).map((day, index) => (
-                  <div key={index} className="py-1 sm:py-1.5 md:py-3 text-center text-[9px] sm:text-[10px] md:text-sm font-medium text-muted-foreground bg-muted/30">
+              <div className="grid grid-cols-7 border-b border-border">
+                {weekDays.map((day) => (
+                  <div key={day} className="py-1 sm:py-1.5 md:py-3 text-center text-[9px] sm:text-[10px] md:text-sm font-medium text-muted-foreground bg-muted/30">
                     {day}
                   </div>
                 ))}
