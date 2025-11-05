@@ -472,7 +472,7 @@ export default function Pacientes() {
                 <SelectContent>
                   <SelectItem value="todos" className="text-xs sm:text-sm">Todos</SelectItem>
                   <SelectItem value="novo" className="text-xs sm:text-sm">Novo</SelectItem>
-                  <SelectItem value="followup" className="text-xs sm:text-sm">Follow-up</SelectItem>
+                  <SelectItem value="followup" className="text-xs sm:text-sm">Em atendimento</SelectItem>
                   <SelectItem value="topoucall" className="text-xs sm:text-sm">Agendado</SelectItem>
                   <SelectItem value="atendimentofinal" className="text-xs sm:text-sm">Concluído</SelectItem>
                   <SelectItem value="cancelou_agendamento" className="text-xs sm:text-sm">Cancelou Agendamento</SelectItem>
