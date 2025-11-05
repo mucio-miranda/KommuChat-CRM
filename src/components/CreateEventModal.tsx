@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Calendar, X, Save, Clock, MapPin, Users, FileText } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Calendar, X, Save, Clock, MapPin, Users, FileText, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,6 +27,7 @@ interface CreateEventModalProps {
   onEventCreated?: () => void;
   initialDate?: Date;
   initialTime?: string;
+  existingEvents?: GoogleCalendarEvent[];
 }
 
 export function CreateEventModal({
@@ -35,6 +36,7 @@ export function CreateEventModal({
   onEventCreated,
   initialDate,
   initialTime,
+  existingEvents = [],
 }: CreateEventModalProps) {
   const [formData, setFormData] = useState({
     title: "",
@@ -51,6 +53,10 @@ export function CreateEventModal({
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { createEvent, isConnected } = useGoogleCalendar();
+  const startDateRef = useRef<HTMLInputElement>(null);
+  const startTimeRef = useRef<HTMLInputElement>(null);
+  const endDateRef = useRef<HTMLInputElement>(null);
+  const endTimeRef = useRef<HTMLInputElement>(null);
 
   // Preencher data/hora inicial se fornecida
   useEffect(() => {
@@ -150,6 +156,43 @@ export function CreateEventModal({
         toast({
           title: "Erro",
           description: "A hora de término deve ser posterior à hora de início",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Verificar se há conflito com eventos existentes
+      const hasConflict = existingEvents.some((event) => {
+        if (!event.start || !event.end) return false;
+
+        const existingStart = event.start.dateTime 
+          ? new Date(event.start.dateTime) 
+          : event.start.date 
+          ? new Date(event.start.date)
+          : null;
+        
+        const existingEnd = event.end.dateTime 
+          ? new Date(event.end.dateTime) 
+          : event.end.date 
+          ? new Date(event.end.date)
+          : null;
+
+        if (!existingStart || !existingEnd) return false;
+
+        // Verificar se há sobreposição de horários
+        // Conflito ocorre se: novo evento começa antes do evento existente terminar
+        // E novo evento termina depois do evento existente começar
+        const conflicts = 
+          (startDateTime < existingEnd && endDateTime > existingStart);
+
+        return conflicts;
+      });
+
+      if (hasConflict) {
+        toast({
+          title: "Erro",
+          description: "Já existe um evento neste horário. Escolha outro horário.",
           variant: "destructive",
         });
         setIsLoading(false);
@@ -271,25 +314,49 @@ export function CreateEventModal({
                 <Clock className="w-4 h-4" />
                 Data Início *
               </Label>
-              <Input
-                id="startDate"
-                type="date"
-                value={formData.startDate}
-                onChange={(e) => handleInputChange("startDate", e.target.value)}
-                required
-                disabled={isLoading}
-              />
+              <div className="relative">
+                <Input
+                  ref={startDateRef}
+                  id="startDate"
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e) => handleInputChange("startDate", e.target.value)}
+                  required
+                  disabled={isLoading}
+                  className="pr-10"
+                />
+                <ChevronDown 
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground transition-colors" 
+                  onClick={() => {
+                    if (startDateRef.current) {
+                      startDateRef.current.showPicker?.() || startDateRef.current.click();
+                    }
+                  }}
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="startTime">Hora Início *</Label>
-              <Input
-                id="startTime"
-                type="time"
-                value={formData.startTime}
-                onChange={(e) => handleInputChange("startTime", e.target.value)}
-                required
-                disabled={isLoading}
-              />
+              <div className="relative">
+                <Input
+                  ref={startTimeRef}
+                  id="startTime"
+                  type="time"
+                  value={formData.startTime}
+                  onChange={(e) => handleInputChange("startTime", e.target.value)}
+                  required
+                  disabled={isLoading}
+                  className="pr-10"
+                />
+                <ChevronDown 
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground transition-colors" 
+                  onClick={() => {
+                    if (startTimeRef.current) {
+                      startTimeRef.current.showPicker?.() || startTimeRef.current.click();
+                    }
+                  }}
+                />
+              </div>
             </div>
           </div>
 
@@ -320,23 +387,47 @@ export function CreateEventModal({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="endDate">Data Término</Label>
-              <Input
-                id="endDate"
-                type="date"
-                value={formData.endDate}
-                onChange={(e) => handleInputChange("endDate", e.target.value)}
-                disabled={isLoading}
-              />
+              <div className="relative">
+                <Input
+                  ref={endDateRef}
+                  id="endDate"
+                  type="date"
+                  value={formData.endDate}
+                  onChange={(e) => handleInputChange("endDate", e.target.value)}
+                  disabled={isLoading}
+                  className="pr-10"
+                />
+                <ChevronDown 
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground transition-colors" 
+                  onClick={() => {
+                    if (endDateRef.current) {
+                      endDateRef.current.showPicker?.() || endDateRef.current.click();
+                    }
+                  }}
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="endTime">Hora Término</Label>
-              <Input
-                id="endTime"
-                type="time"
-                value={formData.endTime}
-                onChange={(e) => handleInputChange("endTime", e.target.value)}
-                disabled={isLoading}
-              />
+              <div className="relative">
+                <Input
+                  ref={endTimeRef}
+                  id="endTime"
+                  type="time"
+                  value={formData.endTime}
+                  onChange={(e) => handleInputChange("endTime", e.target.value)}
+                  disabled={isLoading}
+                  className="pr-10"
+                />
+                <ChevronDown 
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground transition-colors" 
+                  onClick={() => {
+                    if (endTimeRef.current) {
+                      endTimeRef.current.showPicker?.() || endTimeRef.current.click();
+                    }
+                  }}
+                />
+              </div>
             </div>
           </div>
 

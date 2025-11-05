@@ -767,6 +767,7 @@ export default function Calendario() {
         onEventCreated={handleEventCreated}
         initialDate={selectedDateForEvent}
         initialTime={selectedTimeForEvent}
+        existingEvents={events}
       />
     </Layout>
   );
