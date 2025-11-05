@@ -13,7 +13,7 @@ const statusConfig = {
     className: "bg-accent/10 text-accent border-accent/20"
   },
   followup: {
-    label: "Follow-up",
+    label: "Em atendimento",
     className: "bg-primary/10 text-primary border-primary/20"
   },
   topoucall: {
