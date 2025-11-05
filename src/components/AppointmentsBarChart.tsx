@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { BarChart3 } from "lucide-react";
 import {
@@ -8,9 +8,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useGoogleCalendar } from "@/contexts/GoogleCalendarContextSimple";
+import { googleCalendarServiceHybrid } from "@/lib/google-calendar-hybrid";
 
 interface AppointmentsBarChartProps {
-  rows: any[] | null;
+  rows?: any[] | null; // Mantido para compatibilidade, mas não será usado
 }
 
 const weekDaysShort = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -18,10 +20,162 @@ const weekDaysShort = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
   const [selectedPeriod, setSelectedPeriod] = useState("week");
   const [hoveredBar, setHoveredBar] = useState<number | null>(null);
+  const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const { isConnected, selectedCalendars } = useGoogleCalendar();
 
-  // Processar dados reais dos agendamentos
+  // Função para buscar eventos do Google Calendar com período específico
+  const fetchCalendarEvents = async (period: "week" | "month" | "year") => {
+    if (!isConnected) {
+      console.log('❌ Google Calendar não conectado');
+      setCalendarEvents([]);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Verificar e renovar token se necessário
+      const tokenValid = await googleCalendarServiceHybrid.ensureValidToken();
+      if (!tokenValid) {
+        console.error('❌ Token inválido');
+        setCalendarEvents([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // Obter token de acesso
+      const tokensData = localStorage.getItem('google_calendar_tokens');
+      if (!tokensData) {
+        throw new Error('Token de acesso não encontrado');
+      }
+
+      const tokens = JSON.parse(tokensData);
+      const accessToken = tokens.access_token;
+
+      if (!accessToken) {
+        throw new Error('Token de acesso inválido');
+      }
+
+      // Calcular período de busca baseado no período selecionado
+      const now = new Date();
+      const nowBrasil = new Date(now.toLocaleString("en-US", {timeZone: "America/Sao_Paulo"}));
+      
+      let timeMin: Date;
+      let timeMax: Date;
+
+      if (period === "week") {
+        // Semana: início da semana atual até o fim
+        const inicioSemana = new Date(nowBrasil);
+        inicioSemana.setDate(nowBrasil.getDate() - nowBrasil.getDay());
+        inicioSemana.setHours(0, 0, 0, 0);
+        timeMin = inicioSemana;
+
+        const fimSemana = new Date(inicioSemana);
+        fimSemana.setDate(inicioSemana.getDate() + 6);
+        fimSemana.setHours(23, 59, 59, 999);
+        timeMax = fimSemana;
+      } else if (period === "month") {
+        // Mês: 4 meses para trás + atual + 1 futuro = 6 meses
+        const inicio = new Date(nowBrasil.getFullYear(), nowBrasil.getMonth() - 4, 1);
+        inicio.setHours(0, 0, 0, 0);
+        timeMin = inicio;
+
+        const fim = new Date(nowBrasil.getFullYear(), nowBrasil.getMonth() + 2, 0);
+        fim.setHours(23, 59, 59, 999);
+        timeMax = fim;
+      } else {
+        // Ano: últimos 4 anos
+        const inicio = new Date(nowBrasil.getFullYear() - 3, 0, 1);
+        inicio.setHours(0, 0, 0, 0);
+        timeMin = inicio;
+
+        const fim = new Date(nowBrasil.getFullYear(), 11, 31);
+        fim.setHours(23, 59, 59, 999);
+        timeMax = fim;
+      }
+
+      // Buscar lista de calendários
+      const calendarsResponse = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!calendarsResponse.ok) {
+        throw new Error(`Erro ao buscar calendários: ${calendarsResponse.status}`);
+      }
+
+      const calendarsData = await calendarsResponse.json();
+      const calendars = calendarsData.items || [];
+
+      // Filtrar apenas calendários selecionados (ou todos se nenhum selecionado)
+      const calendarsToFetch = selectedCalendars.length > 0
+        ? calendars.filter((cal: any) => selectedCalendars.includes(cal.id))
+        : calendars;
+
+      // Buscar eventos de cada calendário
+      const allEvents: any[] = [];
+      const promises = calendarsToFetch.map(async (calendar: any) => {
+        try {
+          const params = new URLSearchParams({
+            timeMin: timeMin.toISOString(),
+            timeMax: timeMax.toISOString(),
+            maxResults: '2500', // Aumentar para garantir que pegamos todos os eventos
+            singleEvents: 'true',
+            orderBy: 'startTime',
+          });
+
+          const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.id)}/events?${params}`;
+          
+          const response = await fetch(url, {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            return data.items || [];
+          } else {
+            console.warn(`⚠️ Erro ao buscar eventos da agenda ${calendar.summary}: ${response.status}`);
+            return [];
+          }
+        } catch (error) {
+          console.warn(`⚠️ Erro ao buscar eventos da agenda ${calendar.summary}:`, error);
+          return [];
+        }
+      });
+
+      const results = await Promise.all(promises);
+      results.forEach(events => {
+        allEvents.push(...events);
+      });
+
+      console.log(`✅ ${allEvents.length} eventos encontrados do Google Calendar`);
+      setCalendarEvents(allEvents);
+    } catch (error) {
+      console.error('❌ Erro ao buscar eventos do Google Calendar:', error);
+      setCalendarEvents([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Buscar eventos quando o período ou conexão mudar
+  useEffect(() => {
+    if (isConnected) {
+      fetchCalendarEvents(selectedPeriod as "week" | "month" | "year");
+    } else {
+      setCalendarEvents([]);
+    }
+  }, [selectedPeriod, isConnected, selectedCalendars]);
+
+  // Processar dados dos eventos do Google Calendar
   const chartData = useMemo(() => {
-    if (!rows || rows.length === 0) {
+    // Se não estiver conectado, retornar dados vazios
+    if (!isConnected || calendarEvents.length === 0) {
       // Retornar dados vazios se não houver rows
       if (selectedPeriod === "week") {
         return weekDaysShort.map(day => ({ day, count: 0 }));
@@ -34,7 +188,7 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
     }
 
     if (selectedPeriod === "week") {
-      // Lógica para semana (mantida como estava)
+      // Lógica para semana
       const hoje = new Date();
       const hojeBrasil = new Date(hoje.toLocaleString("en-US", {timeZone: "America/Sao_Paulo"}));
       
@@ -48,19 +202,20 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
 
       const counts = new Array(7).fill(0);
 
-      rows.forEach(row => {
-        if (!row.data_agendamento) return;
+      calendarEvents.forEach(event => {
+        const eventStart = event.start?.dateTime || event.start?.date;
+        if (!eventStart) return;
 
         try {
-          const dataAgendamento = new Date(row.data_agendamento);
-          const dataAgendamentoBrasil = new Date(dataAgendamento.toLocaleString("en-US", {timeZone: "America/Sao_Paulo"}));
+          const dataEvento = new Date(eventStart);
+          const dataEventoBrasil = new Date(dataEvento.toLocaleString("en-US", {timeZone: "America/Sao_Paulo"}));
           
-          if (dataAgendamentoBrasil >= inicioSemana && dataAgendamentoBrasil <= fimSemana) {
-            const dayOfWeek = dataAgendamentoBrasil.getDay();
+          if (dataEventoBrasil >= inicioSemana && dataEventoBrasil <= fimSemana) {
+            const dayOfWeek = dataEventoBrasil.getDay();
             counts[dayOfWeek]++;
           }
         } catch (error) {
-          console.error('Erro ao processar data:', error);
+          console.error('Erro ao processar data do evento:', error);
         }
       });
 
@@ -69,28 +224,28 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
         count: counts[index]
       }));
     } else if (selectedPeriod === "month") {
-      // Lógica para mês - mostrar apenas 6 meses (atual + 1 futuro + 4 passados)
+      // Lógica para mês - mostrar apenas 6 meses
       const { monthLabels, monthMapping } = getLast6Months();
       const counts = new Array(6).fill(0);
 
-      rows.forEach(row => {
-        if (!row.data_agendamento) return;
+      calendarEvents.forEach(event => {
+        const eventStart = event.start?.dateTime || event.start?.date;
+        if (!eventStart) return;
 
         try {
-          const dataAgendamento = new Date(row.data_agendamento);
-          const dataAgendamentoBrasil = new Date(dataAgendamento.toLocaleString("en-US", {timeZone: "America/Sao_Paulo"}));
+          const dataEvento = new Date(eventStart);
+          const dataEventoBrasil = new Date(dataEvento.toLocaleString("en-US", {timeZone: "America/Sao_Paulo"}));
           
-          const year = dataAgendamentoBrasil.getFullYear();
-          const month = dataAgendamentoBrasil.getMonth();
+          const year = dataEventoBrasil.getFullYear();
+          const month = dataEventoBrasil.getMonth();
           const monthKey = `${year}-${month}`;
           
-          // Verificar se o mês está no range de 6 meses
           const monthIndex = monthMapping[monthKey];
           if (monthIndex !== undefined) {
             counts[monthIndex]++;
           }
         } catch (error) {
-          console.error('Erro ao processar data:', error);
+          console.error('Erro ao processar data do evento:', error);
         }
       });
 
@@ -104,23 +259,22 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
       const counts = new Array(4).fill(0);
       const currentYear = new Date().getFullYear();
 
-      rows.forEach(row => {
-        if (!row.data_agendamento) return;
+      calendarEvents.forEach(event => {
+        const eventStart = event.start?.dateTime || event.start?.date;
+        if (!eventStart) return;
 
         try {
-          const dataAgendamento = new Date(row.data_agendamento);
-          const dataAgendamentoBrasil = new Date(dataAgendamento.toLocaleString("en-US", {timeZone: "America/Sao_Paulo"}));
+          const dataEvento = new Date(eventStart);
+          const dataEventoBrasil = new Date(dataEvento.toLocaleString("en-US", {timeZone: "America/Sao_Paulo"}));
           
-          const year = dataAgendamentoBrasil.getFullYear();
+          const year = dataEventoBrasil.getFullYear();
           
-          // Verificar se o ano está nos últimos 4 anos
-          // Mapear: 2021->0, 2022->1, 2023->2, 2024->3
           const yearIndex = year - (currentYear - 3);
           if (yearIndex >= 0 && yearIndex < 4) {
             counts[yearIndex]++;
           }
         } catch (error) {
-          console.error('Erro ao processar data:', error);
+          console.error('Erro ao processar data do evento:', error);
         }
       });
 
@@ -129,7 +283,7 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
         count: counts[index]
       }));
     }
-  }, [rows, selectedPeriod]);
+  }, [calendarEvents, selectedPeriod, isConnected]);
 
   // Função para obter os últimos 6 meses (4 passados + atual + 1 futuro)
   function getLast6Months() {
@@ -175,38 +329,58 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
     return chartData.reduce((sum, item) => sum + item.count, 0);
   }, [chartData]);
 
-  // Filtrar e ordenar pacientes com agendamentos
-  const recentPatients = useMemo(() => {
-    if (!rows || rows.length === 0) return [];
+  // Filtrar e ordenar eventos pelos mais próximos da data atual
+  const recentEvents = useMemo(() => {
+    if (!isConnected || calendarEvents.length === 0) return [];
     
-    return rows
-      .filter(row => {
-        // Apenas pacientes com agendamento e nome
-        if (!row.data_agendamento || !row.nome) return false;
+    const now = new Date();
+    
+    return calendarEvents
+      .filter(event => {
+        const eventStart = event.start?.dateTime || event.start?.date;
+        if (!eventStart) return false;
         
-        // Filtrar pacientes com ano "9999"
         try {
-          const dataAgendamento = new Date(row.data_agendamento);
-          const ano = dataAgendamento.getFullYear();
-          return ano !== 9999;
-        } catch (error) {
-          console.error('Erro ao processar data:', error);
+          const dataEvento = new Date(eventStart);
+          return !isNaN(dataEvento.getTime());
+        } catch {
           return false;
         }
       })
       .sort((a, b) => {
-        // Ordenar por data_agendamento (mais recente primeiro)
-        const dateA = new Date(a.data_agendamento);
-        const dateB = new Date(b.data_agendamento);
-        return dateB.getTime() - dateA.getTime();
+        const dateA = new Date(a.start?.dateTime || a.start?.date || 0);
+        const dateB = new Date(b.start?.dateTime || b.start?.date || 0);
+        
+        const nowTime = now.getTime();
+        const timeA = dateA.getTime();
+        const timeB = dateB.getTime();
+        
+        const isAFuture = timeA >= nowTime;
+        const isBFuture = timeB >= nowTime;
+        
+        // Priorizar eventos futuros sobre passados
+        if (isAFuture && !isBFuture) return -1; // A é futuro, B é passado -> A vem primeiro
+        if (!isAFuture && isBFuture) return 1;  // A é passado, B é futuro -> B vem primeiro
+        
+        // Se ambos são futuros ou ambos são passados, ordenar por proximidade
+        if (isAFuture && isBFuture) {
+          // Ambos futuros: ordenar do mais próximo ao mais distante (crescente)
+          return timeA - timeB;
+        } else {
+          // Ambos passados: ordenar do mais recente ao mais antigo (decrescente)
+          return timeB - timeA;
+        }
       })
-      .slice(0, 10); // Limitar a 10 pacientes mais recentes
-  }, [rows]);
+      .slice(0, 10); // Limitar a 10 eventos mais próximos
+  }, [calendarEvents, isConnected]);
 
-  // Função para formatar a data do agendamento
-  const formatAppointmentDate = (dateString: string): string => {
+  // Função para formatar a data do evento
+  const formatEventDate = (event: any): string => {
     try {
-      const date = new Date(dateString);
+      const eventStart = event.start?.dateTime || event.start?.date;
+      if (!eventStart) return "Data inválida";
+      
+      const date = new Date(eventStart);
       return date.toLocaleString('pt-BR', {
         day: '2-digit',
         month: '2-digit',
@@ -217,18 +391,6 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
     } catch {
       return "Data inválida";
     }
-  };
-
-  // Função para formatar o telefone
-  const formatPhone = (phone: string): string => {
-    if (!phone) return "N/A";
-    const cleanPhone = phone.replace(/\D/g, '');
-    if (cleanPhone.length === 11) {
-      return `(${cleanPhone.slice(0,2)}) ${cleanPhone.slice(2,7)}-${cleanPhone.slice(7)}`;
-    } else if (cleanPhone.length === 10) {
-      return `(${cleanPhone.slice(0,2)}) ${cleanPhone.slice(2,6)}-${cleanPhone.slice(6)}`;
-    }
-    return phone;
   };
 
   // Encontrar o valor máximo para normalizar as barras
@@ -262,7 +424,8 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
           <div>
             <h2 className="text-lg font-bold text-foreground">Agendamentos</h2>
             <p className="text-xs text-muted-foreground">
-              {selectedPeriod === "week" ? "Por dia da semana" : 
+              {!isConnected ? "Conecte-se ao Google Calendar" :
+               selectedPeriod === "week" ? "Por dia da semana" : 
                selectedPeriod === "month" ? "Por mês" : "Por ano"}
             </p>
           </div>
@@ -280,7 +443,23 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
         </Select>
       </div>
 
+      {/* Loading state */}
+      {isLoading && (
+        <div className="text-center py-8 text-sm text-muted-foreground">
+          Carregando eventos do Google Calendar...
+        </div>
+      )}
+
+      {/* Not connected state */}
+      {!isConnected && !isLoading && (
+        <div className="text-center py-8 text-sm text-muted-foreground">
+          Conecte-se ao Google Calendar para ver os agendamentos
+        </div>
+      )}
+
       {/* Vertical Bar Chart */}
+      {isConnected && !isLoading && (
+        <>
       <div className="relative h-64 mb-4 bg-gray-50 rounded-lg p-2">
         <div className="flex items-end justify-between h-full gap-2 px-2">
           {chartData.map((item, index) => {
@@ -344,29 +523,31 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
           </span>
         </div>
 
-        {/* Lista dos últimos pacientes com agendamento */}
-        {recentPatients.length > 0 && (
+        {/* Lista dos últimos eventos */}
+        {recentEvents.length > 0 && (
           <div className="mt-4">
             <h4 className="text-sm font-semibold text-foreground mb-3">
               Últimos agendamentos
             </h4>
             <div className="space-y-2">
-              {recentPatients.map((patient, index) => (
+              {recentEvents.map((event, index) => (
                 <div
-                  key={`${patient.id || index}-${patient.data_agendamento}`}
+                  key={event.id || index}
                   className="flex items-center justify-between p-2 bg-gray-50 rounded-lg text-xs"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-foreground truncate">
-                      {patient.nome}
+                      {event.summary || 'Sem título'}
                     </div>
-                    <div className="text-muted-foreground">
-                      {formatPhone(patient.telefone || '')}
-                    </div>
+                    {event.description && (
+                      <div className="text-muted-foreground truncate">
+                        {event.description}
+                      </div>
+                    )}
                   </div>
                   <div className="text-right ml-2">
                     <div className="font-medium text-foreground">
-                      {formatAppointmentDate(patient.data_agendamento)}
+                      {formatEventDate(event)}
                     </div>
                   </div>
                 </div>
@@ -375,6 +556,8 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
           </div>
         )}
       </div>
+        </>
+      )}
     </Card>
   );
 }
