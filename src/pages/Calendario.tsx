@@ -469,7 +469,7 @@ export default function Calendario() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleCreateEventClick(day, undefined)}
-                      className="w-full mt-1.5 h-6 text-[9px] text-muted-foreground hover:text-foreground"
+                      className="w-full mt-1.5 h-6 text-[9px] text-muted-foreground hover:text-white hover:bg-primary"
                     >
                       <Plus className="w-3 h-3 mr-1" />
                       Novo evento
@@ -517,7 +517,7 @@ export default function Calendario() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleCreateEventClick(day, undefined)}
-                      className="w-full mt-2 text-xs text-muted-foreground hover:text-foreground"
+                      className="w-full mt-2 text-xs text-muted-foreground hover:text-white hover:bg-primary"
                     >
                       <Plus className="w-3 h-3 mr-1" />
                       Novo evento
