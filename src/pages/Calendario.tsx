@@ -22,6 +22,7 @@ const monthNames = [
 const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 type ViewMode = 'month' | 'week';
+type ModalMode = 'create' | 'edit';
 
 export default function Calendario() {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
@@ -36,6 +37,8 @@ export default function Calendario() {
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
   const [selectedDateForEvent, setSelectedDateForEvent] = useState<Date | undefined>();
   const [selectedTimeForEvent, setSelectedTimeForEvent] = useState<string | undefined>();
+  const [modalMode, setModalMode] = useState<ModalMode>('create');
+  const [selectedEvent, setSelectedEvent] = useState<GoogleCalendarEvent | null>(null);
   const { isConnected, isLoading, events, connect, disconnect, refreshEvents, forceRefreshToken, getCalendarList } = useGoogleCalendar();
   const { user } = useAuth();
 
@@ -220,8 +223,18 @@ export default function Calendario() {
   };
 
   const handleCreateEventClick = (date?: Date, time?: string) => {
+    setModalMode('create');
+    setSelectedEvent(null);
     setSelectedDateForEvent(date);
     setSelectedTimeForEvent(time);
+    setIsCreateEventModalOpen(true);
+  };
+
+  const handleEditEventClick = (event: GoogleCalendarEvent) => {
+    setModalMode('edit');
+    setSelectedEvent(event);
+    setSelectedDateForEvent(undefined);
+    setSelectedTimeForEvent(undefined);
     setIsCreateEventModalOpen(true);
   };
 
@@ -393,7 +406,16 @@ export default function Calendario() {
           </div>
           <div className="space-y-0.5 overflow-hidden">
             {appointments.slice(0, 1).map((apt, index) => (
-              <div key={`${apt.id}-${index}`} className={`text-[8px] sm:text-[9px] md:text-[10px] p-0.5 rounded ${apt.color} truncate leading-tight`}>
+              <div
+                key={`${apt.id}-${index}`}
+                className={`text-[8px] sm:text-[9px] md:text-[10px] p-0.5 rounded ${apt.color} truncate leading-tight`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  if (apt.googleEvent) {
+                    handleEditEventClick(apt.googleEvent);
+                  }
+                }}
+              >
                 <div className="font-medium truncate">{apt.time}</div>
                 <div className="truncate hidden md:block">{apt.title}</div>
               </div>
@@ -454,7 +476,16 @@ export default function Calendario() {
                   {/* Appointments */}
                   <div className="space-y-1.5">
                     {appointments.map((apt) => (
-                      <div key={apt.id} className={`p-1.5 rounded ${apt.color} cursor-pointer hover:opacity-80 transition-opacity shadow-sm`}>
+                      <div
+                        key={apt.id}
+                        className={`p-1.5 rounded ${apt.color} cursor-pointer hover:opacity-80 transition-opacity shadow-sm`}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          if (apt.googleEvent) {
+                            handleEditEventClick(apt.googleEvent);
+                          }
+                        }}
+                      >
                         <div className="font-semibold text-[10px] mb-0.5 truncate">{apt.time}</div>
                         <div className="font-medium text-[10px] mb-0.5 truncate">{apt.title}</div>
                         <div className="text-[9px] opacity-75 truncate">{apt.patient}</div>
@@ -469,7 +500,7 @@ export default function Calendario() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleCreateEventClick(day, undefined)}
-                      className="w-full mt-1.5 h-6 text-[9px] text-muted-foreground hover:text-white hover:bg-primary"
+                      className="w-full mt-1.5 h-6 text-[9px] text-muted-foreground hover:text-white hover:bg-primary border border-[#0000001A]"
                     >
                       <Plus className="w-3 h-3 mr-1" />
                       Novo evento
@@ -502,7 +533,16 @@ export default function Calendario() {
                   {/* Appointments */}
                   <div className="space-y-2 lg:space-y-3">
                     {appointments.map((apt) => (
-                      <div key={apt.id} className={`text-sm p-2 lg:p-3 rounded ${apt.color} cursor-pointer hover:opacity-80 transition-opacity shadow-sm`}>
+                      <div
+                        key={apt.id}
+                        className={`text-sm p-2 lg:p-3 rounded ${apt.color} cursor-pointer hover:opacity-80 transition-opacity shadow-sm`}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          if (apt.googleEvent) {
+                            handleEditEventClick(apt.googleEvent);
+                          }
+                        }}
+                      >
                         <div className="font-semibold text-sm mb-1 truncate">{apt.time}</div>
                         <div className="font-medium text-sm mb-1 truncate">{apt.title}</div>
                         <div className="text-xs opacity-75 truncate">{apt.patient}</div>
@@ -517,7 +557,7 @@ export default function Calendario() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleCreateEventClick(day, undefined)}
-                      className="w-full mt-2 text-xs text-muted-foreground hover:text-white hover:bg-primary"
+                      className="w-full mt-2 text-xs text-muted-foreground hover:text-white hover:bg-primary border border-[#0000001A]"
                     >
                       <Plus className="w-3 h-3 mr-1" />
                       Novo evento
@@ -763,8 +803,12 @@ export default function Calendario() {
       {/* Modal de Criação de Evento */}
       <CreateEventModal
         isOpen={isCreateEventModalOpen}
+        mode={modalMode}
+        eventToEdit={selectedEvent || undefined}
         onClose={() => setIsCreateEventModalOpen(false)}
         onEventCreated={handleEventCreated}
+        onEventUpdated={handleEventCreated}
+        onEventDeleted={handleEventCreated}
         initialDate={selectedDateForEvent}
         initialTime={selectedTimeForEvent}
         existingEvents={events}
