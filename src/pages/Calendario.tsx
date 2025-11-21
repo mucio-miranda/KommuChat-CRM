@@ -791,14 +791,20 @@ export default function Calendario() {
         </div>
       </div>
 
-      {/* Modal de Criação de Evento */}
+      {/* Modal de Criação/Edição de Evento */}
       <CreateEventModal
         isOpen={isCreateEventModalOpen}
-        onClose={() => setIsCreateEventModalOpen(false)}
+        onClose={() => {
+          setIsCreateEventModalOpen(false);
+          setModalMode('create');
+          setSelectedEvent(null);
+        }}
         onEventCreated={handleEventCreated}
         initialDate={selectedDateForEvent}
         initialTime={selectedTimeForEvent}
         existingEvents={events}
+        modalMode={modalMode}
+        selectedEvent={selectedEvent}
       />
     </Layout>
   );

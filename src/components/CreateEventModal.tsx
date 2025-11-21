@@ -28,6 +28,8 @@ interface CreateEventModalProps {
   initialDate?: Date;
   initialTime?: string;
   existingEvents?: GoogleCalendarEvent[];
+  modalMode?: 'create' | 'edit';
+  selectedEvent?: GoogleCalendarEvent | null;
 }
 
 export function CreateEventModal({
@@ -37,6 +39,8 @@ export function CreateEventModal({
   initialDate,
   initialTime,
   existingEvents = [],
+  modalMode = 'create',
+  selectedEvent = null,
 }: CreateEventModalProps) {
   const [formData, setFormData] = useState({
     title: "",
@@ -52,26 +56,82 @@ export function CreateEventModal({
 
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { createEvent, isConnected } = useGoogleCalendar();
+  const { createEvent, updateEvent, isConnected } = useGoogleCalendar();
   const startDateRef = useRef<HTMLInputElement>(null);
   const startTimeRef = useRef<HTMLInputElement>(null);
   const endDateRef = useRef<HTMLInputElement>(null);
   const endTimeRef = useRef<HTMLInputElement>(null);
 
-  // Preencher data/hora inicial se fornecida
+  // Preencher formulário quando modal abrir
   useEffect(() => {
-    if (isOpen && initialDate) {
-      const dateStr = initialDate.toISOString().split("T")[0];
-      const timeStr = initialTime || "09:00";
-      setFormData((prev) => ({
-        ...prev,
-        startDate: dateStr,
-        startTime: timeStr,
-        endDate: dateStr,
-        endTime: calculateEndTime(timeStr, prev.duracao_minutos),
-      }));
+    if (isOpen) {
+      if (modalMode === 'edit' && selectedEvent) {
+        // Modo de edição: preencher com dados do evento selecionado
+        const startDate = selectedEvent.start.dateTime 
+          ? new Date(selectedEvent.start.dateTime) 
+          : selectedEvent.start.date 
+          ? new Date(selectedEvent.start.date)
+          : new Date();
+        
+        const endDate = selectedEvent.end.dateTime 
+          ? new Date(selectedEvent.end.dateTime) 
+          : selectedEvent.end.date 
+          ? new Date(selectedEvent.end.date)
+          : new Date();
+        
+        const startDateStr = startDate.toISOString().split("T")[0];
+        const startTimeStr = startDate.toTimeString().slice(0, 5);
+        const endDateStr = endDate.toISOString().split("T")[0];
+        const endTimeStr = endDate.toTimeString().slice(0, 5);
+        
+        // Calcular duração em minutos
+        const durationMs = endDate.getTime() - startDate.getTime();
+        const durationMinutes = Math.round(durationMs / (1000 * 60));
+        
+        // Formatar participantes
+        const attendeesStr = selectedEvent.attendees
+          ?.map(att => att.email)
+          .filter(Boolean)
+          .join(", ") || "";
+        
+        setFormData({
+          title: selectedEvent.summary || "",
+          description: selectedEvent.description || "",
+          startDate: startDateStr,
+          startTime: startTimeStr,
+          endDate: endDateStr,
+          endTime: endTimeStr,
+          location: selectedEvent.location || "",
+          duracao_minutos: durationMinutes.toString(),
+          attendees: attendeesStr,
+        });
+      } else if (initialDate) {
+        // Modo de criação: preencher com data/hora inicial se fornecida
+        const dateStr = initialDate.toISOString().split("T")[0];
+        const timeStr = initialTime || "09:00";
+        setFormData((prev) => ({
+          ...prev,
+          startDate: dateStr,
+          startTime: timeStr,
+          endDate: dateStr,
+          endTime: calculateEndTime(timeStr, prev.duracao_minutos),
+        }));
+      } else {
+        // Limpar formulário para novo evento
+        setFormData({
+          title: "",
+          description: "",
+          startDate: "",
+          startTime: "",
+          endDate: "",
+          endTime: "",
+          location: "",
+          duracao_minutos: "60",
+          attendees: "",
+        });
+      }
     }
-  }, [isOpen, initialDate, initialTime]);
+  }, [isOpen, initialDate, initialTime, modalMode, selectedEvent]);
 
 
   const calculateEndTime = (startTime: string, duration: string): string => {
@@ -163,7 +223,13 @@ export function CreateEventModal({
       }
 
       // Verificar se há conflito com eventos existentes
+      // Ao editar, não considerar o próprio evento como conflito
       const hasConflict = existingEvents.some((event) => {
+        // Ignorar o evento que está sendo editado
+        if (modalMode === 'edit' && selectedEvent?.id && event.id === selectedEvent.id) {
+          return false;
+        }
+        
         if (!event.start || !event.end) return false;
 
         const existingStart = event.start.dateTime 
@@ -208,7 +274,7 @@ export function CreateEventModal({
             .map((email) => ({ email }))
         : [];
 
-      // Criar evento no Google Calendar
+      // Preparar dados do evento
       const googleEvent: Partial<GoogleCalendarEvent> = {
         summary: formData.title,
         description: formData.description || undefined,
@@ -224,13 +290,23 @@ export function CreateEventModal({
         attendees: attendees.length > 0 ? attendees : undefined,
       };
 
-      const createdEvent = await createEvent(googleEvent);
-
-      // Evento criado com sucesso no Google Calendar
-      toast({
-        title: "Sucesso",
-        description: "Evento criado no Google Calendar com sucesso!",
-      });
+      if (modalMode === 'edit' && selectedEvent?.id) {
+        // Atualizar evento existente
+        await updateEvent(selectedEvent.id, googleEvent, selectedEvent.calendarId);
+        
+        toast({
+          title: "Sucesso",
+          description: "Evento atualizado no Google Calendar com sucesso!",
+        });
+      } else {
+        // Criar novo evento
+        await createEvent(googleEvent);
+        
+        toast({
+          title: "Sucesso",
+          description: "Evento criado no Google Calendar com sucesso!",
+        });
+      }
 
       // Limpar formulário
       setFormData({
@@ -286,7 +362,7 @@ export function CreateEventModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="w-5 h-5" />
-            Novo Evento no Calendário
+            {modalMode === 'edit' ? 'Editar Evento' : 'Novo Evento no Calendário'}
           </DialogTitle>
         </DialogHeader>
 
@@ -491,7 +567,10 @@ export function CreateEventModal({
             </Button>
             <Button type="submit" disabled={isLoading || !isConnected}>
               <Save className="w-4 h-4 mr-2" />
-              {isLoading ? "Criando..." : "Criar Evento"}
+              {isLoading 
+                ? (modalMode === 'edit' ? "Salvando..." : "Criando...") 
+                : (modalMode === 'edit' ? "Salvar Alterações" : "Criar Evento")
+              }
             </Button>
           </div>
         </form>
