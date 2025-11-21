@@ -3,7 +3,6 @@ import { Check, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useGoogleCalendar } from '@/contexts/GoogleCalendarContextSimple';
-import { MiniCalendar } from './MiniCalendar';
 
 interface Calendar {
   id: string;
@@ -24,7 +23,7 @@ interface CalendarAgendasListProps {
 export function CalendarAgendasList({ isConnected, onDateSelect }: CalendarAgendasListProps) {
   const { getCalendarList, selectedCalendars, setSelectedCalendars } = useGoogleCalendar();
   const [calendars, setCalendars] = useState<Calendar[]>([]);
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   console.log('🔍 CalendarAgendasList renderizado, isConnected:', isConnected);
@@ -140,15 +139,6 @@ export function CalendarAgendasList({ isConnected, onDateSelect }: CalendarAgend
         )}
       </CardContent>
     </Card>
-    
-    {/* Mini Calendar */}
-    <MiniCalendar 
-      className="mt-4"
-      onDateSelect={(date) => {
-        console.log('📅 Data selecionada no mini calendário:', date);
-        onDateSelect?.(date);
-      }}
-    />
   </div>
   );
 }

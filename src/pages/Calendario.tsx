@@ -386,7 +386,7 @@ export default function Calendario() {
     // Empty cells for days before the first day of the month
     for (let i = 0; i < firstDay; i++) {
       days.push(
-        <div key={`empty-${i}`} className="h-14 sm:h-18 md:h-24 lg:h-36 border border-border/20"></div>
+        <div key={`empty-${i}`} className="h-16 sm:h-20 md:h-28 lg:h-40 xl:h-44 border border-border/20"></div>
       );
     }
 
@@ -398,17 +398,17 @@ export default function Calendario() {
       days.push(
         <div 
           key={day} 
-          className={`h-14 sm:h-18 md:h-24 lg:h-36 border border-border/20 p-0.5 sm:p-1 md:p-1.5 bg-card relative transition-colors hover:bg-muted/20 cursor-pointer ${isToday ? 'bg-primary/5' : ''}`}
+          className={`h-16 sm:h-20 md:h-28 lg:h-40 xl:h-44 border border-border/20 p-1 sm:p-1.5 md:p-2 bg-card relative transition-colors hover:bg-muted/20 cursor-pointer ${isToday ? 'bg-primary/5' : ''}`}
           onClick={() => handleDateClick(day)}
         >
-          <div className={`text-[9px] sm:text-[10px] md:text-xs font-medium mb-0.5 ${isToday ? 'text-primary font-semibold' : 'text-foreground'}`}>
+          <div className={`text-[10px] sm:text-xs md:text-sm font-medium mb-1 ${isToday ? 'text-primary font-semibold' : 'text-foreground'}`}>
             {day}
           </div>
-          <div className="space-y-0.5 overflow-hidden">
-            {appointments.slice(0, 1).map((apt, index) => (
+          <div className="space-y-0.5 sm:space-y-1 overflow-hidden">
+            {appointments.slice(0, 2).map((apt, index) => (
               <div
                 key={`${apt.id}-${index}`}
-                className={`text-[8px] sm:text-[9px] md:text-[10px] p-0.5 rounded ${apt.color} truncate leading-tight`}
+                className={`text-[9px] sm:text-[10px] md:text-xs p-0.5 sm:p-1 rounded ${apt.color} truncate leading-tight`}
                 onClick={(event) => {
                   event.stopPropagation();
                   if (apt.googleEvent) {
@@ -417,12 +417,12 @@ export default function Calendario() {
                 }}
               >
                 <div className="font-medium truncate">{apt.time}</div>
-                <div className="truncate hidden md:block">{apt.title}</div>
+                <div className="truncate hidden sm:block">{apt.title}</div>
               </div>
             ))}
-            {appointments.length > 1 && (
-              <div className="text-[8px] sm:text-[9px] md:text-[10px] text-muted-foreground font-medium">
-                +{appointments.length - 1}
+            {appointments.length > 2 && (
+              <div className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground font-medium">
+                +{appointments.length - 2}
               </div>
             )}
           </div>
@@ -462,7 +462,7 @@ export default function Calendario() {
               const isCurrentMonth = day.getMonth() === currentMonth && day.getFullYear() === currentYear;
 
               return (
-                <div key={index} className={`min-h-[280px] border border-border/20 p-1.5 bg-card relative transition-colors hover:bg-muted/20 ${isCurrent ? 'bg-primary/5 ring-1 ring-primary/20' : ''}`}>
+                <div key={index} className={`min-h-[320px] border border-border/20 p-2 bg-card relative transition-colors hover:bg-muted/20 ${isCurrent ? 'bg-primary/5 ring-1 ring-primary/20' : ''}`}>
                   {/* Header do dia */}
                   <div className="mb-1.5">
                     <div className={`text-[10px] font-medium ${isCurrent ? 'text-primary font-semibold' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}`}>
@@ -519,7 +519,7 @@ export default function Calendario() {
               const isCurrentMonth = day.getMonth() === currentMonth && day.getFullYear() === currentYear;
 
               return (
-                <div key={index} className={`min-h-[450px] lg:min-h-[600px] border border-border/20 p-2 lg:p-3 bg-card relative transition-colors hover:bg-muted/20 ${isToday ? 'bg-primary/5' : ''}`}>
+                <div key={index} className={`min-h-[500px] lg:min-h-[650px] xl:min-h-[700px] border border-border/20 p-2.5 lg:p-3 xl:p-4 bg-card relative transition-colors hover:bg-muted/20 ${isToday ? 'bg-primary/5' : ''}`}>
                   {/* Header do dia */}
                   <div className="mb-2 md:mb-3">
                     <div className={`text-sm font-medium ${isToday ? 'text-primary font-semibold' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}`}>
@@ -585,34 +585,25 @@ export default function Calendario() {
       <div className="space-y-6">
         {/* Conteúdo principal */}
         <div className="space-y-3 md:space-y-5 px-1 sm:px-2 md:px-0">
-          <div className="flex flex-col lg:flex-row lg:space-x-4 xl:space-x-6 space-y-2 lg:space-y-0">
-            {/* Sidebar com lista de agendas - Desktop */}
-            <div className="hidden lg:block lg:w-64 xl:w-72 lg:flex-shrink-0">
+          {/* Barra superior com lista de agendas e busca */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1 min-w-0">
               <CalendarAgendasList 
                 isConnected={isConnected} 
                 onDateSelect={handleMiniCalendarDateSelect}
               />
+            </div>
+            <div className="flex-1 min-w-0">
               <SearchConsultation 
-                className="mt-4"
                 onSearch={setSearchQuery}
                 appointments={getAllFilteredAppointments}
               />
-              {isConnected && (
-                <Button
-                  variant="default"
-                  onClick={() => handleCreateEventClick()}
-                  className="flex items-center justify-center gap-1 h-8 w-full mt-4 text-sm px-3"
-                  size="sm"
-                >
-                  <Plus className="w-4 h-4" />
-                  Novo Evento
-                </Button>
-              )}
             </div>
+          </div>
             
-            {/* Conteúdo principal */}
-            <div className="flex-1 min-w-0">
-              <div className="space-y-2 md:space-y-4">
+          {/* Conteúdo principal - Calendário */}
+          <div className="w-full">
+            <div className="space-y-2 md:space-y-4">
             {/* Header */}
             <div className="flex flex-col space-y-2 md:space-y-0 md:flex-row md:items-center md:justify-between gap-2 md:gap-3">
               {/* View Toggle e Navigation - Combinados em mobile */}
@@ -680,19 +671,20 @@ export default function Calendario() {
                 </div>
               </div>
 
-              {/* Status da conexão Google Calendar */}
+              {/* Botão Novo Evento e Status da conexão Google Calendar */}
               <div className="flex items-center gap-1 sm:gap-1.5 justify-center md:justify-end">
                 {isConnected ? (
                   <>
-                    {/* Botão Novo Evento - Mobile/Tablet (Desktop está na sidebar) */}
+                    {/* Botão Novo Evento */}
                     <Button
                       variant="default"
                       onClick={() => handleCreateEventClick()}
-                      className="flex items-center justify-center gap-1 h-6 sm:h-7 lg:hidden text-xs sm:text-sm px-2 sm:px-3"
+                      className="flex items-center justify-center gap-1 h-6 sm:h-7 lg:h-8 text-xs sm:text-sm px-2 sm:px-3"
                       size="sm"
                     >
                       <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5 lg:w-4 lg:h-4" />
-                      <span>Novo</span>
+                      <span className="hidden sm:inline">Novo Evento</span>
+                      <span className="sm:hidden">Novo</span>
                     </Button>
                     <Badge variant="secondary" className="bg-green-100 text-green-800 text-[9px] sm:text-[10px] lg:text-xs whitespace-nowrap px-1 sm:px-1.5 lg:px-2">
                       <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5" />
@@ -723,78 +715,77 @@ export default function Calendario() {
               </div>
             </div>
 
-            {/* Calendar */}
-            <div className="bg-card rounded-md sm:rounded-lg md:rounded-2xl shadow-soft border border-border mt-2 md:mt-4 overflow-hidden">
-              {/* Week days header */}
-              <div className="grid grid-cols-7 border-b border-border">
-                {weekDays.map((day) => (
-                  <div key={day} className="py-1 sm:py-1.5 md:py-3 text-center text-[9px] sm:text-[10px] md:text-sm font-medium text-muted-foreground bg-muted/30">
-                    {day}
-                  </div>
-                ))}
-              </div>
-
-              {/* Calendar grid */}
-              {viewMode === 'month' ? (
-                <div className="grid grid-cols-7">
-                  {renderCalendarDays()}
+              {/* Calendar */}
+              <div className="bg-card rounded-md sm:rounded-lg md:rounded-2xl shadow-soft border border-border overflow-hidden">
+                {/* Week days header */}
+                <div className="grid grid-cols-7 border-b border-border">
+                  {weekDays.map((day) => (
+                    <div key={day} className="py-2 sm:py-2.5 md:py-4 text-center text-[10px] sm:text-xs md:text-sm font-medium text-muted-foreground bg-muted/30">
+                      {day}
+                    </div>
+                  ))}
                 </div>
-              ) : (
-                renderWeeklyView()
-              )}
-            </div>
 
-            {/* Google Calendar Status */}
-            {!isConnected ? (
-              <Card className="shadow-soft">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Calendar className="w-5 h-5 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm font-medium">Google Calendar não conectado</p>
-                        <p className="text-xs text-muted-foreground">
-                          {clienteEmail ? `Use: ${clienteEmail}` : 'Configure o email da clínica'}
-                        </p>
-                      </div>
-                    </div>
-                    <Button 
-                      onClick={connect}
-                      size="sm"
-                      className="h-8 px-3"
-                    >
-                      <Calendar className="w-4 h-4 mr-1" />
-                      Conectar
-                    </Button>
+                {/* Calendar grid */}
+                {viewMode === 'month' ? (
+                  <div className="grid grid-cols-7">
+                    {renderCalendarDays()}
                   </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="shadow-soft">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Calendar className="w-5 h-5 text-green-600" />
-                      <div>
-                        <p className="text-sm font-medium">Google Calendar conectado</p>
-                        <p className="text-xs text-muted-foreground">
-                          {connectedCalendarName || clienteEmail || 'Calendário Conectado'}
-                        </p>
-                      </div>
-                    </div>
-                    <Button 
-                      onClick={disconnect}
-                      variant="outline"
-                      size="sm"
-                      className="h-8 px-3"
-                    >
-                      Desconectar
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                ) : (
+                  renderWeeklyView()
+                )}
               </div>
+
+              {/* Google Calendar Status */}
+              {!isConnected ? (
+                <Card className="shadow-soft">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Calendar className="w-5 h-5 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium">Google Calendar não conectado</p>
+                          <p className="text-xs text-muted-foreground">
+                            {clienteEmail ? `Use: ${clienteEmail}` : 'Configure o email da clínica'}
+                          </p>
+                        </div>
+                      </div>
+                      <Button 
+                        onClick={connect}
+                        size="sm"
+                        className="h-8 px-3"
+                      >
+                        <Calendar className="w-4 h-4 mr-1" />
+                        Conectar
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="shadow-soft">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Calendar className="w-5 h-5 text-green-600" />
+                        <div>
+                          <p className="text-sm font-medium">Google Calendar conectado</p>
+                          <p className="text-xs text-muted-foreground">
+                            {connectedCalendarName || clienteEmail || 'Calendário Conectado'}
+                          </p>
+                        </div>
+                      </div>
+                      <Button 
+                        onClick={disconnect}
+                        variant="outline"
+                        size="sm"
+                        className="h-8 px-3"
+                      >
+                        Desconectar
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </div>
@@ -803,12 +794,8 @@ export default function Calendario() {
       {/* Modal de Criação de Evento */}
       <CreateEventModal
         isOpen={isCreateEventModalOpen}
-        mode={modalMode}
-        eventToEdit={selectedEvent || undefined}
         onClose={() => setIsCreateEventModalOpen(false)}
         onEventCreated={handleEventCreated}
-        onEventUpdated={handleEventCreated}
-        onEventDeleted={handleEventCreated}
         initialDate={selectedDateForEvent}
         initialTime={selectedTimeForEvent}
         existingEvents={events}
