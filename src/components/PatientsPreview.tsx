@@ -175,27 +175,18 @@ export function PatientsPreview() {
         }
       }
 
-      // 3. Unificar dados
+      // 3. Unificar e ordenar dados (igual à página /pacientes)
       const allPatients = [...iaPatients, ...manualPatients];
       
-      // 4. APLICAR FILTRO DE SETDATA PRIMEIRO (antes de limitar)
-      // Filtrar pacientes da IA que não têm setdata preenchida
-      // Mas incluir pacientes manuais independente do setdata
-      const patientsWithSetdata = allPatients.filter(patient => {
-        const hasSetdata = patient.setdata !== null && patient.setdata !== undefined && patient.setdata !== '';
-        const isManualPatient = patient.fonte === 'humano';
-        return isManualPatient || hasSetdata;
-      });
-      
-      // 5. Ordenar por data de atualização (mais recente primeiro)
-      const sortedPatients = patientsWithSetdata.sort((a, b) => {
+      // Ordenar por data de atualização (mais recente primeiro)
+      const sortedPatients = allPatients.sort((a, b) => {
         const dateA = a.updated_at || a.created_at || '';
         const dateB = b.updated_at || b.created_at || '';
         return new Date(dateB).getTime() - new Date(dateA).getTime();
       });
 
-      console.log('✅ PACIENTES PREVIEW - Total de pacientes após filtro:', sortedPatients.length);
-      setPatients(sortedPatients.slice(0, 10)); // Limitar a 10 DEPOIS do filtro de setdata
+      console.log('✅ PACIENTES PREVIEW - Total de pacientes:', sortedPatients.length);
+      setPatients(sortedPatients); // Armazenar todos os pacientes (sem limitar aqui)
       
       if (isAutoRefresh) {
         console.log('✅ PACIENTES PREVIEW - Refresh automático concluído');
@@ -223,7 +214,7 @@ export function PatientsPreview() {
   //   return () => clearInterval(interval);
   // }, [loadData]);
 
-  // Filtrar pacientes quando o termo de busca muda
+  // Filtrar pacientes quando o termo de busca muda (igual à página /pacientes)
   useEffect(() => {
     console.log('🔍 PATIENTS PREVIEW - Filtrando pacientes:', { 
       totalPatients: patients.length, 
@@ -231,14 +222,23 @@ export function PatientsPreview() {
       patients: patients.slice(0, 2) // Mostrar apenas os primeiros 2 para debug
     });
     
-    // O filtro de setdata já foi aplicado no loadData, aqui só aplicamos a busca
+    // Aplicar o mesmo filtro da página /pacientes:
+    // 1. Filtrar pacientes da IA que não têm setdata preenchida
+    // 2. Mas incluir pacientes manuais independente do setdata
+    // 3. Aplicar busca por nome, email ou telefone
     const filtered = patients.filter(patient => {
+      // Filtro de setdata (igual à página /pacientes)
+      const hasSetdata = patient.setdata !== null && patient.setdata !== undefined && patient.setdata !== '';
+      const isManualPatient = patient.fonte === 'humano';
+      const passesSetdataFilter = isManualPatient || hasSetdata;
+      
+      // Filtro de busca
       const matchesSearch = patient.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            patient.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            patient.telefone?.includes(searchTerm);
       
-      return matchesSearch;
-    });
+      return passesSetdataFilter && matchesSearch;
+    }).slice(0, 10); // Limitar a 10 apenas para exibição
     
     console.log('✅ PATIENTS PREVIEW - Pacientes filtrados:', filtered.length);
     setFilteredPatients(filtered);
