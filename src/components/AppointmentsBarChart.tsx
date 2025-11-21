@@ -422,7 +422,7 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
             <BarChart3 className="w-5 h-5 text-[#E21929]" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-foreground">Agendamentos</h2>
+            <h2 className="text-lg font-bold text-foreground">Consultas</h2>
             <p className="text-xs text-muted-foreground">
               {!isConnected ? "Conecte-se ao Google Calendar" :
                selectedPeriod === "week" ? "Por dia da semana" : 

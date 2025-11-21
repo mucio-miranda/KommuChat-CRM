@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Calendar, X, Save, Clock, MapPin, Users, FileText, ChevronDown, Trash } from "lucide-react";
+import { Calendar, X, Save, Clock, MapPin, Users, FileText, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,13 +25,9 @@ interface CreateEventModalProps {
   isOpen: boolean;
   onClose: () => void;
   onEventCreated?: () => void;
-  onEventUpdated?: () => void;
-  onEventDeleted?: () => void;
   initialDate?: Date;
   initialTime?: string;
   existingEvents?: GoogleCalendarEvent[];
-  mode?: "create" | "edit";
-  eventToEdit?: GoogleCalendarEvent | null;
 }
 
 export function CreateEventModal({
@@ -41,10 +37,6 @@ export function CreateEventModal({
   initialDate,
   initialTime,
   existingEvents = [],
-  onEventUpdated,
-  onEventDeleted,
-  mode = "create",
-  eventToEdit = null,
 }: CreateEventModalProps) {
   const [formData, setFormData] = useState({
     title: "",
@@ -60,7 +52,7 @@ export function CreateEventModal({
 
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { createEvent, updateEvent, deleteEvent, isConnected } = useGoogleCalendar();
+  const { createEvent, isConnected } = useGoogleCalendar();
   const startDateRef = useRef<HTMLInputElement>(null);
   const startTimeRef = useRef<HTMLInputElement>(null);
   const endDateRef = useRef<HTMLInputElement>(null);
@@ -68,47 +60,7 @@ export function CreateEventModal({
 
   // Preencher data/hora inicial se fornecida
   useEffect(() => {
-    if (isOpen && mode === "edit" && eventToEdit) {
-      const startDateTime = eventToEdit.start?.dateTime || eventToEdit.start?.date;
-      const endDateTime = eventToEdit.end?.dateTime || eventToEdit.end?.date;
-      const start = startDateTime ? new Date(startDateTime) : null;
-      const end = endDateTime ? new Date(endDateTime) : null;
-
-      const getDateOnly = (value?: string) => {
-        if (!value) return "";
-        if (value.includes("T")) {
-          return value.split("T")[0];
-        }
-        return value;
-        };
-
-      const getTimeOnly = (value?: string) => {
-        if (!value || !value.includes("T")) return "";
-        const [, timeWithZone] = value.split("T");
-        if (!timeWithZone) return "";
-        return timeWithZone.slice(0, 5);
-      };
-
-      setFormData({
-        title: eventToEdit.summary || "",
-        description: eventToEdit.description || "",
-        startDate: getDateOnly(startDateTime),
-        startTime: getTimeOnly(eventToEdit.start?.dateTime),
-        endDate: getDateOnly(endDateTime),
-        endTime: getTimeOnly(eventToEdit.end?.dateTime),
-        location: eventToEdit.location || "",
-        duracao_minutos: (() => {
-          if (!start || !end) return "60";
-          const diffMinutes = (end.getTime() - start.getTime()) / (60 * 1000);
-          return String(diffMinutes > 0 ? diffMinutes : 60);
-        })(),
-        attendees:
-          eventToEdit.attendees
-            ?.map((attendee) => attendee.email)
-            .filter(Boolean)
-            .join(", ") || "",
-      });
-    } else if (isOpen && initialDate) {
+    if (isOpen && initialDate) {
       const dateStr = initialDate.toISOString().split("T")[0];
       const timeStr = initialTime || "09:00";
       setFormData((prev) => ({
@@ -118,20 +70,8 @@ export function CreateEventModal({
         endDate: dateStr,
         endTime: calculateEndTime(timeStr, prev.duracao_minutos),
       }));
-    } else if (!isOpen || mode === "create") {
-      setFormData({
-        title: "",
-        description: "",
-        startDate: "",
-        startTime: "",
-        endDate: "",
-        endTime: "",
-        location: "",
-        duracao_minutos: "60",
-        attendees: "",
-      });
     }
-  }, [isOpen, initialDate, initialTime, mode, eventToEdit]);
+  }, [isOpen, initialDate, initialTime]);
 
 
   const calculateEndTime = (startTime: string, duration: string): string => {
@@ -224,9 +164,6 @@ export function CreateEventModal({
 
       // Verificar se há conflito com eventos existentes
       const hasConflict = existingEvents.some((event) => {
-        if (mode === "edit" && event.id === eventToEdit?.id) {
-          return false;
-        }
         if (!event.start || !event.end) return false;
 
         const existingStart = event.start.dateTime 
@@ -287,25 +224,13 @@ export function CreateEventModal({
         attendees: attendees.length > 0 ? attendees : undefined,
       };
 
-      if (mode === "edit" && eventToEdit?.id) {
-        await updateEvent(eventToEdit.id, googleEvent, eventToEdit.calendarId || undefined);
-        toast({
-          title: "Evento atualizado",
-          description: "Alterações salvas no Google Calendar.",
-        });
-        if (onEventUpdated) {
-          onEventUpdated();
-        }
-      } else {
-        await createEvent(googleEvent);
-        toast({
-          title: "Sucesso",
-          description: "Evento criado no Google Calendar com sucesso!",
-        });
-        if (onEventCreated) {
-          onEventCreated();
-        }
-      }
+      const createdEvent = await createEvent(googleEvent);
+
+      // Evento criado com sucesso no Google Calendar
+      toast({
+        title: "Sucesso",
+        description: "Evento criado no Google Calendar com sucesso!",
+      });
 
       // Limpar formulário
       setFormData({
@@ -320,8 +245,11 @@ export function CreateEventModal({
         attendees: "",
       });
 
-      // Fechar modal
+      // Fechar modal e chamar callback
       onClose();
+      if (onEventCreated) {
+        onEventCreated();
+      }
     } catch (error: any) {
       console.error("Erro ao criar evento:", error);
       toast({
@@ -352,42 +280,13 @@ export function CreateEventModal({
     }
   };
 
-  const handleDelete = async () => {
-    if (!eventToEdit?.id) return;
-    const confirmed = window.confirm("Tem certeza de que deseja remover este evento?");
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      await deleteEvent(eventToEdit.id, eventToEdit.calendarId || undefined);
-      toast({
-        title: "Evento removido",
-        description: "O evento foi apagado do Google Calendar.",
-      });
-      if (onEventDeleted) {
-        onEventDeleted();
-      }
-      onClose();
-    } catch (error: any) {
-      toast({
-        title: "Erro ao excluir",
-        description: error.message || "Não foi possível excluir o evento.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="w-5 h-5" />
-            {mode === "edit" ? "Editar Evento" : "Novo Evento no Calendário"}
+            Novo Evento no Calendário
           </DialogTitle>
         </DialogHeader>
 
@@ -580,42 +479,20 @@ export function CreateEventModal({
           </div>
 
           {/* Botões */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4">
-            {mode === "edit" ? (
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={handleDelete}
-                disabled={isLoading}
-                className="sm:order-1 order-2"
-              >
-                <Trash className="w-4 h-4 mr-2" />
-                Apagar evento
-              </Button>
-            ) : (
-              <div />
-            )}
-            <div className="flex justify-end gap-2 sm:order-2 order-1">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleClose}
-                disabled={isLoading}
-              >
-                <X className="w-4 h-4 mr-2" />
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isLoading || !isConnected}>
-                <Save className="w-4 h-4 mr-2" />
-                {isLoading
-                  ? mode === "edit"
-                    ? "Salvando..."
-                    : "Criando..."
-                  : mode === "edit"
-                  ? "Salvar alterações"
-                  : "Criar Evento"}
-              </Button>
-            </div>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+              disabled={isLoading}
+            >
+              <X className="w-4 h-4 mr-2" />
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isLoading || !isConnected}>
+              <Save className="w-4 h-4 mr-2" />
+              {isLoading ? "Criando..." : "Criar Evento"}
+            </Button>
           </div>
         </form>
       </DialogContent>
