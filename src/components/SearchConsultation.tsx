@@ -38,11 +38,22 @@ export function SearchConsultation({ onSearch, appointments = [], className }: S
     });
   };
 
+  // Função helper para converter data de eventos corretamente
+  // Eventos de dia inteiro (all-day) usam 'date' sem hora e devem ser interpretados no timezone local
+  const parseEventDate = (start: { dateTime?: string; date?: string }): Date => {
+    if (start.dateTime) {
+      return new Date(start.dateTime);
+    } else if (start.date) {
+      // Evento de dia inteiro - interpretar no timezone local sem conversão UTC
+      const [year, month, day] = start.date.split('-').map(Number);
+      return new Date(year, month - 1, day); // month é 0-indexed
+    }
+    return new Date();
+  };
+
   const getEventDate = (appointment: Appointment) => {
-    if (appointment.googleEvent?.start?.dateTime) {
-      return new Date(appointment.googleEvent.start.dateTime);
-    } else if (appointment.googleEvent?.start?.date) {
-      return new Date(appointment.googleEvent.start.date);
+    if (appointment.googleEvent?.start) {
+      return parseEventDate(appointment.googleEvent.start);
     }
     return new Date();
   };

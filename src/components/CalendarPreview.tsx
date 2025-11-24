@@ -14,6 +14,19 @@ const monthNames = [
 
 const weekDaysShort = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
+// Função helper para converter data de eventos corretamente
+// Eventos de dia inteiro (all-day) usam 'date' sem hora e devem ser interpretados no timezone local
+const parseEventDate = (start: { dateTime?: string; date?: string }): Date => {
+  if (start.dateTime) {
+    return new Date(start.dateTime);
+  } else if (start.date) {
+    // Evento de dia inteiro - interpretar no timezone local sem conversão UTC
+    const [year, month, day] = start.date.split('-').map(Number);
+    return new Date(year, month - 1, day); // month é 0-indexed
+  }
+  return new Date();
+};
+
 export function CalendarPreview() {
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -39,10 +52,7 @@ export function CalendarPreview() {
   // Filtrar eventos do dia selecionado
   const todayEvents = useMemo(() => {
     const filtered = events.filter((event) => {
-      const eventDate = event.start.dateTime 
-        ? new Date(event.start.dateTime) 
-        : new Date(event.start.date || '');
-      
+      const eventDate = parseEventDate(event.start);
       return eventDate.toDateString() === selectedDate.toDateString();
     });
 
@@ -60,12 +70,18 @@ export function CalendarPreview() {
   // Formatar eventos para exibição
   const formattedAppointments = useMemo(() => {
     return todayEvents.map((event) => {
-      const startDate = event.start.dateTime 
-        ? new Date(event.start.dateTime) 
-        : new Date(event.start.date || '');
-      const endDate = event.end?.dateTime 
-        ? new Date(event.end.dateTime) 
-        : null;
+      const isAllDayEvent = !event.start.dateTime;
+      
+      if (isAllDayEvent) {
+        return {
+          id: event.id,
+          title: event.summary || 'Evento sem título',
+          time: 'Dia inteiro',
+        };
+      }
+
+      const startDate = parseEventDate(event.start);
+      const endDate = event.end?.dateTime ? new Date(event.end.dateTime) : null;
 
       const startTime = startDate.toLocaleTimeString('pt-BR', { 
         hour: '2-digit', 
@@ -81,7 +97,12 @@ export function CalendarPreview() {
         title: event.summary || 'Evento sem título',
         time: endTime ? `${startTime} - ${endTime}` : startTime,
       };
-    }).sort((a, b) => a.time.localeCompare(b.time));
+    }).sort((a, b) => {
+      // Eventos de dia inteiro aparecem primeiro
+      if (a.time === 'Dia inteiro' && b.time !== 'Dia inteiro') return -1;
+      if (a.time !== 'Dia inteiro' && b.time === 'Dia inteiro') return 1;
+      return a.time.localeCompare(b.time);
+    });
   }, [todayEvents]);
 
   // Navegar entre dias

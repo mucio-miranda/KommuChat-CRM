@@ -24,6 +24,22 @@ const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 type ViewMode = 'month' | 'week';
 type ModalMode = 'create' | 'edit';
 
+// Função helper para converter data de eventos corretamente
+// Eventos de dia inteiro (all-day) usam 'date' sem hora e devem ser interpretados no timezone local
+// Eventos com hora usam 'dateTime' e já incluem timezone
+const parseEventDate = (start: { dateTime?: string; date?: string }): Date => {
+  if (start.dateTime) {
+    // Evento com hora específica - usar dateTime
+    return new Date(start.dateTime);
+  } else if (start.date) {
+    // Evento de dia inteiro - interpretar no timezone local sem conversão UTC
+    // start.date vem como "YYYY-MM-DD" (ex: "2024-11-25")
+    const [year, month, day] = start.date.split('-').map(Number);
+    return new Date(year, month - 1, day); // month é 0-indexed
+  }
+  return new Date();
+};
+
 export default function Calendario() {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
@@ -58,8 +74,13 @@ export default function Calendario() {
     );
     
     return uniqueEvents.map((event, index) => {
-      const startDate = event.start.dateTime ? new Date(event.start.dateTime) : new Date(event.start.date || '');
-      const time = startDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      const startDate = parseEventDate(event.start);
+      
+      // Para eventos de dia inteiro, não mostrar hora
+      const isAllDayEvent = !event.start.dateTime;
+      const time = isAllDayEvent 
+        ? 'Dia inteiro' 
+        : startDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
       
       return {
         id: event.id,
@@ -111,7 +132,7 @@ export default function Calendario() {
     const dayAppointments = googleAppointments.filter(apt => {
       // Para eventos do Google Calendar, verificar se a data corresponde ao dia
       if (apt.googleEvent) {
-        const eventDate = apt.googleEvent.start.dateTime ? new Date(apt.googleEvent.start.dateTime) : new Date(apt.googleEvent.start.date || '');
+        const eventDate = parseEventDate(apt.googleEvent.start);
         return eventDate.getDate() === day && eventDate.getMonth() === currentMonth && eventDate.getFullYear() === currentYear;
       }
       return false;
@@ -201,7 +222,7 @@ export default function Calendario() {
     const dateAppointments = googleAppointments.filter(apt => {
       // Para eventos do Google Calendar, usar a data real do evento
       if (apt.googleEvent) {
-        const eventDate = apt.googleEvent.start.dateTime ? new Date(apt.googleEvent.start.dateTime) : new Date(apt.googleEvent.start.date || '');
+        const eventDate = parseEventDate(apt.googleEvent.start);
         return eventDate.toDateString() === date.toDateString();
       }
       return false;
@@ -371,8 +392,8 @@ export default function Calendario() {
   const getAllFilteredAppointments = useMemo(() => {
     const allAppointments = convertGoogleEventsToAppointments(events);
     return filterAppointmentsBySearch(allAppointments).sort((a, b) => {
-      const dateA = a.googleEvent?.start.dateTime ? new Date(a.googleEvent.start.dateTime) : new Date(a.googleEvent?.start.date || '');
-      const dateB = b.googleEvent?.start.dateTime ? new Date(b.googleEvent.start.dateTime) : new Date(b.googleEvent?.start.date || '');
+      const dateA = a.googleEvent ? parseEventDate(a.googleEvent.start) : new Date();
+      const dateB = b.googleEvent ? parseEventDate(b.googleEvent.start) : new Date();
       return dateA.getTime() - dateB.getTime();
     });
   }, [events, searchQuery]);

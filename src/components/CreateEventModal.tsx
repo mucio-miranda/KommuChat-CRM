@@ -62,22 +62,25 @@ export function CreateEventModal({
   const endDateRef = useRef<HTMLInputElement>(null);
   const endTimeRef = useRef<HTMLInputElement>(null);
 
+  // Função helper para converter data de eventos corretamente
+  const parseEventDate = (start: { dateTime?: string; date?: string }): Date => {
+    if (start.dateTime) {
+      return new Date(start.dateTime);
+    } else if (start.date) {
+      // Evento de dia inteiro - interpretar no timezone local sem conversão UTC
+      const [year, month, day] = start.date.split('-').map(Number);
+      return new Date(year, month - 1, day); // month é 0-indexed
+    }
+    return new Date();
+  };
+
   // Preencher formulário quando modal abrir
   useEffect(() => {
     if (isOpen) {
       if (modalMode === 'edit' && selectedEvent) {
         // Modo de edição: preencher com dados do evento selecionado
-        const startDate = selectedEvent.start.dateTime 
-          ? new Date(selectedEvent.start.dateTime) 
-          : selectedEvent.start.date 
-          ? new Date(selectedEvent.start.date)
-          : new Date();
-        
-        const endDate = selectedEvent.end.dateTime 
-          ? new Date(selectedEvent.end.dateTime) 
-          : selectedEvent.end.date 
-          ? new Date(selectedEvent.end.date)
-          : new Date();
+        const startDate = parseEventDate(selectedEvent.start);
+        const endDate = selectedEvent.end ? parseEventDate(selectedEvent.end) : startDate;
         
         const startDateStr = startDate.toISOString().split("T")[0];
         const startTimeStr = startDate.toTimeString().slice(0, 5);
@@ -232,17 +235,8 @@ export function CreateEventModal({
         
         if (!event.start || !event.end) return false;
 
-        const existingStart = event.start.dateTime 
-          ? new Date(event.start.dateTime) 
-          : event.start.date 
-          ? new Date(event.start.date)
-          : null;
-        
-        const existingEnd = event.end.dateTime 
-          ? new Date(event.end.dateTime) 
-          : event.end.date 
-          ? new Date(event.end.date)
-          : null;
+        const existingStart = parseEventDate(event.start);
+        const existingEnd = parseEventDate(event.end);
 
         if (!existingStart || !existingEnd) return false;
 
