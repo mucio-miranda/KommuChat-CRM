@@ -65,7 +65,7 @@ export function CreateEventModal({
   });
 
   const [isLoading, setIsLoading] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const { toast } = useToast();
   const { createEvent, updateEvent, deleteEvent, isConnected } = useGoogleCalendar();
   const startDateRef = useRef<HTMLInputElement>(null);
@@ -367,37 +367,34 @@ export function CreateEventModal({
     }
   };
 
-  const handleDelete = async () => {
+  const handleDeleteEvent = async () => {
     if (!selectedEvent?.id) return;
     
     setIsLoading(true);
     try {
-      const success = await deleteEvent(selectedEvent.id, selectedEvent.calendarId);
+      await deleteEvent(selectedEvent.id, selectedEvent.calendarId);
       
-      if (success) {
-        toast({
-          title: "Sucesso",
-          description: "Evento excluído do Google Calendar com sucesso!",
-        });
-        
-        // Fechar modal e chamar callback
-        onClose();
-        if (onEventCreated) {
-          onEventCreated();
-        }
-      } else {
-        throw new Error("Falha ao excluir evento");
+      toast({
+        title: "Sucesso",
+        description: "Agendamento excluído com sucesso!",
+      });
+      
+      // Fechar modal e chamar callback
+      setIsDeleteDialogOpen(false);
+      onClose();
+      if (onEventCreated) {
+        onEventCreated();
       }
     } catch (error: any) {
-      console.error("Erro ao excluir evento:", error);
+      console.error("Erro ao deletar evento:", error);
       toast({
         title: "Erro",
-        description: error.message || "Não foi possível excluir o evento. Tente novamente.",
+        description:
+          error.message || "Não foi possível excluir o agendamento. Tente novamente.",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
-      setShowDeleteConfirm(false);
     }
   };
 
@@ -601,25 +598,21 @@ export function CreateEventModal({
 
           {/* Botões */}
           <div className="flex justify-between gap-2 pt-4">
-            {/* Botão de deletar à esquerda (apenas em modo de edição) */}
+            {/* Botão de deletar - apenas no modo de edição */}
             {modalMode === 'edit' && (
               <Button
                 type="button"
                 variant="destructive"
-                onClick={() => setShowDeleteConfirm(true)}
+                onClick={() => setIsDeleteDialogOpen(true)}
                 disabled={isLoading}
-                className="gap-2"
+                className="bg-red-600 hover:bg-red-700"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-4 h-4 mr-2" />
                 Excluir
               </Button>
             )}
             
-            {/* Espaçador para manter os botões Cancelar e Salvar à direita */}
-            <div className="flex-1" />
-            
-            {/* Botões de ação à direita */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 ml-auto">
               <Button
                 type="button"
                 variant="outline"
@@ -639,31 +632,45 @@ export function CreateEventModal({
             </div>
           </div>
         </form>
-        
-        {/* Dialog de Confirmação de Exclusão */}
-        <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-              <AlertDialogDescription>
-                Tem certeza que deseja excluir este evento? Esta ação não pode ser desfeita e o evento será removido permanentemente do Google Calendar.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={isLoading}>
-                Cancelar
-              </AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDelete}
-                disabled={isLoading}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                {isLoading ? "Excluindo..." : "Sim, Excluir"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </DialogContent>
+
+      {/* AlertDialog de confirmação de exclusão */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este agendamento? Esta ação não pode ser desfeita.
+              {selectedEvent && (
+                <div className="mt-3 p-3 bg-muted rounded-md">
+                  <p className="font-semibold text-foreground">{selectedEvent.summary}</p>
+                  {selectedEvent.start.dateTime && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {new Date(selectedEvent.start.dateTime).toLocaleString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  )}
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteEvent}
+              disabled={isLoading}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isLoading ? "Excluindo..." : "Excluir Agendamento"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
