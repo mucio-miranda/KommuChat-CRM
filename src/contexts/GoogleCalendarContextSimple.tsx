@@ -323,7 +323,13 @@ export function GoogleCalendarProvider({ children }: { children: React.ReactNode
       
       // Usar a nova função que busca em todas as agendas com período estendido
       const calendarEvents = await googleCalendarServiceHybrid.getAllEventsFromAllCalendars();
-      console.log('📅 Eventos recebidos de todas as agendas (F5):', calendarEvents);
+      console.log('📅 Eventos recebidos de todas as agendas (F5):', calendarEvents.length, 'eventos');
+      console.log('📋 Detalhes dos eventos:', calendarEvents.map(e => ({
+        id: e.id,
+        summary: e.summary,
+        start: e.start,
+        calendarId: e.calendarId
+      })));
       
       // Filtrar eventos apenas dos calendários selecionados
       const filteredEvents = calendarEvents.filter(event => {
@@ -333,7 +339,8 @@ export function GoogleCalendarProvider({ children }: { children: React.ReactNode
         return selectedCalendars.includes(event.calendarId || '');
       });
       
-      console.log('📅 Eventos filtrados por calendários selecionados:', filteredEvents);
+      console.log('📅 Eventos filtrados por calendários selecionados:', filteredEvents.length, 'eventos');
+      console.log('📋 Calendários selecionados:', selectedCalendars);
       setEvents(filteredEvents as GoogleCalendarEvent[]);
       console.log('✅ Calendário recarregado com sucesso (F5)');
       
@@ -397,9 +404,16 @@ export function GoogleCalendarProvider({ children }: { children: React.ReactNode
   const createEvent = async (event: Partial<GoogleCalendarEvent>, calendarId?: string) => {
     try {
       setIsLoading(true);
+      console.log('📝 Criando evento:', event);
       const newEvent = await googleCalendarServiceHybrid.createEvent(event, calendarId);
+      console.log('✅ Evento criado, recarregando lista de eventos...');
+      
+      // Adicionar um pequeno delay antes de recarregar para garantir que a API do Google Calendar tenha processado
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       // Recarregar eventos após criar
       await refreshEvents();
+      console.log('✅ Lista de eventos recarregada após criação');
       return newEvent;
     } catch (error) {
       console.error('Erro ao criar evento:', error);
@@ -413,9 +427,16 @@ export function GoogleCalendarProvider({ children }: { children: React.ReactNode
   const updateEvent = async (eventId: string, event: Partial<GoogleCalendarEvent>, calendarId?: string) => {
     try {
       setIsLoading(true);
+      console.log('✏️ Atualizando evento:', eventId);
       const updatedEvent = await googleCalendarServiceHybrid.updateEvent(eventId, event, calendarId);
+      console.log('✅ Evento atualizado, recarregando lista de eventos...');
+      
+      // Adicionar um pequeno delay antes de recarregar
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       // Recarregar eventos após atualizar
       await refreshEvents();
+      console.log('✅ Lista de eventos recarregada após atualização');
       return updatedEvent;
     } catch (error) {
       console.error('Erro ao atualizar evento:', error);
@@ -429,9 +450,16 @@ export function GoogleCalendarProvider({ children }: { children: React.ReactNode
   const deleteEvent = async (eventId: string, calendarId?: string) => {
     try {
       setIsLoading(true);
+      console.log('🗑️ Deletando evento:', eventId);
       await googleCalendarServiceHybrid.deleteEvent(eventId, calendarId);
+      console.log('✅ Evento deletado, recarregando lista de eventos...');
+      
+      // Adicionar um pequeno delay antes de recarregar
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       // Recarregar eventos após deletar
       await refreshEvents();
+      console.log('✅ Lista de eventos recarregada após exclusão');
       return true;
     } catch (error) {
       console.error('Erro ao deletar evento:', error);
