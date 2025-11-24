@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Calendar, X, Save, Clock, MapPin, Users, FileText, ChevronDown } from "lucide-react";
+import { Calendar, X, Save, Clock, MapPin, Users, FileText, ChevronDown, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,8 +55,9 @@ export function CreateEventModal({
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { toast } = useToast();
-  const { createEvent, updateEvent, isConnected } = useGoogleCalendar();
+  const { createEvent, updateEvent, deleteEvent, isConnected } = useGoogleCalendar();
   const startDateRef = useRef<HTMLInputElement>(null);
   const startTimeRef = useRef<HTMLInputElement>(null);
   const endDateRef = useRef<HTMLInputElement>(null);
@@ -346,7 +347,41 @@ export function CreateEventModal({
         duracao_minutos: "60",
         attendees: "",
       });
+      setShowDeleteConfirm(false);
       onClose();
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedEvent || modalMode !== 'edit') return;
+
+    try {
+      setIsLoading(true);
+
+      // Deletar evento do Google Calendar
+      await deleteEvent(
+        selectedEvent.id,
+        selectedEvent.calendarId || 'primary'
+      );
+
+      toast({
+        title: "Evento deletado!",
+        description: "O evento foi removido com sucesso do calendário.",
+      });
+
+      // Fechar modal e notificar atualização
+      handleClose();
+      onEventCreated?.();
+    } catch (error) {
+      console.error('Erro ao deletar evento:', error);
+      toast({
+        title: "Erro ao deletar evento",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao tentar deletar o evento.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -549,23 +584,66 @@ export function CreateEventModal({
           </div>
 
           {/* Botões */}
-          <div className="flex justify-end gap-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-              disabled={isLoading}
-            >
-              <X className="w-4 h-4 mr-2" />
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isLoading || !isConnected}>
-              <Save className="w-4 h-4 mr-2" />
-              {isLoading 
-                ? (modalMode === 'edit' ? "Salvando..." : "Criando...") 
-                : (modalMode === 'edit' ? "Salvar Alterações" : "Criar Evento")
-              }
-            </Button>
+          <div className="flex justify-between items-center gap-2 pt-4 border-t">
+            {/* Botão Deletar (apenas em modo de edição) */}
+            {modalMode === 'edit' && selectedEvent && (
+              <div className="flex gap-2">
+                {!showDeleteConfirm ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowDeleteConfirm(true)}
+                    disabled={isLoading}
+                    className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Deletar Evento
+                  </Button>
+                ) : (
+                  <div className="flex gap-2 items-center">
+                    <span className="text-sm text-red-600 font-medium">Confirmar exclusão?</span>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={handleDelete}
+                      disabled={isLoading}
+                      size="sm"
+                    >
+                      Sim, deletar
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowDeleteConfirm(false)}
+                      disabled={isLoading}
+                      size="sm"
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Botões de ação principal */}
+            <div className="flex gap-2 ml-auto">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleClose}
+                disabled={isLoading}
+              >
+                <X className="w-4 h-4 mr-2" />
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isLoading || !isConnected}>
+                <Save className="w-4 h-4 mr-2" />
+                {isLoading 
+                  ? (modalMode === 'edit' ? "Salvando..." : "Criando...") 
+                  : (modalMode === 'edit' ? "Salvar Alterações" : "Criar Evento")
+                }
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>
