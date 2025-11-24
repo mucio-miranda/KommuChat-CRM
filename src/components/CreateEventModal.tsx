@@ -16,7 +16,19 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useGoogleCalendar } from "@/contexts/GoogleCalendarContextSimple";
 import { GoogleCalendarEvent } from "@/types/google-calendar";
@@ -587,42 +599,16 @@ export function CreateEventModal({
           <div className="flex justify-between items-center gap-2 pt-4 border-t">
             {/* Botão Deletar (apenas em modo de edição) */}
             {modalMode === 'edit' && selectedEvent && (
-              <div className="flex gap-2">
-                {!showDeleteConfirm ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowDeleteConfirm(true)}
-                    disabled={isLoading}
-                    className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Deletar Evento
-                  </Button>
-                ) : (
-                  <div className="flex gap-2 items-center">
-                    <span className="text-sm text-red-600 font-medium">Confirmar exclusão?</span>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      onClick={handleDelete}
-                      disabled={isLoading}
-                      size="sm"
-                    >
-                      Sim, deletar
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setShowDeleteConfirm(false)}
-                      disabled={isLoading}
-                      size="sm"
-                    >
-                      Cancelar
-                    </Button>
-                  </div>
-                )}
-              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={isLoading}
+                className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Deletar Evento
+              </Button>
             )}
 
             {/* Botões de ação principal */}
@@ -647,6 +633,30 @@ export function CreateEventModal({
           </div>
         </form>
       </DialogContent>
+
+      {/* Modal de Confirmação de Exclusão */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este evento? Esta ação não pode ser desfeita e o evento será removido permanentemente do Google Calendar.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isLoading}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isLoading}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isLoading ? "Excluindo..." : "Sim, Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

@@ -34,12 +34,18 @@ O botão de deletar está posicionado em uma **"zona segura"**:
 └─────────────────────────────────────────────────────────┘
 ```
 
-**Passo 2 - Confirmação:**
+**Passo 2 - Modal de Confirmação (AlertDialog):**
 ```
-┌──────────────────────────────────────────────────────────┐
-│ Confirmar exclusão? [Sim, deletar] [Cancelar]             │
-│                                    [Cancelar] [Salvar]     │
-└──────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────┐
+│  Confirmar Exclusão                              │
+│                                                  │
+│  Tem certeza que deseja excluir este evento?    │
+│  Esta ação não pode ser desfeita e o evento     │
+│  será removido permanentemente do Google         │
+│  Calendar.                                       │
+│                                                  │
+│                    [Cancelar]  [Sim, Excluir]   │
+└─────────────────────────────────────────────────┘
 ```
 
 ### Proteções Implementadas
@@ -144,32 +150,45 @@ O evento foi removido com sucesso do calendário.
 
 ### Estrutura do Botão
 ```tsx
+{/* Botão Deletar no formulário */}
 {modalMode === 'edit' && selectedEvent && (
-  <div className="flex gap-2">
-    {!showDeleteConfirm ? (
-      <Button
-        variant="outline"
-        onClick={() => setShowDeleteConfirm(true)}
-        className="border-red-200 text-red-600 hover:bg-red-50"
-      >
-        <Trash2 className="w-4 h-4 mr-2" />
-        Deletar Evento
-      </Button>
-    ) : (
-      <div className="flex gap-2 items-center">
-        <span className="text-sm text-red-600 font-medium">
-          Confirmar exclusão?
-        </span>
-        <Button variant="destructive" onClick={handleDelete}>
-          Sim, deletar
-        </Button>
-        <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
-          Cancelar
-        </Button>
-      </div>
-    )}
-  </div>
+  <Button
+    type="button"
+    variant="outline"
+    onClick={() => setShowDeleteConfirm(true)}
+    className="border-red-200 text-red-600 hover:bg-red-50"
+  >
+    <Trash2 className="w-4 h-4 mr-2" />
+    Deletar Evento
+  </Button>
 )}
+```
+
+### Modal de Confirmação (AlertDialog)
+```tsx
+<AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+      <AlertDialogDescription>
+        Tem certeza que deseja excluir este evento? Esta ação não pode ser 
+        desfeita e o evento será removido permanentemente do Google Calendar.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel disabled={isLoading}>
+        Cancelar
+      </AlertDialogCancel>
+      <AlertDialogAction
+        onClick={handleDelete}
+        disabled={isLoading}
+        className="bg-red-600 hover:bg-red-700"
+      >
+        {isLoading ? "Excluindo..." : "Sim, Excluir"}
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
 ```
 
 ## Melhorias Futuras (Possíveis)
