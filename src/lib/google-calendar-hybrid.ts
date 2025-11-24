@@ -357,7 +357,7 @@ export class GoogleCalendarServiceHybrid {
   }
 
   // Obter eventos de TODAS as agendas com período estendido
-  async getAllEventsFromAllCalendars(maxResults: number = 100) {
+  async getAllEventsFromAllCalendars(maxResults: number = 250) {
     try {
       // Verificar e renovar token se necessário antes de fazer a requisição
       const tokenValid = await this.ensureValidToken();
@@ -391,26 +391,29 @@ export class GoogleCalendarServiceHybrid {
       
       console.log(`📅 Encontradas ${calendars.length} agendas:`);
       calendars.forEach(cal => {
-        console.log(`  - ${cal.summary} (${cal.id})`);
+        console.log(`  - ${cal.summary} (${cal.id}) - Selecionada: ${cal.selected !== false}`);
       });
 
-      // 2. Definir período: 1 ano para trás e 6 meses para frente
+      // 2. Definir período: 2 anos para trás e 1 ano para frente (período mais amplo)
       const now = new Date();
-      const timeMin = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()).toISOString();
-      const timeMax = new Date(now.getFullYear(), now.getMonth() + 6, now.getDate()).toISOString();
+      const timeMin = new Date(now.getFullYear() - 2, now.getMonth(), now.getDate()).toISOString();
+      const timeMax = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()).toISOString();
       
-      console.log(`📅 Período de busca: ${timeMin} até ${timeMax}`);
+      console.log(`📅 Período de busca ampliado: ${timeMin} até ${timeMax}`);
 
       // 3. Buscar eventos de cada agenda
       const allEvents = [];
       const promises = calendars.map(async (calendar) => {
         try {
+          console.log(`🔍 Buscando eventos da agenda: ${calendar.summary} (${calendar.id})...`);
+          
           const params = new URLSearchParams({
             timeMin: timeMin,
             timeMax: timeMax,
             maxResults: maxResults.toString(),
             singleEvents: 'true',
             orderBy: 'startTime',
+            showDeleted: 'false', // Não mostrar eventos deletados
           });
 
           const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.id)}/events?${params}`;
@@ -427,6 +430,17 @@ export class GoogleCalendarServiceHybrid {
             const data = await response.json();
             const events = data.items || [];
             
+            console.log(`📊 Agenda "${calendar.summary}": ${events.length} eventos encontrados`);
+            
+            // Log detalhado dos primeiros 3 eventos (para debug)
+            if (events.length > 0) {
+              console.log(`📋 Primeiros eventos de "${calendar.summary}":`);
+              events.slice(0, 3).forEach(event => {
+                const startDate = event.start?.dateTime || event.start?.date || 'sem data';
+                console.log(`  - ${event.summary || 'Sem título'} (${startDate})`);
+              });
+            }
+            
             // Adicionar informações da agenda a cada evento
             const eventsWithCalendar = events.map(event => ({
               ...event,
@@ -435,10 +449,11 @@ export class GoogleCalendarServiceHybrid {
               calendarColor: calendar.backgroundColor || '#1a73e8'
             }));
             
-            console.log(`✅ ${events.length} eventos encontrados na agenda: ${calendar.summary}`);
+            console.log(`✅ ${events.length} eventos processados da agenda: ${calendar.summary}`);
             return eventsWithCalendar;
           } else {
-            console.warn(`⚠️ Erro ao buscar eventos da agenda ${calendar.summary}: ${response.status}`);
+            const errorText = await response.text();
+            console.warn(`⚠️ Erro ao buscar eventos da agenda ${calendar.summary}: ${response.status} - ${errorText}`);
             return [];
           }
         } catch (error) {
@@ -460,7 +475,12 @@ export class GoogleCalendarServiceHybrid {
         return dateA.getTime() - dateB.getTime();
       });
 
-      console.log(`🎉 Total de eventos encontrados em todas as agendas: ${allEvents.length}`);
+      console.log(`\n🎉 ========== RESUMO DA BUSCA ==========`);
+      console.log(`📅 Total de calendários verificados: ${calendars.length}`);
+      console.log(`📊 Total de eventos encontrados: ${allEvents.length}`);
+      console.log(`📅 Período: ${new Date(timeMin).toLocaleDateString('pt-BR')} até ${new Date(timeMax).toLocaleDateString('pt-BR')}`);
+      console.log(`=======================================\n`);
+      
       return allEvents;
 
     } catch (error) {

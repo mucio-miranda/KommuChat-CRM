@@ -323,17 +323,33 @@ export function GoogleCalendarProvider({ children }: { children: React.ReactNode
       
       // Usar a nova função que busca em todas as agendas com período estendido
       const calendarEvents = await googleCalendarServiceHybrid.getAllEventsFromAllCalendars();
-      console.log('📅 Eventos recebidos de todas as agendas (F5):', calendarEvents);
+      console.log('📅 Total de eventos recebidos de todas as agendas:', calendarEvents.length);
       
-      // Filtrar eventos apenas dos calendários selecionados
-      const filteredEvents = calendarEvents.filter(event => {
-        if (selectedCalendars.length === 0) {
-          return true; // Se nenhum calendário selecionado, mostrar todos
-        }
-        return selectedCalendars.includes(event.calendarId || '');
-      });
+      // Agrupar eventos por calendário para debug
+      const eventsByCalendar = calendarEvents.reduce((acc, event) => {
+        const calId = event.calendarId || 'sem-id';
+        const calName = event.calendarSummary || 'Sem nome';
+        const key = `${calName} (${calId})`;
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
       
-      console.log('📅 Eventos filtrados por calendários selecionados:', filteredEvents);
+      console.log('📊 Eventos por calendário:', eventsByCalendar);
+      
+      // REMOVIDO: Filtro de calendários selecionados - agora mostra TODOS os eventos
+      // Filtrar eventos apenas dos calendários selecionados (se houver filtro ativo)
+      let filteredEvents = calendarEvents;
+      
+      if (selectedCalendars.length > 0) {
+        filteredEvents = calendarEvents.filter(event => {
+          return selectedCalendars.includes(event.calendarId || '');
+        });
+        console.log(`📅 Filtro ativo: ${selectedCalendars.length} calendários selecionados`);
+        console.log(`📅 Eventos após filtro: ${filteredEvents.length} (de ${calendarEvents.length} total)`);
+      } else {
+        console.log('📅 Sem filtro ativo - mostrando TODOS os eventos');
+      }
+      
       setEvents(filteredEvents as GoogleCalendarEvent[]);
       console.log('✅ Calendário recarregado com sucesso (F5)');
       
