@@ -394,12 +394,12 @@ export class GoogleCalendarServiceHybrid {
         console.log(`  - ${cal.summary} (${cal.id})`);
       });
 
-      // 2. Definir período: 2 anos para trás e 1 ano para frente (período amplo para garantir que todos os eventos sejam capturados)
+      // 2. Definir período: 1 ano para trás e 6 meses para frente
       const now = new Date();
-      const timeMin = new Date(now.getFullYear() - 2, now.getMonth(), now.getDate()).toISOString();
-      const timeMax = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()).toISOString();
+      const timeMin = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()).toISOString();
+      const timeMax = new Date(now.getFullYear(), now.getMonth() + 6, now.getDate()).toISOString();
       
-      console.log(`📅 Período de busca AMPLIADO: ${timeMin} até ${timeMax}`);
+      console.log(`📅 Período de busca: ${timeMin} até ${timeMax}`);
 
       // 3. Buscar eventos de cada agenda
       const allEvents = [];
@@ -436,15 +436,6 @@ export class GoogleCalendarServiceHybrid {
             }));
             
             console.log(`✅ ${events.length} eventos encontrados na agenda: ${calendar.summary}`);
-            if (events.length > 0) {
-              console.log(`📋 Primeiros eventos da agenda ${calendar.summary}:`, 
-                events.slice(0, 3).map(e => ({
-                  id: e.id,
-                  summary: e.summary,
-                  start: e.start
-                }))
-              );
-            }
             return eventsWithCalendar;
           } else {
             console.warn(`⚠️ Erro ao buscar eventos da agenda ${calendar.summary}: ${response.status}`);
@@ -597,13 +588,6 @@ export class GoogleCalendarServiceHybrid {
 
       const createdEvent = await response.json();
       console.log('✅ Evento criado com sucesso:', createdEvent.id);
-      console.log('📅 Detalhes do evento criado:', {
-        id: createdEvent.id,
-        summary: createdEvent.summary,
-        start: createdEvent.start,
-        end: createdEvent.end,
-        calendarId: calendarId
-      });
       return createdEvent;
     } catch (error) {
       console.error('❌ Erro ao criar evento:', error);

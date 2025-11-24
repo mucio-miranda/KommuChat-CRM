@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Calendar, X, Save, Clock, MapPin, Users, FileText, ChevronDown, Trash2 } from "lucide-react";
+import { Calendar, X, Save, Clock, MapPin, Users, FileText, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,16 +17,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useGoogleCalendar } from "@/contexts/GoogleCalendarContextSimple";
 import { GoogleCalendarEvent } from "@/types/google-calendar";
@@ -65,9 +55,8 @@ export function CreateEventModal({
   });
 
   const [isLoading, setIsLoading] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const { toast } = useToast();
-  const { createEvent, updateEvent, deleteEvent, isConnected } = useGoogleCalendar();
+  const { createEvent, updateEvent, isConnected } = useGoogleCalendar();
   const startDateRef = useRef<HTMLInputElement>(null);
   const startTimeRef = useRef<HTMLInputElement>(null);
   const endDateRef = useRef<HTMLInputElement>(null);
@@ -367,37 +356,6 @@ export function CreateEventModal({
     }
   };
 
-  const handleDeleteEvent = async () => {
-    if (!selectedEvent?.id) return;
-    
-    setIsLoading(true);
-    try {
-      await deleteEvent(selectedEvent.id, selectedEvent.calendarId);
-      
-      toast({
-        title: "Sucesso",
-        description: "Agendamento excluído com sucesso!",
-      });
-      
-      // Fechar modal e chamar callback
-      setIsDeleteDialogOpen(false);
-      onClose();
-      if (onEventCreated) {
-        onEventCreated();
-      }
-    } catch (error: any) {
-      console.error("Erro ao deletar evento:", error);
-      toast({
-        title: "Erro",
-        description:
-          error.message || "Não foi possível excluir o agendamento. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
@@ -597,80 +555,26 @@ export function CreateEventModal({
           </div>
 
           {/* Botões */}
-          <div className="flex justify-between gap-2 pt-4">
-            {/* Botão de deletar - apenas no modo de edição */}
-            {modalMode === 'edit' && (
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={() => setIsDeleteDialogOpen(true)}
-                disabled={isLoading}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Excluir
-              </Button>
-            )}
-            
-            <div className="flex gap-2 ml-auto">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleClose}
-                disabled={isLoading}
-              >
-                <X className="w-4 h-4 mr-2" />
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isLoading || !isConnected}>
-                <Save className="w-4 h-4 mr-2" />
-                {isLoading 
-                  ? (modalMode === 'edit' ? "Salvando..." : "Criando...") 
-                  : (modalMode === 'edit' ? "Salvar Alterações" : "Criar Evento")
-                }
-              </Button>
-            </div>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+              disabled={isLoading}
+            >
+              <X className="w-4 h-4 mr-2" />
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isLoading || !isConnected}>
+              <Save className="w-4 h-4 mr-2" />
+              {isLoading 
+                ? (modalMode === 'edit' ? "Salvando..." : "Criando...") 
+                : (modalMode === 'edit' ? "Salvar Alterações" : "Criar Evento")
+              }
+            </Button>
           </div>
         </form>
       </DialogContent>
-
-      {/* AlertDialog de confirmação de exclusão */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir este agendamento? Esta ação não pode ser desfeita.
-              {selectedEvent && (
-                <div className="mt-3 p-3 bg-muted rounded-md">
-                  <p className="font-semibold text-foreground">{selectedEvent.summary}</p>
-                  {selectedEvent.start.dateTime && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {new Date(selectedEvent.start.dateTime).toLocaleString('pt-BR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </p>
-                  )}
-                </div>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isLoading}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteEvent}
-              disabled={isLoading}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              {isLoading ? "Excluindo..." : "Excluir Agendamento"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </Dialog>
   );
 }

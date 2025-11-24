@@ -108,37 +108,11 @@ export default function Calendario() {
   const getAppointmentsForDay = (day: number) => {
     // Apenas eventos reais do Google Calendar
     const googleAppointments = convertGoogleEventsToAppointments(events);
-    
-    // Log para debug - mostrar quantidade total de eventos
-    if (day === 1) {
-      console.log(`📅 Total de eventos carregados: ${events.length}`);
-      console.log(`📅 Buscando eventos para: dia ${day}, mês ${currentMonth} (${monthNames[currentMonth]}), ano ${currentYear}`);
-      console.log(`📅 Eventos disponíveis:`, events.map(e => ({
-        id: e.id,
-        summary: e.summary,
-        start: e.start,
-        calendarId: e.calendarId
-      })));
-    }
-    
     const dayAppointments = googleAppointments.filter(apt => {
       // Para eventos do Google Calendar, verificar se a data corresponde ao dia
       if (apt.googleEvent) {
         const eventDate = apt.googleEvent.start.dateTime ? new Date(apt.googleEvent.start.dateTime) : new Date(apt.googleEvent.start.date || '');
-        const matches = eventDate.getDate() === day && eventDate.getMonth() === currentMonth && eventDate.getFullYear() === currentYear;
-        
-        // Log detalhado para o dia 1 de cada mês
-        if (day === 1 && matches) {
-          console.log(`✅ Evento encontrado para dia ${day}:`, {
-            title: apt.title,
-            eventDate: eventDate.toISOString(),
-            day: eventDate.getDate(),
-            month: eventDate.getMonth(),
-            year: eventDate.getFullYear()
-          });
-        }
-        
-        return matches;
+        return eventDate.getDate() === day && eventDate.getMonth() === currentMonth && eventDate.getFullYear() === currentYear;
       }
       return false;
     });
@@ -156,28 +130,21 @@ export default function Calendario() {
   };
 
   const navigateMonth = (direction: 'prev' | 'next') => {
-    let newMonth = currentMonth;
-    let newYear = currentYear;
-    
     if (direction === 'prev') {
       if (currentMonth === 0) {
-        newMonth = 11;
-        newYear = currentYear - 1;
+        setCurrentMonth(11);
+        setCurrentYear(currentYear - 1);
       } else {
-        newMonth = currentMonth - 1;
+        setCurrentMonth(currentMonth - 1);
       }
     } else {
       if (currentMonth === 11) {
-        newMonth = 0;
-        newYear = currentYear + 1;
+        setCurrentMonth(0);
+        setCurrentYear(currentYear + 1);
       } else {
-        newMonth = currentMonth + 1;
+        setCurrentMonth(currentMonth + 1);
       }
     }
-    
-    console.log(`📅 Navegando para: ${monthNames[newMonth]}/${newYear}`);
-    setCurrentMonth(newMonth);
-    setCurrentYear(newYear);
   };
 
   const navigateWeek = (direction: 'prev' | 'next') => {
@@ -319,35 +286,6 @@ export default function Calendario() {
   useEffect(() => {
     if (events.length > 0) {
       setLastUpdate(new Date());
-      
-      // Log detalhado dos eventos carregados
-      console.log('🔄 EVENTOS CARREGADOS - Total:', events.length);
-      
-      // Agrupar eventos por mês/ano
-      const eventosPorMes = events.reduce((acc, event) => {
-        const eventDate = event.start.dateTime ? new Date(event.start.dateTime) : new Date(event.start.date || '');
-        const mesAno = `${monthNames[eventDate.getMonth()]}/${eventDate.getFullYear()}`;
-        if (!acc[mesAno]) {
-          acc[mesAno] = [];
-        }
-        acc[mesAno].push({
-          summary: event.summary,
-          date: eventDate.toLocaleDateString('pt-BR'),
-          calendarId: event.calendarId
-        });
-        return acc;
-      }, {} as Record<string, any[]>);
-      
-      console.log('📊 EVENTOS POR MÊS/ANO:', eventosPorMes);
-      
-      // Mostrar detalhes de todos os eventos
-      console.table(events.map(e => ({
-        Título: e.summary,
-        Início: e.start.dateTime ? new Date(e.start.dateTime).toLocaleString('pt-BR') : e.start.date,
-        Calendário: e.calendarSummary || e.calendarId
-      })));
-    } else {
-      console.log('⚠️ Nenhum evento carregado no array events');
     }
   }, [events]);
 
