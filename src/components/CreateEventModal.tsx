@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Calendar, X, Save, Clock, MapPin, Users, FileText, ChevronDown } from "lucide-react";
+import { Calendar, X, Save, Clock, MapPin, Users, FileText, ChevronDown, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useGoogleCalendar } from "@/contexts/GoogleCalendarContextSimple";
 import { GoogleCalendarEvent } from "@/types/google-calendar";
@@ -55,8 +65,9 @@ export function CreateEventModal({
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { toast } = useToast();
-  const { createEvent, updateEvent, isConnected } = useGoogleCalendar();
+  const { createEvent, updateEvent, deleteEvent, isConnected } = useGoogleCalendar();
   const startDateRef = useRef<HTMLInputElement>(null);
   const startTimeRef = useRef<HTMLInputElement>(null);
   const endDateRef = useRef<HTMLInputElement>(null);
@@ -356,6 +367,40 @@ export function CreateEventModal({
     }
   };
 
+  const handleDelete = async () => {
+    if (!selectedEvent?.id) return;
+    
+    setIsLoading(true);
+    try {
+      const success = await deleteEvent(selectedEvent.id, selectedEvent.calendarId);
+      
+      if (success) {
+        toast({
+          title: "Sucesso",
+          description: "Evento excluído do Google Calendar com sucesso!",
+        });
+        
+        // Fechar modal e chamar callback
+        onClose();
+        if (onEventCreated) {
+          onEventCreated();
+        }
+      } else {
+        throw new Error("Falha ao excluir evento");
+      }
+    } catch (error: any) {
+      console.error("Erro ao excluir evento:", error);
+      toast({
+        title: "Erro",
+        description: error.message || "Não foi possível excluir o evento. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
@@ -555,25 +600,69 @@ export function CreateEventModal({
           </div>
 
           {/* Botões */}
-          <div className="flex justify-end gap-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-              disabled={isLoading}
-            >
-              <X className="w-4 h-4 mr-2" />
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isLoading || !isConnected}>
-              <Save className="w-4 h-4 mr-2" />
-              {isLoading 
-                ? (modalMode === 'edit' ? "Salvando..." : "Criando...") 
-                : (modalMode === 'edit' ? "Salvar Alterações" : "Criar Evento")
-              }
-            </Button>
+          <div className="flex justify-between gap-2 pt-4">
+            {/* Botão de deletar à esquerda (apenas em modo de edição) */}
+            {modalMode === 'edit' && (
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={isLoading}
+                className="gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                Excluir
+              </Button>
+            )}
+            
+            {/* Espaçador para manter os botões Cancelar e Salvar à direita */}
+            <div className="flex-1" />
+            
+            {/* Botões de ação à direita */}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleClose}
+                disabled={isLoading}
+              >
+                <X className="w-4 h-4 mr-2" />
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isLoading || !isConnected}>
+                <Save className="w-4 h-4 mr-2" />
+                {isLoading 
+                  ? (modalMode === 'edit' ? "Salvando..." : "Criando...") 
+                  : (modalMode === 'edit' ? "Salvar Alterações" : "Criar Evento")
+                }
+              </Button>
+            </div>
           </div>
         </form>
+        
+        {/* Dialog de Confirmação de Exclusão */}
+        <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja excluir este evento? Esta ação não pode ser desfeita e o evento será removido permanentemente do Google Calendar.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isLoading}>
+                Cancelar
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                disabled={isLoading}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {isLoading ? "Excluindo..." : "Sim, Excluir"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );
