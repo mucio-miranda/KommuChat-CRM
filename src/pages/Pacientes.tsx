@@ -97,10 +97,12 @@ export default function Pacientes() {
       }
     }
     
-    if (patient.atendimentofinal === "true") return "atendimentofinal";
-    if (patient.topoucall === "true") return "topoucall";
-    if (patient.followup === "true") return "followup";
-    if (patient.follow === "true") return "followup";
+    const checkTrue = (val: any) => String(val) === "true" || val === true;
+
+    if (checkTrue(patient.atendimentofinal)) return "atendimentofinal";
+    if (checkTrue(patient.topoucall)) return "topoucall";
+    if (checkTrue(patient.followup)) return "followup";
+    if (checkTrue(patient.follow)) return "followup";
     return "novo";
   };
 
@@ -267,10 +269,13 @@ export default function Pacientes() {
       
       if (patient.fonte === 'humano') {
         // Update paciente manual
+        // Nota: Se a tabela manual não tiver a coluna topoucall, isso pode gerar erro.
+        // Assumindo que o usuário quer replicar o comportamento.
         const { error: updateError } = await supabaseWrite!
           .from('pacientes_manuais')
           .update({ 
             data_agendamento: dateStr,
+            // Para manuais, mantemos string por segurança ou removemos se não existir
             topoucall: topoucallValue 
           })
           .eq('id', patient.id)
@@ -279,13 +284,15 @@ export default function Pacientes() {
         error = updateError;
       } else {
         // Update paciente IA
-        // Tenta atualizar usando o cliente de leitura (que pode ter permissão se configurado corretamente)
-        // Se a tabela tiver RLS habilitado para permitir update de autenticados, pode funcionar
+        // Para tabelas IA, geralmente topoucall é boolean ou string 'true'/'false'.
+        // Vamos enviar boolean para garantir compatibilidade se for coluna boolean.
+        const topoucallBoolean = !!newDate;
+
         const { error: updateError } = await supabase!
           .from(iaTableName)
           .update({ 
             data_agendamento: dateStr,
-            topoucall: topoucallValue
+            topoucall: topoucallBoolean
           })
           .eq('id', patient.id);
           
