@@ -259,6 +259,8 @@ export default function Pacientes() {
 
     setUpdatingPatientId(patient.id);
     const dateStr = newDate ? newDate.toISOString() : null;
+    // Se tem data (nova ou alterada), topoucall = "true". Se removeu a data, topoucall = "false".
+    const topoucallValue = newDate ? "true" : "false";
     
     try {
       let error = null;
@@ -267,7 +269,10 @@ export default function Pacientes() {
         // Update paciente manual
         const { error: updateError } = await supabaseWrite!
           .from('pacientes_manuais')
-          .update({ data_agendamento: dateStr })
+          .update({ 
+            data_agendamento: dateStr,
+            topoucall: topoucallValue 
+          })
           .eq('id', patient.id)
           .eq('cliente_id', user.cliente_id);
           
@@ -278,7 +283,10 @@ export default function Pacientes() {
         // Se a tabela tiver RLS habilitado para permitir update de autenticados, pode funcionar
         const { error: updateError } = await supabase!
           .from(iaTableName)
-          .update({ data_agendamento: dateStr })
+          .update({ 
+            data_agendamento: dateStr,
+            topoucall: topoucallValue
+          })
           .eq('id', patient.id);
           
         error = updateError;
@@ -298,7 +306,11 @@ export default function Pacientes() {
         });
         // Atualizar estado local para refletir mudança imediata
         setPatients(prev => prev.map(p => 
-          p.id === patient.id ? { ...p, data_agendamento: dateStr || undefined } : p
+          p.id === patient.id ? { 
+            ...p, 
+            data_agendamento: dateStr || undefined,
+            topoucall: topoucallValue 
+          } : p
         ));
       }
     } catch (err) {
