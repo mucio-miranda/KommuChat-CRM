@@ -357,7 +357,7 @@ export class GoogleCalendarServiceHybrid {
   }
 
   // Obter eventos de TODAS as agendas com período estendido
-  async getAllEventsFromAllCalendars(maxResults: number = 250) {
+  async getAllEventsFromAllCalendars(maxResults: number = 1000) {
     try {
       // Verificar e renovar token se necessário antes de fazer a requisição
       const tokenValid = await this.ensureValidToken();
