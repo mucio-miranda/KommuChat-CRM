@@ -10,6 +10,7 @@ import {
 import { StatusBadge } from "@/components/StatusBadge";
 import { Layout } from "@/components/Layout";
 import { NewPatientModal } from "@/components/NewPatientModal";
+import { EditDatePopover } from "@/components/EditDatePopover";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,6 +66,9 @@ export default function Pacientes() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [isNewPatientModalOpen, setIsNewPatientModalOpen] = useState(false);
+  const [updatingPatientId, setUpdatingPatientId] = useState<number | null>(null);
+  // Estado para armazenar o nome da tabela IA atual
+  const [iaTableName, setIaTableName] = useState<string>("kommuchat_mvp");
   
   // Estados para ordenação
   const [sortField, setSortField] = useState<string>("");
@@ -117,7 +121,11 @@ export default function Pacientes() {
   const formatDate = (dateString?: string): string => {
     if (!dateString) return "N/A";
     try {
-      return new Date(dateString).toLocaleDateString('pt-BR');
+      const date = new Date(dateString);
+      if (date.getFullYear() === 9999) {
+        return "N/A";
+      }
+      return date.toLocaleDateString('pt-BR');
     } catch {
       return "Data inválida";
     }
@@ -160,6 +168,8 @@ export default function Pacientes() {
           console.log('✅ PACIENTES - Tabela IA alterada para:', tableName);
         }
       }
+      
+      setIaTableName(tableName);
 
       console.log('🎯 PACIENTES - Carregando dados da tabela IA:', tableName);
 
@@ -243,6 +253,66 @@ export default function Pacientes() {
     }
   }, [supabase, supabaseWrite, supabaseConfig, user, toast]);
 
+  // Função para atualizar a data de agendamento
+  const handleUpdateDate = async (patient: Patient, newDate: Date | null) => {
+    if (!user) return;
+
+    setUpdatingPatientId(patient.id);
+    const dateStr = newDate ? newDate.toISOString() : null;
+    
+    try {
+      let error = null;
+      
+      if (patient.fonte === 'humano') {
+        // Update paciente manual
+        const { error: updateError } = await supabaseWrite!
+          .from('pacientes_manuais')
+          .update({ data_agendamento: dateStr })
+          .eq('id', patient.id)
+          .eq('cliente_id', user.cliente_id);
+          
+        error = updateError;
+      } else {
+        // Update paciente IA
+        // Tenta atualizar usando o cliente de leitura (que pode ter permissão se configurado corretamente)
+        // Se a tabela tiver RLS habilitado para permitir update de autenticados, pode funcionar
+        const { error: updateError } = await supabase!
+          .from(iaTableName)
+          .update({ data_agendamento: dateStr })
+          .eq('id', patient.id);
+          
+        error = updateError;
+      }
+
+      if (error) {
+        console.error('Erro ao atualizar data:', error);
+        toast({
+          title: "Erro ao atualizar",
+          description: "Não foi possível atualizar a data. Verifique suas permissões.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Data atualizada",
+          description: newDate ? "Agendamento salvo com sucesso!" : "Agendamento removido.",
+        });
+        // Atualizar estado local para refletir mudança imediata
+        setPatients(prev => prev.map(p => 
+          p.id === patient.id ? { ...p, data_agendamento: dateStr || undefined } : p
+        ));
+      }
+    } catch (err) {
+      console.error('Erro inesperado:', err);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro inesperado ao tentar atualizar.",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingPatientId(null);
+    }
+  };
+
   // Função para abrir diálogo de confirmação de exclusão
   const handleDeletePatient = (patient: Patient) => {
     if (patient.fonte !== 'humano') {
@@ -325,10 +395,20 @@ export default function Pacientes() {
           aValue = a.fonte;
           bValue = b.fonte;
           break;
+        case 'agendamento':
+          // Ordenar por data de agendamento
+          const getDateValue = (dateStr?: string) => {
+            if (!dateStr) return 0;
+            const date = new Date(dateStr);
+            return date.getFullYear() === 9999 ? 0 : date.getTime();
+          };
+          aValue = getDateValue(a.data_agendamento);
+          bValue = getDateValue(b.data_agendamento);
+          break;
         case 'data':
           // Ordenar por data de atualização
-          aValue = new Date(a.setdata || a.updated_at || a.created_at || '').getTime();
-          bValue = new Date(b.setdata || b.updated_at || b.created_at || '').getTime();
+          aValue = new Date(a.setdata || a.updated_at || a.created_at || 0).getTime();
+          bValue = new Date(b.setdata || b.updated_at || b.created_at || 0).getTime();
           break;
         case 'status':
           // Ordenar por status
@@ -357,7 +437,12 @@ export default function Pacientes() {
     } else {
       // Se clicou em coluna diferente, definir nova coluna e direção padrão
       setSortField(field);
-      setSortDirection('asc');
+      // Para campos de data, padrão é descendente (mais recente primeiro)
+      if (field === 'data' || field === 'agendamento') {
+        setSortDirection('desc');
+      } else {
+        setSortDirection('asc');
+      }
     }
   };
 
@@ -588,6 +673,24 @@ export default function Pacientes() {
                   </th>
                   <th className="text-left py-3 px-2 font-medium text-muted-foreground">
                     <button
+                      onClick={() => handleSort('agendamento')}
+                      className="flex items-center gap-1 hover:text-foreground transition-colors"
+                    >
+                      Data do Agendamento
+                      {sortField === 'agendamento' ? (
+                        sortDirection === 'asc' ? 
+                          <ChevronUp className="w-4 h-4" /> : 
+                          <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <div className="flex flex-col">
+                          <ChevronUp className="w-3 h-3 opacity-30" />
+                          <ChevronDown className="w-3 h-3 opacity-30 -mt-1" />
+                        </div>
+                      )}
+                    </button>
+                  </th>
+                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">
+                    <button
                       onClick={() => handleSort('data')}
                       className="flex items-center gap-1 hover:text-foreground transition-colors"
                     >
@@ -636,6 +739,17 @@ export default function Pacientes() {
                       >
                         {patient.fonte === 'ia' ? 'IA' : 'Humano'}
                       </Badge>
+                    </td>
+                    <td className="py-4 px-2">
+                      <div className="text-sm">
+                        <div className="text-foreground font-medium">
+                          <EditDatePopover 
+                            initialDate={patient.data_agendamento}
+                            onSave={(date) => handleUpdateDate(patient, date)}
+                            isLoading={updatingPatientId === patient.id}
+                          />
+                        </div>
+                      </div>
                     </td>
                     <td className="py-4 px-2">
                       <div className="text-sm">
@@ -699,21 +813,30 @@ export default function Pacientes() {
                   {/* Status e Data */}
                   <div className="flex items-center justify-between gap-2 pt-0.5">
                     <StatusBadge status={getPatientStatus(patient)} />
-                    <div className="flex items-center gap-2">
-                      <div className="text-[9px] sm:text-[10px] text-muted-foreground whitespace-nowrap">
-                        {formatDate(patient.setdata || patient.updated_at || patient.created_at)}
+                    <div className="flex flex-col items-end gap-0.5">
+                      <div className="text-[9px] sm:text-[10px] font-medium whitespace-nowrap">
+                         <EditDatePopover 
+                            initialDate={patient.data_agendamento}
+                            onSave={(date) => handleUpdateDate(patient, date)}
+                            isLoading={updatingPatientId === patient.id}
+                          />
                       </div>
-                      {patient.fonte === 'humano' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeletePatient(patient)}
-                          className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          title="Excluir paciente"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <div className="text-[9px] sm:text-[10px] text-muted-foreground whitespace-nowrap">
+                          {formatDate(patient.setdata || patient.updated_at || patient.created_at)}
+                        </div>
+                        {patient.fonte === 'humano' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeletePatient(patient)}
+                            className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            title="Excluir paciente"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
