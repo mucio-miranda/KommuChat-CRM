@@ -32,6 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Switch } from "@/components/ui/switch";
 import { useSupabase } from "@/hooks/useSupabase";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -82,6 +83,8 @@ export default function Pacientes() {
   const { user } = useAuth();
   const { read: supabase, config: supabaseConfig, write: supabaseWrite } = useSupabase();
 
+  const checkTrue = (val: any) => String(val) === "true" || val === true;
+
   // Função para determinar o status baseado nos campos do Supabase
   const getPatientStatus = (patient: Patient): "followup" | "topoucall" | "atendimentofinal" | "cancelou_agendamento" | "novo" => {
     // Verificar se tem data_agendamento com ano 9999 (cancelou agendamento)
@@ -97,8 +100,6 @@ export default function Pacientes() {
       }
     }
     
-    const checkTrue = (val: any) => String(val) === "true" || val === true;
-
     if (checkTrue(patient.atendimentofinal)) return "atendimentofinal";
     if (checkTrue(patient.topoucall)) return "topoucall";
     if (checkTrue(patient.followup)) return "followup";
@@ -329,6 +330,70 @@ export default function Pacientes() {
       });
     } finally {
       setUpdatingPatientId(null);
+    }
+  };
+
+  const handleToggleAtendimentoFinal = async (patient: Patient) => {
+    if (!user) return;
+
+    const currentVal = checkTrue(patient.atendimentofinal);
+    // Se currentVal é true (campo true), o toggle está OFF. Queremos ligar -> campo false.
+    // Se currentVal é false (campo false), o toggle está ON. Queremos desligar -> campo true.
+    // Resumo: newFieldVal = !currentVal
+    const newFieldVal = !currentVal;
+    
+    // Optimistic update
+    setPatients(prev => prev.map(p => 
+      p.id === patient.id ? { ...p, atendimentofinal: String(newFieldVal) } : p
+    ));
+
+    try {
+      let error = null;
+      
+      if (patient.fonte === 'humano') {
+        // Update paciente manual
+        const { error: updateError } = await supabaseWrite!
+          .from('pacientes_manuais')
+          .update({ 
+            atendimentofinal: String(newFieldVal)
+          })
+          .eq('id', patient.id)
+          .eq('cliente_id', user.cliente_id);
+          
+        error = updateError;
+      } else {
+        // Update paciente IA
+        const { error: updateError } = await supabase!
+          .from(iaTableName)
+          .update({ 
+            atendimentofinal: newFieldVal
+          })
+          .eq('id', patient.id);
+          
+        error = updateError;
+      }
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Status atualizado",
+        description: `Atendimento ${newFieldVal ? 'desativado' : 'ativado'} com sucesso.`,
+      });
+
+    } catch (err) {
+      console.error('Erro ao atualizar status:', err);
+      // Revert optimistic update
+      setPatients(prev => prev.map(p => 
+        p.id === patient.id ? { ...p, atendimentofinal: String(currentVal) } : p
+      ));
+      
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o status.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -727,7 +792,7 @@ export default function Pacientes() {
                     </button>
                   </th>
                   <th className="text-left py-3 px-2 font-medium text-muted-foreground">
-                    Ações
+                    Ativar/Desativar
                   </th>
                 </tr>
               </thead>
@@ -778,17 +843,24 @@ export default function Pacientes() {
                       </div>
                     </td>
                     <td className="py-4 px-2">
-                      {patient.fonte === 'humano' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeletePatient(patient)}
-                          className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          title="Excluir paciente"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={!checkTrue(patient.atendimentofinal)}
+                          onCheckedChange={() => handleToggleAtendimentoFinal(patient)}
+                          title={checkTrue(patient.atendimentofinal) ? "Reativar atendimento" : "Finalizar atendimento"}
+                        />
+                        {patient.fonte === 'humano' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeletePatient(patient)}
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            title="Excluir paciente"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
