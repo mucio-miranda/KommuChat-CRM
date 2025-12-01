@@ -11,6 +11,7 @@ import { SearchConsultation } from "@/components/SearchConsultation";
 import { CreateEventModal } from "@/components/CreateEventModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabaseCrm } from "@/lib/supabase-crm";
+import { useSearchParams } from "react-router-dom";
 
 // Removidos eventos mock - apenas eventos reais do Google Calendar serão exibidos
 
@@ -55,8 +56,10 @@ export default function Calendario() {
   const [selectedTimeForEvent, setSelectedTimeForEvent] = useState<string | undefined>();
   const [modalMode, setModalMode] = useState<ModalMode>('create');
   const [selectedEvent, setSelectedEvent] = useState<GoogleCalendarEvent | null>(null);
+  const [preSelectedPatient, setPreSelectedPatient] = useState<{ id: number; fonte: 'ia' | 'humano'; name: string } | null>(null);
   const { isConnected, isLoading, events, connect, disconnect, refreshEvents, forceRefreshToken, getCalendarList } = useGoogleCalendar();
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const getDaysInMonth = (month: number, year: number) => {
     return new Date(year, month + 1, 0).getDate();
@@ -387,6 +390,70 @@ export default function Calendario() {
       clearInterval(interval);
     };
   }, [isConnected, forceRefreshToken]);
+
+  // Detectar parâmetros da URL para abrir modal com paciente pré-selecionado ou navegar para data
+  useEffect(() => {
+    const openModal = searchParams.get('openModal');
+    const patientId = searchParams.get('patientId');
+    const patientName = searchParams.get('patientName');
+    const patientFonte = searchParams.get('patientFonte') as 'ia' | 'humano' | null;
+    const dateParam = searchParams.get('date');
+    const viewParam = searchParams.get('view');
+
+    console.log('🔍 CALENDÁRIO - Parâmetros da URL:', {
+      openModal,
+      patientId,
+      patientName,
+      patientFonte,
+      dateParam,
+      viewParam
+    });
+
+    // Se há uma data para navegar, ir para visualização semanal naquela data
+    if (dateParam && viewParam === 'week') {
+      try {
+        const targetDate = new Date(dateParam);
+        
+        // Mudar para visualização semanal
+        setViewMode('week');
+        
+        // Posicionar na semana correta
+        setCurrentWeek(targetDate);
+        
+        // Também atualizar mês e ano para manter consistência
+        setCurrentMonth(targetDate.getMonth());
+        setCurrentYear(targetDate.getFullYear());
+        
+        console.log('📅 Navegando para data:', targetDate);
+      } catch (error) {
+        console.error('Erro ao processar data da URL:', error);
+      }
+      
+      // Limpar parâmetros da URL
+      setSearchParams({});
+    } 
+    // Se deve abrir modal com paciente pré-selecionado
+    else if (openModal === 'true' && patientId && patientName && patientFonte) {
+      const preSelected = {
+        id: parseInt(patientId),
+        fonte: patientFonte,
+        name: patientName
+      };
+
+      console.log('🎯 CALENDÁRIO - Configurando paciente pré-selecionado:', preSelected);
+
+      // Configurar paciente pré-selecionado
+      setPreSelectedPatient(preSelected);
+
+      // Abrir modal de criar evento
+      setModalMode('create');
+      setSelectedEvent(null);
+      setIsCreateEventModalOpen(true);
+
+      // Limpar parâmetros da URL
+      setSearchParams({});
+    }
+  }, [searchParams, setSearchParams]);
 
   // Obter todas as consultas filtradas para o componente de busca
   const getAllFilteredAppointments = useMemo(() => {
@@ -819,6 +886,7 @@ export default function Calendario() {
           setIsCreateEventModalOpen(false);
           setModalMode('create');
           setSelectedEvent(null);
+          setPreSelectedPatient(null);
         }}
         onEventCreated={handleEventCreated}
         initialDate={selectedDateForEvent}
@@ -826,6 +894,7 @@ export default function Calendario() {
         existingEvents={events}
         modalMode={modalMode}
         selectedEvent={selectedEvent}
+        preSelectedPatient={preSelectedPatient}
       />
     </Layout>
   );

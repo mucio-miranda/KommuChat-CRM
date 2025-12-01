@@ -32,6 +32,11 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useGoogleCalendar } from "@/contexts/GoogleCalendarContextSimple";
 import { GoogleCalendarEvent } from "@/types/google-calendar";
+import { usePatientsSearch } from "@/hooks/usePatientsSearch";
+import { useSupabase } from "@/hooks/useSupabase";
+import { useAuth } from "@/contexts/AuthContext";
+import { Patient, EventPatientMetadata } from "@/types/patient";
+import { PatientCombobox } from "@/components/PatientCombobox";
 
 interface CreateEventModalProps {
   isOpen: boolean;
@@ -42,6 +47,7 @@ interface CreateEventModalProps {
   existingEvents?: GoogleCalendarEvent[];
   modalMode?: 'create' | 'edit';
   selectedEvent?: GoogleCalendarEvent | null;
+  preSelectedPatient?: { id: number; fonte: 'ia' | 'humano'; name: string } | null;
 }
 
 export function CreateEventModal({
@@ -53,7 +59,10 @@ export function CreateEventModal({
   existingEvents = [],
   modalMode = 'create',
   selectedEvent = null,
+  preSelectedPatient = null,
 }: CreateEventModalProps) {
+  console.log('🔄 CreateEventModal renderizado - preSelectedPatient:', preSelectedPatient);
+
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -68,8 +77,34 @@ export function CreateEventModal({
 
   const [isLoading, setIsLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const { toast } = useToast();
   const { createEvent, updateEvent, deleteEvent, isConnected } = useGoogleCalendar();
+  const { patients, loading: patientsLoading, iaTableName } = usePatientsSearch();
+  const { write: supabaseWrite, read: supabase } = useSupabase();
+  const { user } = useAuth();
+
+  // Debug: Log quando pacientes são carregados
+  useEffect(() => {
+    console.log('🔍 CreateEventModal: Pacientes carregados:', patients.length, 'Loading:', patientsLoading);
+  }, [patients, patientsLoading]);
+
+  // Definir paciente pré-selecionado quando fornecido
+  useEffect(() => {
+    if (preSelectedPatient && patients.length > 0 && isOpen && modalMode === 'create') {
+      const patient = patients.find(
+        p => p.id === preSelectedPatient.id && p.fonte === preSelectedPatient.fonte
+      );
+      if (patient) {
+        console.log('🎯 Paciente pré-selecionado encontrado:', patient);
+        setSelectedPatient(patient);
+      } else {
+        console.log('❌ Paciente pré-selecionado não encontrado:', preSelectedPatient);
+        console.log('📋 Pacientes disponíveis:', patients.length);
+      }
+    }
+  }, [preSelectedPatient, patients, isOpen, modalMode]);
+
   const startDateRef = useRef<HTMLInputElement>(null);
   const startTimeRef = useRef<HTMLInputElement>(null);
   const endDateRef = useRef<HTMLInputElement>(null);
@@ -85,6 +120,23 @@ export function CreateEventModal({
       return new Date(year, month - 1, day); // month é 0-indexed
     }
     return new Date();
+  };
+
+  // Função auxiliar para extrair metadata do paciente da descrição do evento
+  const extractPatientMetadata = (description?: string): EventPatientMetadata | null => {
+    if (!description) return null;
+    
+    try {
+      // Procurar por JSON no final da descrição
+      const metadataMatch = description.match(/\[PATIENT_METADATA\](.*?)\[\/PATIENT_METADATA\]/);
+      if (metadataMatch) {
+        return JSON.parse(metadataMatch[1]);
+      }
+    } catch (error) {
+      console.error('Erro ao extrair metadata do paciente:', error);
+    }
+    
+    return null;
   };
 
   // Preencher formulário quando modal abrir
@@ -110,9 +162,28 @@ export function CreateEventModal({
           .filter(Boolean)
           .join(", ") || "";
         
+        // Extrair metadata do paciente
+        const patientMetadata = extractPatientMetadata(selectedEvent.description);
+        
+        // Buscar paciente se houver metadata
+        if (patientMetadata && patients.length > 0) {
+          const patient = patients.find(
+            p => p.id === patientMetadata.patientId && p.fonte === patientMetadata.patientSource
+          );
+          setSelectedPatient(patient || null);
+        } else {
+          setSelectedPatient(null);
+        }
+        
+        // Remover metadata da descrição para exibição
+        let displayDescription = selectedEvent.description || "";
+        if (patientMetadata) {
+          displayDescription = displayDescription.replace(/\[PATIENT_METADATA\].*?\[\/PATIENT_METADATA\]/, '').trim();
+        }
+        
         setFormData({
           title: selectedEvent.summary || "",
-          description: selectedEvent.description || "",
+          description: displayDescription,
           startDate: startDateStr,
           startTime: startTimeStr,
           endDate: endDateStr,
@@ -132,6 +203,10 @@ export function CreateEventModal({
           endDate: dateStr,
           endTime: calculateEndTime(timeStr, prev.duracao_minutos),
         }));
+        // Não limpar paciente selecionado se houver um pré-selecionado
+        if (!preSelectedPatient) {
+          setSelectedPatient(null);
+        }
       } else {
         // Limpar formulário para novo evento
         setFormData({
@@ -145,9 +220,13 @@ export function CreateEventModal({
           duracao_minutos: "60",
           attendees: "",
         });
+        // Não limpar paciente selecionado se houver um pré-selecionado
+        if (!preSelectedPatient) {
+          setSelectedPatient(null);
+        }
       }
     }
-  }, [isOpen, initialDate, initialTime, modalMode, selectedEvent]);
+  }, [isOpen, initialDate, initialTime, modalMode, selectedEvent, patients, preSelectedPatient]);
 
 
   const calculateEndTime = (startTime: string, duration: string): string => {
@@ -281,10 +360,21 @@ export function CreateEventModal({
             .map((email) => ({ email }))
         : [];
 
+      // Preparar descrição com metadata do paciente (se houver)
+      let eventDescription = formData.description || "";
+      if (selectedPatient) {
+        const patientMetadata: EventPatientMetadata = {
+          patientId: selectedPatient.id,
+          patientSource: selectedPatient.fonte,
+          patientName: selectedPatient.nome,
+        };
+        eventDescription += `\n\n[PATIENT_METADATA]${JSON.stringify(patientMetadata)}[/PATIENT_METADATA]`;
+      }
+
       // Preparar dados do evento
       const googleEvent: Partial<GoogleCalendarEvent> = {
         summary: formData.title,
-        description: formData.description || undefined,
+        description: eventDescription || undefined,
         start: {
           dateTime: startDateTime.toISOString(),
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -297,23 +387,75 @@ export function CreateEventModal({
         attendees: attendees.length > 0 ? attendees : undefined,
       };
 
+      // Criar ou atualizar evento no Google Calendar
       if (modalMode === 'edit' && selectedEvent?.id) {
         // Atualizar evento existente
         await updateEvent(selectedEvent.id, googleEvent, selectedEvent.calendarId);
-        
-        toast({
-          title: "Sucesso",
-          description: "Evento atualizado no Google Calendar com sucesso!",
-        });
       } else {
         // Criar novo evento
         await createEvent(googleEvent);
-        
-        toast({
-          title: "Sucesso",
-          description: "Evento criado no Google Calendar com sucesso!",
-        });
       }
+
+      // Atualizar data_agendamento do paciente (se houver paciente selecionado)
+      if (selectedPatient && user) {
+        try {
+          const dateStr = startDateTime.toISOString();
+          
+          if (selectedPatient.fonte === 'humano') {
+            // Update paciente manual
+            const { error: updateError } = await supabaseWrite!
+              .from('pacientes_manuais')
+              .update({ 
+                data_agendamento: dateStr,
+                topoucall: "true"
+              })
+              .eq('id', selectedPatient.id)
+              .eq('cliente_id', user.cliente_id);
+            
+            if (updateError) {
+              console.error('Erro ao atualizar paciente manual:', updateError);
+              toast({
+                title: "Aviso",
+                description: "Evento salvo, mas houve um erro ao atualizar o agendamento do paciente.",
+                variant: "default",
+              });
+            }
+          } else {
+            // Update paciente IA
+            const { error: updateError } = await supabase!
+              .from(iaTableName)
+              .update({ 
+                data_agendamento: dateStr,
+                topoucall: true
+              })
+              .eq('id', selectedPatient.id);
+            
+            if (updateError) {
+              console.error('Erro ao atualizar paciente IA:', updateError);
+              toast({
+                title: "Aviso",
+                description: "Evento salvo, mas houve um erro ao atualizar o agendamento do paciente.",
+                variant: "default",
+              });
+            }
+          }
+        } catch (patientError) {
+          console.error('Erro ao atualizar paciente:', patientError);
+          toast({
+            title: "Aviso",
+            description: "Evento salvo, mas houve um erro ao atualizar o agendamento do paciente.",
+            variant: "default",
+          });
+        }
+      }
+      
+      // Mostrar mensagem de sucesso
+      toast({
+        title: "Sucesso",
+        description: modalMode === 'edit' 
+          ? "Evento atualizado no Google Calendar com sucesso!" 
+          : "Evento criado no Google Calendar com sucesso!",
+      });
 
       // Limpar formulário
       setFormData({
@@ -327,6 +469,7 @@ export function CreateEventModal({
         duracao_minutos: "60",
         attendees: "",
       });
+      setSelectedPatient(null);
 
       // Fechar modal e chamar callback
       onClose();
@@ -359,6 +502,7 @@ export function CreateEventModal({
         duracao_minutos: "60",
         attendees: "",
       });
+      setSelectedPatient(null);
       setShowDeleteConfirm(false);
       onClose();
     }
@@ -370,11 +514,50 @@ export function CreateEventModal({
     try {
       setIsLoading(true);
 
+      // Extrair metadata do paciente antes de deletar
+      const patientMetadata = extractPatientMetadata(selectedEvent.description);
+
       // Deletar evento do Google Calendar
       await deleteEvent(
         selectedEvent.id,
         selectedEvent.calendarId || 'primary'
       );
+
+      // Remover agendamento do paciente (se houver paciente associado)
+      if (patientMetadata && user) {
+        try {
+          if (patientMetadata.patientSource === 'humano') {
+            // Update paciente manual
+            const { error: updateError } = await supabaseWrite!
+              .from('pacientes_manuais')
+              .update({ 
+                data_agendamento: null,
+                topoucall: "false"
+              })
+              .eq('id', patientMetadata.patientId)
+              .eq('cliente_id', user.cliente_id);
+            
+            if (updateError) {
+              console.error('Erro ao atualizar paciente manual:', updateError);
+            }
+          } else {
+            // Update paciente IA
+            const { error: updateError } = await supabase!
+              .from(iaTableName)
+              .update({ 
+                data_agendamento: null,
+                topoucall: false
+              })
+              .eq('id', patientMetadata.patientId);
+            
+            if (updateError) {
+              console.error('Erro ao atualizar paciente IA:', updateError);
+            }
+          }
+        } catch (patientError) {
+          console.error('Erro ao atualizar paciente ao deletar evento:', patientError);
+        }
+      }
 
       toast({
         title: "Evento deletado!",
@@ -422,6 +605,26 @@ export function CreateEventModal({
               required
               disabled={isLoading}
             />
+          </div>
+
+          {/* Seleção de Paciente */}
+          <div className="space-y-2">
+            <Label htmlFor="patient" className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Paciente
+            </Label>
+            <PatientCombobox
+              patients={patients}
+              value={selectedPatient ? { id: selectedPatient.id, fonte: selectedPatient.fonte } : null}
+              onSelect={setSelectedPatient}
+              disabled={isLoading}
+              loading={patientsLoading}
+            />
+            {selectedPatient && (
+              <p className="text-xs text-muted-foreground">
+                A data deste evento será sincronizada com o agendamento do paciente.
+              </p>
+            )}
           </div>
 
           {/* Data e Hora de Início */}

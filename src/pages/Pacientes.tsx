@@ -831,6 +831,9 @@ export default function Pacientes() {
                             initialDate={patient.data_agendamento}
                             onSave={(date) => handleUpdateDate(patient, date)}
                             isLoading={updatingPatientId === patient.id}
+                            patientId={patient.id}
+                            patientName={patient.nome}
+                            patientFonte={patient.fonte}
                           />
                         </div>
                       </div>
