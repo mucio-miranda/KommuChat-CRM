@@ -792,7 +792,7 @@ export default function Pacientes() {
                     </button>
                   </th>
                   <th className="text-left py-3 px-2 font-medium text-muted-foreground">
-                    Ativar/Desativar
+                    Atendimento IA
                   </th>
                 </tr>
               </thead>
