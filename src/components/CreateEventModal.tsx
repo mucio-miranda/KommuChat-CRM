@@ -37,6 +37,7 @@ import { useSupabase } from "@/hooks/useSupabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { Patient, EventPatientMetadata } from "@/types/patient";
 import { PatientCombobox } from "@/components/PatientCombobox";
+import { DatePickerPopover } from "@/components/DatePickerPopover";
 
 interface CreateEventModalProps {
   isOpen: boolean;
@@ -105,9 +106,7 @@ export function CreateEventModal({
     }
   }, [preSelectedPatient, patients, isOpen, modalMode]);
 
-  const startDateRef = useRef<HTMLInputElement>(null);
   const startTimeRef = useRef<HTMLInputElement>(null);
-  const endDateRef = useRef<HTMLInputElement>(null);
   const endTimeRef = useRef<HTMLInputElement>(null);
 
   // Função helper para converter data de eventos corretamente
@@ -634,26 +633,12 @@ export function CreateEventModal({
                 <Clock className="w-4 h-4" />
                 Data Início *
               </Label>
-              <div className="relative">
-                <Input
-                  ref={startDateRef}
-                  id="startDate"
-                  type="date"
-                  value={formData.startDate}
-                  onChange={(e) => handleInputChange("startDate", e.target.value)}
-                  required
-                  disabled={isLoading}
-                  className="pr-10"
-                />
-                <ChevronDown 
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground transition-colors" 
-                  onClick={() => {
-                    if (startDateRef.current) {
-                      startDateRef.current.showPicker?.() || startDateRef.current.click();
-                    }
-                  }}
-                />
-              </div>
+              <DatePickerPopover
+                value={formData.startDate}
+                onChange={(date) => handleInputChange("startDate", date)}
+                disabled={isLoading}
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="startTime">Hora Início *</Label>
@@ -707,25 +692,11 @@ export function CreateEventModal({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="endDate">Data Término</Label>
-              <div className="relative">
-                <Input
-                  ref={endDateRef}
-                  id="endDate"
-                  type="date"
-                  value={formData.endDate}
-                  onChange={(e) => handleInputChange("endDate", e.target.value)}
-                  disabled={isLoading}
-                  className="pr-10"
-                />
-                <ChevronDown 
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground transition-colors" 
-                  onClick={() => {
-                    if (endDateRef.current) {
-                      endDateRef.current.showPicker?.() || endDateRef.current.click();
-                    }
-                  }}
-                />
-              </div>
+              <DatePickerPopover
+                value={formData.endDate}
+                onChange={(date) => handleInputChange("endDate", date)}
+                disabled={isLoading}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="endTime">Hora Término</Label>
