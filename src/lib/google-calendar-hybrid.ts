@@ -357,7 +357,7 @@ export class GoogleCalendarServiceHybrid {
   }
 
   // Obter eventos de TODAS as agendas com período estendido
-  async getAllEventsFromAllCalendars(maxResults: number = 1000) {
+  async getAllEventsFromAllCalendars(maxResults: number = 1500) {
     try {
       // Verificar e renovar token se necessário antes de fazer a requisição
       const tokenValid = await this.ensureValidToken();
@@ -394,12 +394,12 @@ export class GoogleCalendarServiceHybrid {
         console.log(`  - ${cal.summary} (${cal.id}) - Selecionada: ${cal.selected !== false}`);
       });
 
-      // 2. Definir período: 2 anos para trás e 1 ano para frente (período mais amplo)
+      // 2. Definir período: 3 meses para trás e 3 meses para frente
       const now = new Date();
-      const timeMin = new Date(now.getFullYear() - 2, now.getMonth(), now.getDate()).toISOString();
-      const timeMax = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()).toISOString();
+      const timeMin = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate()).toISOString();
+      const timeMax = new Date(now.getFullYear(), now.getMonth() + 3, now.getDate()).toISOString();
       
-      console.log(`📅 Período de busca ampliado: ${timeMin} até ${timeMax}`);
+      console.log(`📅 Período de busca: ${timeMin} até ${timeMax}`);
 
       // 3. Buscar eventos de cada agenda
       const allEvents = [];
