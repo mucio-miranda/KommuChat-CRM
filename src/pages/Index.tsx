@@ -81,8 +81,7 @@ const Index = () => {
 
       const { data, error } = await supabaseRead
         .from(tableName)
-        .select("*")
-        .limit(200);
+        .select("*");
         
       if (error) {
         console.error('❌ DASHBOARD - Erro ao carregar dados:', error);
@@ -162,11 +161,34 @@ const Index = () => {
     
     // Contar registros com data_agendamento preenchida
     const consultasAgendadas = list.filter(r => {
-      if (!r.data_agendamento) return false;
-      // Verificar se é uma data válida
-      const data = new Date(r.data_agendamento);
-      return !isNaN(data.getTime()) && r.data_agendamento.trim() !== '';
+      const dataAgendamento = r.data_agendamento;
+      if (dataAgendamento === null || dataAgendamento === undefined) return false;
+      // Verificar se é string e se após remover espaços não está vazia
+      const dataStr = String(dataAgendamento).trim();
+      return dataStr !== '';
     }).length;
+    
+    // Debug: Log detalhado para investigar discrepância
+    console.log('🔍 AGENDAMENTOS POR IA - Debug:');
+    console.log('  - Total de registros carregados:', list.length);
+    console.log('  - Registros com data_agendamento preenchida:', consultasAgendadas);
+    
+    // Contar registros com diferentes tipos de data_agendamento para debug
+    const comDataAgendamento = list.filter(r => {
+      const dataAgendamento = r.data_agendamento;
+      if (dataAgendamento === null || dataAgendamento === undefined) return false;
+      const dataStr = String(dataAgendamento).trim();
+      return dataStr !== '';
+    });
+    
+    console.log('  - Exemplos de data_agendamento encontradas:', 
+      comDataAgendamento.slice(0, 5).map(r => ({ 
+        id: r.id, 
+        nome: r.nome, 
+        data_agendamento: r.data_agendamento,
+        tipo: typeof r.data_agendamento
+      }))
+    );
     
     // Calcular taxa de conversão: Consultas Agendadas / Atendimentos Realizados (com setdata válida)
     const conversao = total ? Math.round((consultasAgendadas / total) * 100) : 0;

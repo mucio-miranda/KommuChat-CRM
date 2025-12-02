@@ -25,7 +25,7 @@ const statusConfig = {
     className: "bg-primary/10 text-primary border-primary/20"
   },
   atendimentofinal: {
-    label: "Concluído",
+    label: "Atendimento desativado",
     className: "bg-muted text-muted-foreground border-border"
   }
 };
