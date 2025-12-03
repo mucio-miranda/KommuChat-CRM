@@ -621,7 +621,7 @@ export function CreateEventModal({
             />
             {selectedPatient && (
               <p className="text-xs text-muted-foreground">
-                A data deste evento será sincronizada com o agendamento do paciente.
+                A data deste agendamento será sincronizada com o lembrete de consulta do paciente.
               </p>
             )}
           </div>
