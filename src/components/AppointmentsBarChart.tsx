@@ -393,6 +393,17 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
     }
   };
 
+  // Função para remover metadados do paciente da descrição
+  const cleanDescription = (description?: string): string | null => {
+    if (!description) return null;
+    
+    // Remover os metadados do paciente da descrição
+    const cleaned = description.replace(/\[PATIENT_METADATA\].*?\[\/PATIENT_METADATA\]/g, '').trim();
+    
+    // Retornar null se a descrição limpa estiver vazia
+    return cleaned.length > 0 ? cleaned : null;
+  };
+
   // Encontrar o valor máximo para normalizar as barras
   const maxCount = Math.max(...chartData.map(d => d.count), 1); // Mínimo 1 para evitar divisão por zero
   
@@ -539,9 +550,9 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
                     <div className="font-medium text-foreground truncate">
                       {event.summary || 'Sem título'}
                     </div>
-                    {event.description && (
+                    {cleanDescription(event.description) && (
                       <div className="text-muted-foreground truncate">
-                        {event.description}
+                        {cleanDescription(event.description)}
                       </div>
                     )}
                   </div>
