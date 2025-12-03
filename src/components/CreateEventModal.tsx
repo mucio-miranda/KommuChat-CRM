@@ -316,39 +316,8 @@ export function CreateEventModal({
         return;
       }
 
-      // Verificar se há conflito com eventos existentes
-      // Ao editar, não considerar o próprio evento como conflito
-      const hasConflict = existingEvents.some((event) => {
-        // Ignorar o evento que está sendo editado
-        if (modalMode === 'edit' && selectedEvent?.id && event.id === selectedEvent.id) {
-          return false;
-        }
-        
-        if (!event.start || !event.end) return false;
-
-        const existingStart = parseEventDate(event.start);
-        const existingEnd = parseEventDate(event.end);
-
-        if (!existingStart || !existingEnd) return false;
-
-        // Verificar se há sobreposição de horários
-        // Conflito ocorre se: novo evento começa antes do evento existente terminar
-        // E novo evento termina depois do evento existente começar
-        const conflicts = 
-          (startDateTime < existingEnd && endDateTime > existingStart);
-
-        return conflicts;
-      });
-
-      if (hasConflict) {
-        toast({
-          title: "Erro",
-          description: "Já existe um evento neste horário. Escolha outro horário.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
+      // Validação de conflitos de horários desativada
+      // Permite criar eventos no mesmo horário ou com sobreposição
 
       // Preparar participantes (attendees)
       const attendees = formData.attendees
