@@ -100,7 +100,7 @@ function AppRoutes() {
         </ProtectedRoute>
       } />
       {/* Rota /usuarios removida - funcionalidade movida para /admin/dashboard */}
-      <Route path="/automacoes" element={
+      <Route path="/chat" element={
         <ProtectedRoute>
           <Automatizacoes />
         </ProtectedRoute>

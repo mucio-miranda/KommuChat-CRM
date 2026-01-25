@@ -97,7 +97,10 @@ export default function UserManagement() {
     google_redirect_uri: 'http://localhost:8080/auth/google/callback',
     google_calendar_id: '',
     qr_code_file: null as File | null,
-    tabela_supabase: 'none'
+    tabela_supabase: 'none',
+    evo_base_url: '',
+    evo_instance: '',
+    evo_api_key: ''
   });
 
   useEffect(() => {
@@ -498,6 +501,15 @@ export default function UserManagement() {
           { chave: 'lembrete_whatsapp_24h', valor: 'true', tipo: 'boolean' }
         ];
 
+        // Adicionar configurações da Evolution API se fornecidas
+        if (newCliente.evo_base_url && newCliente.evo_instance && newCliente.evo_api_key) {
+          configs.push(
+            { chave: 'evo_base_url', valor: newCliente.evo_base_url, tipo: 'string' },
+            { chave: 'evo_instance', valor: newCliente.evo_instance, tipo: 'string' },
+            { chave: 'evo_api_key', valor: newCliente.evo_api_key, tipo: 'string' }
+          );
+        }
+
         const configsWithClienteId = configs.map(config => ({
           ...config,
           cliente_id: clienteData.id
@@ -588,7 +600,10 @@ export default function UserManagement() {
           google_redirect_uri: 'http://localhost:8080/auth/google/callback',
           google_calendar_id: '',
           qr_code_file: null,
-          tabela_supabase: 'none'
+          tabela_supabase: 'none',
+          evo_base_url: '',
+          evo_instance: '',
+          evo_api_key: ''
         });
       setShowCreateDialog(false);
       loadData();
@@ -935,6 +950,63 @@ export default function UserManagement() {
                     <p className="text-xs text-muted-foreground">
                       ID específico do calendário (deixe vazio para usar o calendário principal)
                     </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Configurações Evolution API */}
+              <div className="space-y-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                <div className="flex items-center gap-2">
+                  <MessageCircle className="w-5 h-5 text-green-600" />
+                  <h3 className="font-semibold text-green-900">Configurações Evolution API (WhatsApp)</h3>
+                </div>
+                <p className="text-sm text-green-700">
+                  Configure as credenciais da Evolution API para integração com WhatsApp
+                </p>
+                
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="evo_base_url">Base URL da Evolution API</Label>
+                    <Input
+                      id="evo_base_url"
+                      type="text"
+                      value={newCliente.evo_base_url}
+                      onChange={(e) => setNewCliente({...newCliente, evo_base_url: e.target.value})}
+                      placeholder="https://evo.seuservidor.com"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      URL base da sua instância da Evolution API
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="evo_instance">Nome da Instância</Label>
+                      <Input
+                        id="evo_instance"
+                        type="text"
+                        value={newCliente.evo_instance}
+                        onChange={(e) => setNewCliente({...newCliente, evo_instance: e.target.value})}
+                        placeholder="cliente_joao"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Nome da instância criada na Evolution API
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="evo_api_key">API Key</Label>
+                      <Input
+                        id="evo_api_key"
+                        type="password"
+                        value={newCliente.evo_api_key}
+                        onChange={(e) => setNewCliente({...newCliente, evo_api_key: e.target.value})}
+                        placeholder="sk_live_xxxxx"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        API Key gerada pela Evolution API
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>

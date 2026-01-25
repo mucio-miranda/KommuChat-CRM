@@ -394,3 +394,125 @@ export const deleteQRCode = async (
   }
 };
 
+// ============================================
+// Funções para gerenciar configurações da Evolution API
+// ============================================
+
+export interface EvolutionConfig {
+  evo_base_url: string;
+  evo_instance: string;
+  evo_api_key: string;
+}
+
+/**
+ * Busca configurações da Evolution API do cliente
+ */
+export const getEvolutionConfig = async (
+  clienteId: string
+): Promise<EvolutionConfig | null> => {
+  if (!supabaseCrm) {
+    console.warn('Supabase CRM não configurado');
+    return null;
+  }
+
+  try {
+    // Buscar todas as configurações da Evolution do cliente
+    const { data, error } = await supabaseCrm
+      .from('configuracoes_cliente')
+      .select('chave, valor')
+      .eq('cliente_id', clienteId)
+      .in('chave', ['evo_base_url', 'evo_instance', 'evo_api_key']);
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      console.warn('⚠️ Configurações da Evolution API não encontradas para o cliente');
+      return null;
+    }
+
+    // Transformar array de configurações em objeto
+    const config: Partial<EvolutionConfig> = {};
+    data.forEach((item) => {
+      if (item.chave === 'evo_base_url') {
+        config.evo_base_url = item.valor;
+      } else if (item.chave === 'evo_instance') {
+        config.evo_instance = item.valor;
+      } else if (item.chave === 'evo_api_key') {
+        config.evo_api_key = item.valor;
+      }
+    });
+
+    // Verificar se todas as configurações necessárias estão presentes
+    if (!config.evo_base_url || !config.evo_instance || !config.evo_api_key) {
+      console.warn('⚠️ Configurações da Evolution API incompletas');
+      return null;
+    }
+
+    return config as EvolutionConfig;
+  } catch (error) {
+    console.error('❌ Erro ao buscar configurações da Evolution API:', error);
+    return null;
+  }
+};
+
+/**
+ * Salva/atualiza configurações da Evolution API do cliente
+ */
+export const saveEvolutionConfig = async (
+  clienteId: string,
+  config: EvolutionConfig
+): Promise<boolean> => {
+  if (!supabaseCrm) {
+    console.warn('Supabase CRM não configurado');
+    return false;
+  }
+
+  try {
+    const configs = [
+      {
+        cliente_id: clienteId,
+        chave: 'evo_base_url',
+        valor: config.evo_base_url,
+        tipo: 'string' as const
+      },
+      {
+        cliente_id: clienteId,
+        chave: 'evo_instance',
+        valor: config.evo_instance,
+        tipo: 'string' as const
+      },
+      {
+        cliente_id: clienteId,
+        chave: 'evo_api_key',
+        valor: config.evo_api_key,
+        tipo: 'string' as const
+      }
+    ];
+
+    // Usar upsert para atualizar ou inserir
+    const { error } = await supabaseCrm
+      .from('configuracoes_cliente')
+      .upsert(configs, {
+        onConflict: 'cliente_id,chave'
+      });
+
+    if (error) throw error;
+
+    console.log('✅ Configurações da Evolution API salvas com sucesso');
+    return true;
+  } catch (error) {
+    console.error('❌ Erro ao salvar configurações da Evolution API:', error);
+    return false;
+  }
+};
+
+/**
+ * Verifica se o cliente tem configuração da Evolution API
+ */
+export const hasEvolutionConfig = async (
+  clienteId: string
+): Promise<boolean> => {
+  const config = await getEvolutionConfig(clienteId);
+  return config !== null;
+};
+

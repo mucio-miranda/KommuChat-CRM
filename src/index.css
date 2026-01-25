@@ -142,6 +142,47 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
   }
+
+  /* Scrollbar personalizada em escala de cinza */
+  .scrollbar-gray {
+    scrollbar-width: thin;
+    scrollbar-color: #9ca3af #e5e7eb;
+  }
+
+  .scrollbar-gray::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .scrollbar-gray::-webkit-scrollbar-track {
+    background: #e5e7eb;
+    border-radius: 4px;
+  }
+
+  .scrollbar-gray::-webkit-scrollbar-thumb {
+    background: #9ca3af;
+    border-radius: 4px;
+  }
+
+  .scrollbar-gray::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+  }
+
+  /* Dark mode scrollbar */
+  .dark .scrollbar-gray {
+    scrollbar-color: #4b5563 #374151;
+  }
+
+  .dark .scrollbar-gray::-webkit-scrollbar-track {
+    background: #374151;
+  }
+
+  .dark .scrollbar-gray::-webkit-scrollbar-thumb {
+    background: #4b5563;
+  }
+
+  .dark .scrollbar-gray::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+  }
 }
 
 @layer components {

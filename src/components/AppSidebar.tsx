@@ -2,7 +2,7 @@ import {
   LayoutDashboard, 
   Users, 
   Calendar, 
-  Zap, 
+  MessageCircle, 
   Settings,
   UserCog,
   LogOut,
@@ -30,12 +30,12 @@ const getMenuItems = (userRole: string) => {
     { title: "Pacientes", url: "/pacientes", icon: Users },
     { title: "Calendário", url: "/calendario", icon: Calendar },
     // { title: "Usuários", url: "/usuarios", icon: UserCog }, // Movido para Admin Dashboard
-    { title: "Automações", url: "/automacoes", icon: Zap },
+    { title: "Chat", url: "/chat", icon: MessageCircle },
   ];
 
-  // Adicionar "Funcionários" para admin_clinica OU admin
+  // Adicionar "Funcionários" para admin_clinica OU admin (após Chat)
   if (userRole === 'admin_clinica' || userRole === 'admin') {
-    baseItems.splice(3, 0, { title: "Funcionários", url: "/funcionarios", icon: UserPlus });
+    baseItems.push({ title: "Funcionários", url: "/funcionarios", icon: UserPlus });
   }
 
   return baseItems;
