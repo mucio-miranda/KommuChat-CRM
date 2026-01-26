@@ -59,6 +59,9 @@ export default function Automatizacoes() {
   
   // Estado para mensagem a enviar
   const [messageText, setMessageText] = useState('');
+  
+  // Estado para controlar scroll automático (apenas ao abrir conversa ou enviar mensagem)
+  const [shouldScrollToBottom, setShouldScrollToBottom] = useState(false);
 
   // Carregar pacientes quando conectar ou iniciar
   useEffect(() => {
@@ -284,6 +287,10 @@ export default function Automatizacoes() {
       setMessageText('');
       console.log('✅ Mensagem enviada com sucesso');
       
+      // Ativar scroll automático após enviar mensagem
+      setShouldScrollToBottom(true);
+      setTimeout(() => setShouldScrollToBottom(false), 500);
+      
       // Recarregar conversas após alguns segundos (tempo para n8n processar)
       setTimeout(() => {
         handleRefreshConversations();
@@ -297,6 +304,10 @@ export default function Automatizacoes() {
 
   const handleSelectPatient = (patient: PatientWithWhatsApp) => {
     setSelectedPatient(patient);
+    // Ativar scroll automático ao abrir nova conversa
+    setShouldScrollToBottom(true);
+    // Resetar após um curto delay para não scrollar em refreshes futuros
+    setTimeout(() => setShouldScrollToBottom(false), 500);
   };
 
   const getStatusBadge = () => {
@@ -480,7 +491,8 @@ export default function Automatizacoes() {
                       ) : (
                         <WhatsAppChat 
                           messages={messages} 
-                          patientName={getPatientName(selectedPatient)} 
+                          patientName={getPatientName(selectedPatient)}
+                          shouldScrollToBottom={shouldScrollToBottom}
                         />
                       )}
                     </WhatsAppChatContainer>

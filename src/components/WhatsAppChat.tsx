@@ -5,21 +5,23 @@ import { cn } from '@/lib/utils';
 interface WhatsAppChatProps {
   messages: WhatsAppChatMessage[];
   patientName: string;
+  /** Se true, faz scroll automático para o fim. Use apenas ao abrir nova conversa ou enviar mensagem */
+  shouldScrollToBottom?: boolean;
 }
 
 /**
  * Componente de Chat do WhatsApp
  * Renderiza mensagens com diferenciação visual para inbound (cliente) e outbound (agente)
  */
-export function WhatsAppChat({ messages, patientName }: WhatsAppChatProps) {
+export function WhatsAppChat({ messages, patientName, shouldScrollToBottom = false }: WhatsAppChatProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Scroll automático para a última mensagem
+  // Scroll automático para a última mensagem (apenas quando solicitado)
   useEffect(() => {
-    if (messagesEndRef.current) {
+    if (shouldScrollToBottom && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages]);
+  }, [shouldScrollToBottom]);
 
   if (messages.length === 0) {
     return (
