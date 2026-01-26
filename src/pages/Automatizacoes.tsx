@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   MessageCircle, 
   QrCode, 
@@ -382,7 +381,7 @@ export default function Automatizacoes() {
                 </div>
                 
                 {/* Lista */}
-                <ScrollArea className="flex-1">
+                <div className="flex-1 min-h-0 overflow-y-auto scrollbar-gray">
                   {loadingPatients ? (
                     <div className="flex items-center justify-center py-8">
                       <Loader2 className="w-6 h-6 animate-spin" />
@@ -452,7 +451,7 @@ export default function Automatizacoes() {
                       })}
                     </div>
                   )}
-                </ScrollArea>
+                </div>
               </div>
 
               {/* Área de Mensagens */}
