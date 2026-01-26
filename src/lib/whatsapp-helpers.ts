@@ -109,22 +109,42 @@ export function formatFullTimestamp(isoString: string): string {
 }
 
 /**
- * Verifica se a interação tem mensagem do cliente (inbound)
+ * Verifica se a interação tem mensagem do cliente (inbound) com conteúdo
  */
 export function hasInboundMessage(interaction: WhatsAppInteraction): boolean {
   return !!interaction.message?.inbound && interaction.message.inbound.trim() !== '';
 }
 
 /**
- * Verifica se a interação tem resposta do agente (outbound)
+ * Verifica se a interação tem resposta do agente (outbound) com conteúdo
  */
 export function hasOutboundMessage(interaction: WhatsAppInteraction): boolean {
   return !!interaction.message?.outbound && interaction.message.outbound.trim() !== '';
 }
 
 /**
+ * Verifica se o campo inbound existe (mesmo que vazio)
+ */
+export function hasInboundField(interaction: WhatsAppInteraction): boolean {
+  return interaction.message?.inbound !== undefined && interaction.message?.inbound !== null;
+}
+
+/**
+ * Verifica se o campo outbound existe (mesmo que vazio)
+ */
+export function hasOutboundField(interaction: WhatsAppInteraction): boolean {
+  return interaction.message?.outbound !== undefined && interaction.message?.outbound !== null;
+}
+
+/**
+ * Texto padrão para mensagens indisponíveis (áudio, imagem, documento, etc.)
+ */
+const UNAVAILABLE_MESSAGE = 'Mensagem indisponível (áudio, imagem ou documento)';
+
+/**
  * Converte interações em mensagens individuais para renderização
  * Cada interação pode gerar 1 ou 2 mensagens (inbound e/ou outbound)
+ * Mensagens vazias são exibidas como "Mensagem indisponível"
  */
 export function interactionsToMessages(interactions: WhatsAppInteraction[]): WhatsAppChatMessage[] {
   const messages: WhatsAppChatMessage[] = [];
@@ -132,25 +152,42 @@ export function interactionsToMessages(interactions: WhatsAppInteraction[]): Wha
   const sorted = sortMessagesByTimestamp(interactions);
 
   sorted.forEach((interaction, index) => {
-    // Adiciona mensagem inbound (do cliente) se existir
-    if (hasInboundMessage(interaction)) {
+    const hasInbound = hasInboundField(interaction);
+    const hasOutbound = hasOutboundField(interaction);
+    const hasInboundContent = hasInboundMessage(interaction);
+    const hasOutboundContent = hasOutboundMessage(interaction);
+
+    // Adiciona mensagem inbound (do cliente)
+    if (hasInbound) {
       messages.push({
         id: `${index}-inbound`,
         type: 'inbound',
-        content: interaction.message.inbound!,
+        content: hasInboundContent ? interaction.message.inbound! : UNAVAILABLE_MESSAGE,
         from: interaction.from,
         timestamp: interaction.timestamp,
         formattedTime: formatTimestamp(interaction.timestamp)
       });
     }
 
-    // Adiciona mensagem outbound (do agente ou atendimento humano) se existir
-    if (hasOutboundMessage(interaction)) {
+    // Adiciona mensagem outbound (do agente ou atendimento humano)
+    if (hasOutbound) {
       messages.push({
         id: `${index}-outbound`,
         type: 'outbound',
-        content: interaction.message.outbound!,
-        from: interaction.from || 'Agente IA', // Usa o from do JSON, fallback para "Agente IA"
+        content: hasOutboundContent ? interaction.message.outbound! : UNAVAILABLE_MESSAGE,
+        from: interaction.from || 'Agente IA',
+        timestamp: interaction.timestamp,
+        formattedTime: formatTimestamp(interaction.timestamp)
+      });
+    }
+
+    // Se a interação não tem nem inbound nem outbound definidos, mas existe, mostrar como indisponível
+    if (!hasInbound && !hasOutbound) {
+      messages.push({
+        id: `${index}-unknown`,
+        type: 'inbound',
+        content: UNAVAILABLE_MESSAGE,
+        from: interaction.from || 'Desconhecido',
         timestamp: interaction.timestamp,
         formattedTime: formatTimestamp(interaction.timestamp)
       });
@@ -182,7 +219,12 @@ export function getLastMessagePreview(interactions: WhatsAppInteraction[]): stri
     return preview.length > 50 ? preview.substring(0, 50) + '...' : preview;
   }
 
-  return 'Mensagem vazia';
+  // Se tem campo mas está vazio, é mídia
+  if (hasOutboundField(lastInteraction) || hasInboundField(lastInteraction)) {
+    return 'Mensagem indisponível';
+  }
+
+  return 'Mensagem indisponível';
 }
 
 /**
