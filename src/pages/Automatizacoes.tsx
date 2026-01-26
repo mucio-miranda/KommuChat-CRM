@@ -366,9 +366,9 @@ export default function Automatizacoes() {
           <div className="flex-1 min-h-0 overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-3 h-full overflow-hidden">
               {/* Lista de Conversas */}
-              <div className="md:col-span-1 border-r flex flex-col h-full bg-background">
+              <div className="md:col-span-1 border-r flex flex-col h-full overflow-hidden bg-background">
                 {/* Busca */}
-                <div className="p-3 border-b">
+                <div className="p-3 border-b flex-shrink-0">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
