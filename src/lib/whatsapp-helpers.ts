@@ -171,11 +171,14 @@ export function interactionsToMessages(interactions: WhatsAppInteraction[]): Wha
 
     // Adiciona mensagem outbound (do agente ou atendimento humano)
     if (hasOutbound) {
+      // Se for "Atendimento Humano" mantém, caso contrário usa "Agente IA"
+      const outboundFrom = interaction.from === 'Atendimento Humano' ? 'Atendimento Humano' : 'Agente IA';
+      
       messages.push({
         id: `${index}-outbound`,
         type: 'outbound',
         content: hasOutboundContent ? interaction.message.outbound! : UNAVAILABLE_MESSAGE,
-        from: interaction.from || 'Agente IA',
+        from: outboundFrom,
         timestamp: interaction.timestamp,
         formattedTime: formatTimestamp(interaction.timestamp)
       });
