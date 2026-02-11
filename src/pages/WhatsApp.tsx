@@ -27,10 +27,14 @@ export default function WhatsApp() {
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [messageText, setMessageText] = useState('');
 
-  const filteredChats = chats.filter(chat =>
-    chat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    chat.phone.includes(searchTerm)
-  );
+  const filteredChats = chats.filter(chat => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      chat.name.toLowerCase().includes(searchLower) ||
+      chat.phone.includes(searchTerm) ||
+      (chat.lastMessage && chat.lastMessage.toLowerCase().includes(searchLower))
+    );
+  });
 
   const handleSendMessage = async () => {
     if (!selectedChat || !messageText.trim()) return;
@@ -159,7 +163,7 @@ export default function WhatsApp() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input
-                    placeholder="Buscar conversas..."
+                    placeholder="Buscar por nome, telefone ou mensagem..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
