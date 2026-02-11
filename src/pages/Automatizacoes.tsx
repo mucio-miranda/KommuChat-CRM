@@ -288,10 +288,14 @@ export default function Automatizacoes() {
         ? `55${cleanPhone}@s.whatsapp.net` 
         : `${cleanPhone}@s.whatsapp.net`;
 
+      // Adicionar marcador invisível para diferenciar mensagens do CRM das mensagens da IA
+      const ZERO_WIDTH_SPACE = '\u200B';
+      const markedMessage = `${ZERO_WIDTH_SPACE}${messageText}`;
+
       await evolutionService.sendMessage(
         user.cliente_id,
         whatsappNumber,
-        messageText
+        markedMessage
       );
       
       setMessageText('');
