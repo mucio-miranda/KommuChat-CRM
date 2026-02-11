@@ -9,7 +9,6 @@ import { GoogleCalendarProvider } from "@/contexts/GoogleCalendarContextSimple";
 import { WhatsAppProvider } from "@/contexts/WhatsAppContext";
 import Index from "./pages/Index";
 import Pacientes from "./pages/Pacientes";
-// import WhatsApp from "./pages/WhatsApp";
 import Calendario from "./pages/Calendario";
 // UserManagement movido para AdminDashboard
 import Automatizacoes from "./pages/Automatizacoes";
@@ -88,12 +87,6 @@ function AppRoutes() {
           <Pacientes />
         </ProtectedRoute>
       } />
-      {/* WhatsApp será adicionado em breve */}
-      {/* <Route path="/whatsapp" element={
-        <ProtectedRoute>
-          <WhatsApp />
-        </ProtectedRoute>
-      } /> */}
       <Route path="/calendario" element={
         <ProtectedRoute>
           <Calendario />

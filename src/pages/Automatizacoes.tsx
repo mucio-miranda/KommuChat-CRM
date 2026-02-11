@@ -15,11 +15,15 @@ import {
   Send,
   Search,
   User,
-  LogOut
+  LogOut,
+  Pencil,
+  Check,
+  X
 } from 'lucide-react';
 import { useWhatsApp } from '@/contexts/WhatsAppContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSupabase } from '@/hooks/useSupabase';
+import { useToast } from '@/hooks/use-toast';
 import { evolutionService } from '@/lib/evolution-service';
 
 // Tipos e helpers para WhatsApp
@@ -42,6 +46,7 @@ export default function Automatizacoes() {
   const { connection, isLoading, connect, disconnect, logout, refreshQRCode } = useWhatsApp();
   const { user } = useAuth();
   const { read: supabase, config: supabaseConfig } = useSupabase();
+  const { toast } = useToast();
   
   // Estados de conexão
   const [isConnecting, setIsConnecting] = useState(false);
@@ -62,6 +67,11 @@ export default function Automatizacoes() {
   
   // Estado para controlar scroll automático (apenas ao abrir conversa ou enviar mensagem)
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(false);
+  
+  // Estados para edição de nome
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editingName, setEditingName] = useState('');
+  const [isSavingName, setIsSavingName] = useState(false);
 
   // Carregar pacientes quando conectar ou iniciar
   useEffect(() => {
@@ -310,6 +320,69 @@ export default function Automatizacoes() {
     setTimeout(() => setShouldScrollToBottom(false), 500);
   };
 
+  const handleStartEditName = (currentName: string) => {
+    setEditingName(currentName);
+    setIsEditingName(true);
+  };
+
+  const handleCancelEditName = () => {
+    setIsEditingName(false);
+    setEditingName('');
+  };
+
+  const handleSaveName = async () => {
+    if (!selectedPatient || !editingName.trim() || !user) {
+      handleCancelEditName();
+      return;
+    }
+
+    setIsSavingName(true);
+
+    try {
+      const tableName = await getClienteTableName();
+      console.log('🔍 Atualizando nome do paciente na tabela:', tableName, 'ID:', selectedPatient.id);
+
+      // Atualizar APENAS o campo nome do paciente
+      const { error: updateError } = await supabase!
+        .from(tableName)
+        .update({ nome: editingName.trim() })
+        .eq('id', selectedPatient.id);
+
+      if (updateError) {
+        console.error('❌ Erro ao atualizar nome:', updateError);
+        throw new Error('Erro ao atualizar o nome do paciente');
+      }
+
+      console.log('✅ Nome atualizado com sucesso para:', editingName.trim());
+
+      toast({
+        title: "Nome atualizado",
+        description: "O nome do contato foi atualizado com sucesso!",
+      });
+
+      // Atualizar o estado local para refletir mudança imediata
+      setPatients(prev => prev.map(p => 
+        p.id === selectedPatient.id ? { ...p, nome: editingName.trim() } : p
+      ));
+      
+      setSelectedPatient(prev => 
+        prev ? { ...prev, nome: editingName.trim() } : null
+      );
+
+      handleCancelEditName();
+
+    } catch (error) {
+      console.error('❌ Erro ao salvar nome:', error);
+      toast({
+        title: "Erro ao atualizar",
+        description: error instanceof Error ? error.message : "Ocorreu um erro inesperado ao tentar atualizar o nome.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingName(false);
+    }
+  };
+
   const getStatusBadge = () => {
     switch (connection.status) {
       case 'connected':
@@ -474,10 +547,57 @@ export default function Automatizacoes() {
                       <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center">
                         <User className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                       </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-sm">
-                          {getPatientName(selectedPatient)}
-                        </h3>
+                      <div className="flex-1 min-w-0">
+                        {isEditingName ? (
+                          <div className="flex items-center gap-2 mb-1">
+                            <Input
+                              value={editingName}
+                              onChange={(e) => setEditingName(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !isSavingName) handleSaveName();
+                                if (e.key === 'Escape') handleCancelEditName();
+                              }}
+                              className="h-7 text-sm font-semibold"
+                              autoFocus
+                              disabled={isSavingName}
+                            />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleSaveName}
+                              disabled={isSavingName}
+                              className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                              title="Salvar"
+                            >
+                              <Check className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleCancelEditName}
+                              disabled={isSavingName}
+                              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                              title="Cancelar"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 mb-1 group">
+                            <h3 className="font-semibold text-sm truncate">
+                              {getPatientName(selectedPatient)}
+                            </h3>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleStartEditName(getPatientName(selectedPatient))}
+                              className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+                              title="Editar nome"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
                         <p className="text-xs text-muted-foreground">
                           {formatPhoneNumber(getPatientPhone(selectedPatient))}
                         </p>

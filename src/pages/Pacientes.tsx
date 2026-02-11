@@ -5,7 +5,10 @@ import {
   RefreshCw,
   ChevronUp,
   ChevronDown,
-  Trash2
+  Trash2,
+  Pencil,
+  Check,
+  X
 } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Layout } from "@/components/Layout";
@@ -78,6 +81,10 @@ export default function Pacientes() {
   // Estados para exclusão
   const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  
+  // Estados para edição de nome
+  const [editingPatientId, setEditingPatientId] = useState<number | null>(null);
+  const [editingName, setEditingName] = useState<string>("");
   
   const { toast } = useToast();
   const { user } = useAuth();
@@ -392,6 +399,75 @@ export default function Pacientes() {
       toast({
         title: "Erro",
         description: "Não foi possível atualizar o status.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Função para iniciar edição do nome
+  const handleStartEditName = (patient: Patient) => {
+    setEditingPatientId(patient.id);
+    setEditingName(patient.nome || "");
+  };
+
+  // Função para cancelar edição do nome
+  const handleCancelEditName = () => {
+    setEditingPatientId(null);
+    setEditingName("");
+  };
+
+  // Função para salvar o nome editado
+  const handleSaveName = async (patient: Patient) => {
+    if (!user || !editingName.trim()) {
+      handleCancelEditName();
+      return;
+    }
+
+    try {
+      let error = null;
+      
+      if (patient.fonte === 'humano') {
+        // Update paciente manual
+        const { error: updateError } = await supabaseWrite!
+          .from('pacientes_manuais')
+          .update({ nome: editingName.trim() })
+          .eq('id', patient.id)
+          .eq('cliente_id', user.cliente_id);
+          
+        error = updateError;
+      } else {
+        // Update paciente IA
+        const { error: updateError } = await supabase!
+          .from(iaTableName)
+          .update({ nome: editingName.trim() })
+          .eq('id', patient.id);
+          
+        error = updateError;
+      }
+
+      if (error) {
+        console.error('Erro ao atualizar nome:', error);
+        toast({
+          title: "Erro ao atualizar",
+          description: "Não foi possível atualizar o nome. Verifique suas permissões.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Nome atualizado",
+          description: "Nome do paciente atualizado com sucesso!",
+        });
+        // Atualizar estado local
+        setPatients(prev => prev.map(p => 
+          p.id === patient.id ? { ...p, nome: editingName.trim() } : p
+        ));
+        handleCancelEditName();
+      }
+    } catch (err) {
+      console.error('Erro inesperado:', err);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro inesperado ao tentar atualizar.",
         variant: "destructive",
       });
     }
@@ -804,7 +880,53 @@ export default function Pacientes() {
                   >
                     <td className="py-4 px-2">
                       <div>
-                        <div className="font-medium text-foreground">{patient.nome || "Nome não informado"}</div>
+                        <div className="flex items-center gap-2 group">
+                          {editingPatientId === patient.id ? (
+                            <div className="flex items-center gap-1">
+                              <Input
+                                value={editingName}
+                                onChange={(e) => setEditingName(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleSaveName(patient);
+                                  if (e.key === 'Escape') handleCancelEditName();
+                                }}
+                                className="h-7 text-sm"
+                                autoFocus
+                              />
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleSaveName(patient)}
+                                className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                title="Salvar"
+                              >
+                                <Check className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleCancelEditName}
+                                className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                                title="Cancelar"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="font-medium text-foreground">{patient.nome || "Nome não informado"}</div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleStartEditName(patient)}
+                                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+                                title="Editar nome"
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
                         <div className="text-sm text-muted-foreground">{patient.email || "Email não informado"}</div>
                       </div>
                     </td>
@@ -882,9 +1004,53 @@ export default function Pacientes() {
                   {/* Nome e Badge */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-xs sm:text-sm text-foreground truncate leading-tight">
-                        {patient.nome || "Nome não informado"}
-                      </div>
+                      {editingPatientId === patient.id ? (
+                        <div className="flex items-center gap-1">
+                          <Input
+                            value={editingName}
+                            onChange={(e) => setEditingName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveName(patient);
+                              if (e.key === 'Escape') handleCancelEditName();
+                            }}
+                            className="h-6 text-xs"
+                            autoFocus
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSaveName(patient)}
+                            className="h-6 w-6 p-0 text-green-600 hover:text-green-700"
+                            title="Salvar"
+                          >
+                            <Check className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleCancelEditName}
+                            className="h-6 w-6 p-0 text-muted-foreground"
+                            title="Cancelar"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 group">
+                          <div className="font-semibold text-xs sm:text-sm text-foreground truncate leading-tight">
+                            {patient.nome || "Nome não informado"}
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleStartEditName(patient)}
+                            className="h-5 w-5 p-0 opacity-60 active:opacity-100 text-muted-foreground"
+                            title="Editar nome"
+                          >
+                            <Pencil className="h-2.5 w-2.5" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
                     <Badge 
                       variant={patient.fonte === 'ia' ? 'default' : 'secondary'}
