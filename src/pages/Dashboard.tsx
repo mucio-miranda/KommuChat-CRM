@@ -6,8 +6,7 @@ import {
   MessageSquare, 
   TrendingUp,
   MessageCircle,
-  AlertCircle,
-  Filter
+  AlertCircle
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { MetricCard } from "@/components/MetricCard";
@@ -152,10 +151,6 @@ export default function Dashboard() {
           </div>
           
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" className="border-primary/20 text-primary hover:bg-primary/10">
-              <Filter className="w-4 h-4" />
-              Filtrar período
-            </Button>
             <Button size="sm" className="bg-primary hover:bg-primary/90 text-white">
               <TrendingUp className="w-4 h-4" />
               Relatórios

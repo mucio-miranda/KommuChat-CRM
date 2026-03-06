@@ -1,11 +1,21 @@
-// Script para limpar dados antigos do Google Calendar
+// Script para limpar dados do Google Calendar
 // Use este script para resetar a conexão e testar novamente
 
-export function clearGoogleCalendarData() {
-  console.log('🧹 Limpando dados antigos do Google Calendar...');
+import { supabaseGoogleTokensService } from './supabase-google-tokens';
+
+export async function clearGoogleCalendarData() {
+  console.log('🧹 Limpando dados do Google Calendar...');
   
-  // Limpar localStorage
-  localStorage.removeItem('google_calendar_tokens');
+  // Limpar tokens do Supabase (única fonte de verdade)
+  try {
+    await supabaseGoogleTokensService.deleteTokens();
+    console.log('✅ Tokens deletados do Supabase');
+  } catch (error) {
+    console.error('❌ Erro ao deletar tokens do Supabase:', error);
+  }
+  
+  // Limpar localStorage (apenas cache/estado)
+  localStorage.removeItem('google_calendar_connected');
   localStorage.removeItem('google_code_verifier');
   
   // Limpar sessionStorage
@@ -16,25 +26,31 @@ export function clearGoogleCalendarData() {
 }
 
 // Função para verificar dados atuais
-export function checkGoogleCalendarData() {
+export async function checkGoogleCalendarData() {
   console.log('🔍 Verificando dados atuais do Google Calendar...');
   
-  const localTokens = localStorage.getItem('google_calendar_tokens');
-  const localVerifier = localStorage.getItem('google_code_verifier');
-  const sessionVerifier = sessionStorage.getItem('google_code_verifier');
-  
-  console.log('📦 localStorage tokens:', localTokens ? 'Presente' : 'Ausente');
-  console.log('📦 localStorage code_verifier:', localVerifier ? 'Presente' : 'Ausente');
-  console.log('📦 sessionStorage code_verifier:', sessionVerifier ? 'Presente' : 'Ausente');
-  
-  if (localTokens) {
-    try {
-      const tokens = JSON.parse(localTokens);
-      console.log('🔑 Tokens:', tokens);
-    } catch (error) {
-      console.error('❌ Erro ao parsear tokens:', error);
+  // Verificar tokens no Supabase
+  try {
+    const tokens = await supabaseGoogleTokensService.getTokens();
+    if (tokens) {
+      console.log('🔑 Tokens no Supabase:', {
+        has_access_token: !!tokens.access_token,
+        has_refresh_token: !!tokens.refresh_token,
+        expires_at: tokens.expires_at,
+        user_id: tokens.user_id
+      });
+    } else {
+      console.log('📦 Nenhum token encontrado no Supabase');
     }
+  } catch (error) {
+    console.error('❌ Erro ao verificar tokens no Supabase:', error);
   }
+  
+  const localVerifier = localStorage.getItem('google_code_verifier');
+  const connectionState = localStorage.getItem('google_calendar_connected');
+  
+  console.log('📦 localStorage connection state:', connectionState);
+  console.log('📦 localStorage code_verifier:', localVerifier ? 'Presente' : 'Ausente');
 }
 
 // Disponibilizar funções globalmente para debug

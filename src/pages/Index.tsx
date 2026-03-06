@@ -2,24 +2,24 @@ import { Layout } from "@/components/Layout";
 import { 
   Users, 
   Calendar, 
-  CheckCircle, 
   TrendingUp,
   MessageCircle,
-  UserCheck,
-  RefreshCw
+  RefreshCw,
+  UserX
 } from "lucide-react";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { MetricCard } from "@/components/MetricCard";
 import { CalendarPreview } from "@/components/CalendarPreview";
 import { AppointmentsBarChart } from "@/components/AppointmentsBarChart";
-import { PatientsPreview } from "@/components/PatientsPreview";
+import { NextAppointmentCard } from "@/components/NextAppointmentCard";
+import { ConversionGaugeCard } from "@/components/ConversionGaugeCard";
+import { RecentConversationsCard } from "@/components/RecentConversationsCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSupabase } from "@/hooks/useSupabase";
+import { useGoogleCalendar } from "@/contexts/GoogleCalendarContextSimple";
 import { toast } from "@/components/ui/use-toast";
-import { Button } from "@/components/ui/button";
 import { convertToBrazilDateString, getTodayBrazilString, filterByToday, filterByCurrentMonth } from "@/lib/date-utils";
 
-// Tipagem mínima da tabela
 type Row = {
   id: string;
   nome?: string | null;
@@ -41,16 +41,15 @@ type Row = {
 const Index = () => {
   const { user } = useAuth();
   const { read: supabaseRead, write: supabaseWrite, config: supabaseConfig } = useSupabase();
+  const { events: calendarEvents, isConnected: isCalendarConnected } = useGoogleCalendar();
   const [rows, setRows] = useState<Row[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
-  // Função para carregar dados
   const loadData = useCallback(async (isAutoRefresh = false) => {
     try {
       if (!supabaseRead) {
-        console.log('❌ Supabase não disponível');
         setRows([]);
         setLoading(false);
         return;
@@ -61,11 +60,8 @@ const Index = () => {
       }
 
       let tableName = "kommuchat_mvp";
-      console.log('🔍 DASHBOARD - user:', user?.email);
       
       if (user) {
-        console.log('🔍 DASHBOARD - Usuário logado, buscando tabela...');
-        
         const { data: configData, error: configError } = await supabaseConfig
           .from('configuracoes_cliente')
           .select('valor')
@@ -75,7 +71,6 @@ const Index = () => {
         
         if (!configError && configData?.valor && configData.valor.trim() !== '') {
           tableName = configData.valor;
-          console.log('✅ DASHBOARD - Tabela alterada para:', tableName);
         }
       }
 
@@ -83,19 +78,12 @@ const Index = () => {
         .from(tableName)
         .select("*");
         
-      if (error) {
-        console.error('❌ DASHBOARD - Erro ao carregar dados:', error);
-        throw error;
-      }
+      if (error) throw error;
       
       setRows(data ?? []);
       setLastRefresh(new Date());
-      
-      if (isAutoRefresh) {
-        console.log('✅ DASHBOARD - Refresh automático concluído');
-      }
     } catch (e: any) {
-      console.error('❌ Erro geral:', e);
+      console.error('Erro ao carregar dados:', e);
       setRows([]);
       if (!isAutoRefresh) {
         toast({ description: "Não foi possível carregar dados do Supabase." });
@@ -106,18 +94,14 @@ const Index = () => {
     }
   }, [supabaseRead, supabaseConfig, user]);
 
-  // Carregamento inicial
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  // Refresh automático a cada 30 segundos
   useEffect(() => {
     const interval = setInterval(() => {
-      console.log('🔄 DASHBOARD - Iniciando refresh automático...');
       loadData(true);
-    }, 30000); // 30 segundos
-
+    }, 30000);
     return () => clearInterval(interval);
   }, [loadData]);
 
@@ -131,133 +115,133 @@ const Index = () => {
     return list;
   }, [rows]);
 
-  const metrics = useMemo(() => {
+  const { calendarEventsThisMonth, calendarEventsLastMonth } = useMemo(() => {
+    if (!isCalendarConnected || calendarEvents.length === 0) return { calendarEventsThisMonth: 0, calendarEventsLastMonth: 0 };
+    const now = new Date();
+    const nowBrasil = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+    const currentMonth = nowBrasil.getMonth();
+    const currentYear = nowBrasil.getFullYear();
+    const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+    const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+
+    const countForMonth = (month: number, year: number) =>
+      calendarEvents.filter((event) => {
+        const eventStart = event.start?.dateTime || event.start?.date;
+        if (!eventStart) return false;
+        try {
+          const d = new Date(eventStart);
+          const db = new Date(d.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+          return db.getMonth() === month && db.getFullYear() === year;
+        } catch {
+          return false;
+        }
+      }).length;
+
+    return {
+      calendarEventsThisMonth: countForMonth(currentMonth, currentYear),
+      calendarEventsLastMonth: countForMonth(prevMonth, prevYear),
+    };
+  }, [calendarEvents, isCalendarConnected]);
+
+  const { metrics, conversionRate } = useMemo(() => {
     const list = sorted;
-    // Filtrar pacientes com setdata vazia (null) para o total de atendimentos
-    const listWithSetdata = list.filter(r => {
-      return r.setdata !== null && r.setdata !== undefined && r.setdata !== '';
-    });
-    const total = listWithSetdata.length;
-    
-    // Buscar consultas do dia atual na coluna data_agendamento
-    // Usar fuso horário do Brasil (UTC-3)
-    const hojeString = getTodayBrazilString();
-    
-    console.log('🔍 CONSULTAS HOJE - Data atual Brasil:', hojeString);
-    
-    const consultasHoje = filterByToday(list, 'data_agendamento').length;
-    
-    console.log('✅ CONSULTAS HOJE - Resultado:', consultasHoje);
-    
-    // Buscar atendimentos do dia atual na coluna setdata
-    const atendimentosHoje = filterByToday(list, 'setdata').length;
-    
-    console.log('✅ ATENDIMENTOS HOJE - Resultado:', atendimentosHoje);
-    
-    // Contar agendamentos do mês atual na coluna data_agendamento
-    const agendamentosMesAtual = filterByCurrentMonth(list, 'data_agendamento').length;
-    
-    console.log('✅ AGENDAMENTOS MÊS ATUAL - Resultado:', agendamentosMesAtual);
-    
-    // Contar registros com data_agendamento preenchida
+
+    const now = new Date();
+    const nowBrasil = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+    const curMonth = nowBrasil.getMonth();
+    const curYear = nowBrasil.getFullYear();
+    const prevMonth = curMonth === 0 ? 11 : curMonth - 1;
+    const prevYear = curMonth === 0 ? curYear - 1 : curYear;
+
+    const isInMonth = (dateStr: string | null | undefined, m: number, y: number) => {
+      if (!dateStr) return false;
+      try {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return false;
+        const db = new Date(d.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+        return db.getMonth() === m && db.getFullYear() === y;
+      } catch { return false; }
+    };
+
+    const calcTrend = (current: number, previous: number) =>
+      previous > 0 ? Math.round(((current - previous) / previous) * 100) : (current > 0 ? 100 : 0);
+
+    // Pacientes (com setdata)
+    const listWithSetdata = list.filter(r => r.setdata !== null && r.setdata !== undefined && r.setdata !== '');
+    const totalPacientes = listWithSetdata.length;
+    const pacientesThisMonth = listWithSetdata.filter(r => isInMonth(r.setdata || r.created_at, curMonth, curYear)).length;
+    const pacientesLastMonth = listWithSetdata.filter(r => isInMonth(r.setdata || r.created_at, prevMonth, prevYear)).length;
+
+    // Consultas Marcadas (com data_agendamento)
     const consultasAgendadas = list.filter(r => {
-      const dataAgendamento = r.data_agendamento;
-      if (dataAgendamento === null || dataAgendamento === undefined) return false;
-      // Verificar se é string e se após remover espaços não está vazia
-      const dataStr = String(dataAgendamento).trim();
-      return dataStr !== '';
+      const da = r.data_agendamento;
+      if (da === null || da === undefined) return false;
+      return String(da).trim() !== '';
     }).length;
-    
-    // Debug: Log detalhado para investigar discrepância
-    console.log('🔍 AGENDAMENTOS POR IA - Debug:');
-    console.log('  - Total de registros carregados:', list.length);
-    console.log('  - Registros com data_agendamento preenchida:', consultasAgendadas);
-    
-    // Contar registros com diferentes tipos de data_agendamento para debug
-    const comDataAgendamento = list.filter(r => {
-      const dataAgendamento = r.data_agendamento;
-      if (dataAgendamento === null || dataAgendamento === undefined) return false;
-      const dataStr = String(dataAgendamento).trim();
-      return dataStr !== '';
-    });
-    
-    console.log('  - Exemplos de data_agendamento encontradas:', 
-      comDataAgendamento.slice(0, 5).map(r => ({ 
-        id: r.id, 
-        nome: r.nome, 
-        data_agendamento: r.data_agendamento,
-        tipo: typeof r.data_agendamento
-      }))
-    );
-    
-    // Calcular taxa de conversão: Consultas Agendadas / Atendimentos Realizados (com setdata válida)
-    const conversao = total ? Math.round((consultasAgendadas / total) * 100) : 0;
+    const consultasThisMonth = list.filter(r => isInMonth(r.data_agendamento, curMonth, curYear)).length;
+    const consultasLastMonth = list.filter(r => isInMonth(r.data_agendamento, prevMonth, prevYear)).length;
 
-    // Contar atendimentos por humano (onde atende_humano === 'true')
-    // Comentado temporariamente - status atende_humano foi removido
-    // const atendimentosHumano = list.filter(r => {
-    //   return r.atende_humano === 'true';
-    // }).length;
+    const conversao = totalPacientes ? Math.round((consultasAgendadas / totalPacientes) * 100) : 0;
 
-    return [
-      { title: "Atendimentos por IA", value: String(total), change: "", changeType: "positive" as const, icon: MessageCircle },
-      { title: "Agendamentos Hoje", value: String(consultasHoje), change: "", changeType: "positive" as const, icon: Calendar },
-      { title: "Contatos Hoje", value: String(atendimentosHoje), change: "", changeType: "positive" as const, icon: MessageCircle },
-      { title: "Agendamentos por IA", value: String(consultasAgendadas), change: "", changeType: "positive" as const, icon: Calendar },
-      { title: "Taxa de Conversão", value: `${conversao}%`, change: "", changeType: "positive" as const, icon: TrendingUp },
-      { title: "Agendamentos no Mês", value: String(agendamentosMesAtual), change: "", changeType: "positive" as const, icon: Calendar },
-    ];
-  }, [sorted]);
+    // Follow Up
+    const isFollowUp = (r: Row) => {
+      const followup = r.followup?.toString().trim().toLowerCase();
+      const follow = r.follow?.toString().trim();
+      return followup === "false" || follow === "Follow Up  2";
+    };
+    const followUpCount = list.filter(isFollowUp).length;
+    const followUpThisMonth = list.filter(r => isFollowUp(r) && isInMonth(r.created_at || r.updated_at, curMonth, curYear)).length;
+    const followUpLastMonth = list.filter(r => isFollowUp(r) && isInMonth(r.created_at || r.updated_at, prevMonth, prevYear)).length;
+
+    // Consultas no mês (calendar events)
+    const calendarTrend = calcTrend(calendarEventsThisMonth, calendarEventsLastMonth);
+
+    return {
+      metrics: [
+        { title: "Contatos", value: String(totalPacientes), trend: calcTrend(pacientesThisMonth, pacientesLastMonth), icon: Users },
+        { title: "Pacientes ativos", value: String(consultasAgendadas), trend: calcTrend(consultasThisMonth, consultasLastMonth), icon: Calendar },
+        { title: "Consultas no mês", value: String(calendarEventsThisMonth), trend: calendarTrend, icon: MessageCircle },
+        // { title: "Follow Up", value: String(followUpCount), trend: calcTrend(followUpThisMonth, followUpLastMonth), icon: UserX },
+      ],
+      conversionRate: conversao,
+    };
+  }, [sorted, calendarEventsThisMonth, calendarEventsLastMonth]);
 
   return (
-    <Layout>
-      <div className="space-y-8 ml-2">
-        {/* Header */}
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-            <p className="text-muted-foreground mt-1">
-              Visão geral do seu CRM clínico
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Última atualização: {lastRefresh.toLocaleTimeString('pt-BR')}
-            </p>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => loadData(false)}
-              disabled={isRefreshing}
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              {isRefreshing ? 'Atualizando...' : 'Atualizar'}
-            </Button>
-          </div>
-        </div>
-
-        {/* Grid de métricas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <Layout
+      lastRefresh={lastRefresh}
+      isRefreshing={isRefreshing}
+      onRefresh={() => loadData(false)}
+    >
+      <div className="space-y-5">
+        {/* Row 1: Stat Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {metrics.map((metric, index) => (
             <MetricCard
               key={index}
               title={metric.title}
               value={metric.value}
-              change={metric.change}
-              changeType={metric.changeType}
+              trend={metric.trend}
+              changeType={metric.trend >= 0 ? "positive" : "negative"}
               icon={metric.icon}
             />
           ))}
         </div>
 
-        {/* Preview do Calendário, Gráficos e Pacientes */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <CalendarPreview />
-          <AppointmentsBarChart rows={rows} />
-          <PatientsPreview />
+        {/* Row 2: Agenda de hoje | Conversão + Próxima Consulta | Chart */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="lg:row-span-2 min-h-0">
+            <CalendarPreview />
+          </div>
+          <ConversionGaugeCard percentage={conversionRate} />
+          <NextAppointmentCard />
+          <div className="lg:col-span-2">
+            <AppointmentsBarChart rows={rows} />
+          </div>
         </div>
+
+        {/* Row 3: Conversas Recentes - full width */}
+        <RecentConversationsCard />
       </div>
     </Layout>
   );

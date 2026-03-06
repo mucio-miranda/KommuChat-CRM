@@ -55,6 +55,18 @@ Desktop.ini
 *.swo
 *~
 
+# Debug, test and setup scripts (may contain credentials)
+test-*.js
+check-*.js
+debug-*.js
+diagnose-*.js
+fix-*.js
+investigate-*.js
+find-*.js
+setup-*.js
+create-*.js
+validate-*.js
+
 # Build outputs
 build/
 out/

@@ -213,13 +213,11 @@ export function getLastMessagePreview(interactions: WhatsAppInteraction[]): stri
 
   // Prioriza outbound (resposta) se existir, senão usa inbound
   if (hasOutboundMessage(lastInteraction)) {
-    const preview = lastInteraction.message.outbound!;
-    return preview.length > 50 ? preview.substring(0, 50) + '...' : preview;
+    return lastInteraction.message.outbound!;
   }
 
   if (hasInboundMessage(lastInteraction)) {
-    const preview = lastInteraction.message.inbound!;
-    return preview.length > 50 ? preview.substring(0, 50) + '...' : preview;
+    return lastInteraction.message.inbound!;
   }
 
   // Se tem campo mas está vazio, é mídia

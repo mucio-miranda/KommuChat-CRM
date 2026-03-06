@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, Plus, Calendar, RefreshCw, Grid3X3, CalendarDays } from "lucide-react";
 import { useGoogleCalendar } from "@/contexts/GoogleCalendarContextSimple";
 import { GoogleCalendarEvent } from "@/types/google-calendar";
-import { CalendarAgendasList } from "@/components/CalendarAgendasList";
+// import { CalendarAgendasList } from "@/components/CalendarAgendasList";
 import { SearchConsultation } from "@/components/SearchConsultation";
 import { CreateEventModal } from "@/components/CreateEventModal";
 import { useAuth } from "@/contexts/AuthContext";
@@ -103,15 +103,15 @@ export default function Calendario() {
   const getEventColor = (title: string) => {
     const lowerTitle = title.toLowerCase();
     if (lowerTitle.includes('consulta') && lowerTitle.includes('rotina')) {
-      return "bg-white text-primary border border-primary/30";
+      return "bg-white dark:bg-[#121212] text-primary dark:text-white border border-primary/30 dark:border-[#2D2D2D]";
     } else if (lowerTitle.includes('primeira') && lowerTitle.includes('consulta')) {
-      return "bg-white text-primary border border-primary/40";
+      return "bg-white dark:bg-[#121212] text-primary dark:text-white border border-primary/40 dark:border-[#2D2D2D]";
     } else if (lowerTitle.includes('retorno')) {
-      return "bg-white text-muted-foreground border border-border";
+      return "bg-white dark:bg-[#121212] text-muted-foreground dark:text-white border border-border dark:border-[#2D2D2D]";
     } else if (lowerTitle.includes('emergência')) {
-      return "bg-white text-destructive border border-destructive/30";
+      return "bg-white dark:bg-[#121212] text-destructive dark:text-white border border-destructive/30 dark:border-[#2D2D2D]";
     } else {
-      return "bg-white text-primary border border-primary/25";
+      return "bg-white dark:bg-[#121212] text-primary dark:text-white border border-primary/25 dark:border-[#2D2D2D]";
     }
   };
 
@@ -591,7 +591,7 @@ export default function Calendario() {
                       className="w-full mt-1.5 h-6 text-[9px] text-muted-foreground hover:text-white hover:bg-primary border border-[#0000001A]"
                     >
                       <Plus className="w-3 h-3 mr-1" />
-                      Novo evento
+                      Agendar
                     </Button>
                   </div>
                 </div>
@@ -648,7 +648,7 @@ export default function Calendario() {
                       className="w-full mt-2 text-xs text-muted-foreground hover:text-white hover:bg-primary border border-[#0000001A]"
                     >
                       <Plus className="w-3 h-3 mr-1" />
-                      Novo evento
+                      Agendar
                     </Button>
                   </div>
                 </div>
@@ -673,20 +673,12 @@ export default function Calendario() {
       <div className="space-y-6">
         {/* Conteúdo principal */}
         <div className="space-y-3 md:space-y-5 px-1 sm:px-2 md:px-0">
-          {/* Barra superior com lista de agendas e busca */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1 min-w-0">
-              <CalendarAgendasList 
-                isConnected={isConnected} 
-                onDateSelect={handleMiniCalendarDateSelect}
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <SearchConsultation 
-                onSearch={setSearchQuery}
-                appointments={getAllFilteredAppointments}
-              />
-            </div>
+          {/* Barra superior com busca */}
+          <div className="max-w-md">
+            <SearchConsultation 
+              onSearch={setSearchQuery}
+              appointments={getAllFilteredAppointments}
+            />
           </div>
             
           {/* Conteúdo principal - Calendário */}
@@ -759,7 +751,7 @@ export default function Calendario() {
                 </div>
               </div>
 
-              {/* Botão Novo Evento e Status da conexão Google Calendar */}
+              {/* Botão Novo Agendamento e Status da conexão Google Calendar */}
               <div className="flex items-center gap-1 sm:gap-1.5 justify-center md:justify-end">
                 {isConnected ? (
                   <>
@@ -771,8 +763,8 @@ export default function Calendario() {
                       size="sm"
                     >
                       <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5 lg:w-4 lg:h-4" />
-                      <span className="hidden sm:inline">Novo Evento</span>
-                      <span className="sm:hidden">Novo</span>
+                      <span className="hidden sm:inline">Agendar</span>
+                      <span className="sm:hidden">Agendar</span>
                     </Button>
                     <Badge variant="secondary" className="bg-green-100 text-green-800 text-[9px] sm:text-[10px] lg:text-xs whitespace-nowrap px-1 sm:px-1.5 lg:px-2">
                       <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5" />

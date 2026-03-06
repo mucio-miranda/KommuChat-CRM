@@ -24,7 +24,9 @@ import { useWhatsApp } from '@/contexts/WhatsAppContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSupabase } from '@/hooks/useSupabase';
 import { useToast } from '@/hooks/use-toast';
+import { useProfilePicture } from '@/hooks/useProfilePicture';
 import { evolutionService } from '@/lib/evolution-service';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 // Tipos e helpers para WhatsApp
 import { PatientWithWhatsApp, WhatsAppChatMessage } from '@/lib/whatsapp-types';
@@ -41,6 +43,50 @@ import {
   formatPhoneNumber
 } from '@/lib/whatsapp-helpers';
 import { WhatsAppChat, WhatsAppChatContainer, WhatsAppChatSkeleton } from '@/components/WhatsAppChat';
+
+interface ContactAvatarProps {
+  phoneNumber: string;
+  clienteId: string | undefined;
+  name?: string;
+  className?: string;
+}
+
+const getInitials = (name: string): string => {
+  if (!name || name === 'Paciente sem nome') return '';
+  
+  const words = name.trim().split(/\s+/).filter(w => w.length > 0);
+  if (words.length === 0) return '';
+  
+  if (words.length === 1) {
+    return words[0].substring(0, 2).toUpperCase();
+  }
+  
+  return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+};
+
+const ContactAvatar: React.FC<ContactAvatarProps> = ({ phoneNumber, clienteId, name, className = "w-10 h-10" }) => {
+  const profilePicture = useProfilePicture(phoneNumber, clienteId);
+  const initials = name ? getInitials(name) : '';
+
+  return (
+    <Avatar className={`${className} flex-shrink-0`}>
+      {profilePicture && (
+        <AvatarImage 
+          src={profilePicture} 
+          alt="Profile"
+          className="object-cover"
+        />
+      )}
+      <AvatarFallback className="bg-red-50 dark:bg-red-950">
+        {initials ? (
+          <span className="text-[#E21929] font-semibold text-sm">{initials}</span>
+        ) : (
+          <User className="w-5 h-5 text-[#E21929]" />
+        )}
+      </AvatarFallback>
+    </Avatar>
+  );
+};
 
 export default function Automatizacoes() {
   const { connection, isLoading, connect, disconnect, logout, refreshQRCode } = useWhatsApp();
@@ -503,9 +549,11 @@ export default function Automatizacoes() {
                           >
                             <div className="flex items-start gap-3">
                               {/* Avatar */}
-                              <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center flex-shrink-0">
-                                <User className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                              </div>
+                              <ContactAvatar 
+                                phoneNumber={getPatientPhone(patient)} 
+                                clienteId={user?.cliente_id}
+                                name={getPatientName(patient)}
+                              />
                               
                               {/* Info */}
                               <div className="flex-1 min-w-0">
@@ -548,9 +596,11 @@ export default function Automatizacoes() {
                   <>
                     {/* Header da Conversa */}
                     <div className="border-b p-3 flex items-center gap-3 flex-shrink-0 bg-background">
-                      <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center">
-                        <User className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                      </div>
+                      <ContactAvatar 
+                        phoneNumber={getPatientPhone(selectedPatient)} 
+                        clienteId={user?.cliente_id}
+                        name={getPatientName(selectedPatient)}
+                      />
                       <div className="flex-1 min-w-0">
                         {isEditingName ? (
                           <div className="flex items-center gap-2 mb-1">

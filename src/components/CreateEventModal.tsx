@@ -29,6 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { useGoogleCalendar } from "@/contexts/GoogleCalendarContextSimple";
 import { GoogleCalendarEvent } from "@/types/google-calendar";
@@ -78,6 +79,7 @@ export function CreateEventModal({
 
   const [isLoading, setIsLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteScope, setDeleteScope] = useState<'single' | 'all'>('single');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const { toast } = useToast();
   const { createEvent, updateEvent, deleteEvent, isConnected } = useGoogleCalendar();
@@ -486,9 +488,12 @@ export function CreateEventModal({
       const patientMetadata = extractPatientMetadata(selectedEvent.description);
 
       // Deletar evento do Google Calendar
+      const isRecurring = !!selectedEvent.recurringEventId;
       await deleteEvent(
         selectedEvent.id,
-        selectedEvent.calendarId || 'primary'
+        selectedEvent.calendarId || 'primary',
+        isRecurring ? deleteScope : 'single',
+        selectedEvent.recurringEventId
       );
 
       // Remover agendamento do paciente (se houver paciente associado)
@@ -529,7 +534,9 @@ export function CreateEventModal({
 
       toast({
         title: "Evento deletado!",
-        description: "O evento foi removido com sucesso do calendário.",
+        description: isRecurring && deleteScope === 'all'
+          ? "Toda a série de eventos recorrentes foi removida do calendário."
+          : "O evento foi removido com sucesso do calendário.",
       });
 
       // Fechar modal e notificar atualização
@@ -778,12 +785,41 @@ export function CreateEventModal({
       </DialogContent>
 
       {/* Modal de Confirmação de Exclusão */}
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+      <AlertDialog open={showDeleteConfirm} onOpenChange={(open) => {
+        setShowDeleteConfirm(open);
+        if (!open) setDeleteScope('single');
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir este evento? Esta ação não pode ser desfeita e o evento será removido permanentemente do Google Calendar.
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  {selectedEvent?.recurringEventId
+                    ? "Este é um evento recorrente. Escolha como deseja excluí-lo:"
+                    : "Tem certeza que deseja excluir este evento? Esta ação não pode ser desfeita e o evento será removido permanentemente do Google Calendar."}
+                </p>
+                {selectedEvent?.recurringEventId && (
+                  <RadioGroup
+                    value={deleteScope}
+                    onValueChange={(v) => setDeleteScope(v as 'single' | 'all')}
+                    className="space-y-2"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="single" id="delete-single" />
+                      <Label htmlFor="delete-single" className="font-normal cursor-pointer">
+                        Somente este evento
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="all" id="delete-all" />
+                      <Label htmlFor="delete-all" className="font-normal cursor-pointer">
+                        Todos os eventos da série
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                )}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

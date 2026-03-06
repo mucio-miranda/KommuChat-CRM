@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { googleCalendarServiceHybrid } from '@/lib/google-calendar-hybrid';
+import { supabaseGoogleTokensService } from '@/lib/supabase-google-tokens';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,13 +31,26 @@ export default function GoogleCallback() {
           return;
         }
 
-            // Trocar código por tokens
-            const tokens = await googleCalendarServiceHybrid.exchangeCodeForTokens(code);
-            
-            // Salvar estado de conexão no localStorage (ULTRA-PERSISTENTE)
-            localStorage.setItem('google_calendar_connected', JSON.stringify(true));
-            localStorage.setItem('google_calendar_ultra_persistent', JSON.stringify(true));
-            console.log('💾 Estado de conexão Google Calendar salvo (ULTRA-PERSISTENTE) após callback');
+        // Trocar código por tokens
+        const tokens = await googleCalendarServiceHybrid.exchangeCodeForTokens(code);
+        console.log('🔑 Tokens recebidos do Google:', { 
+          has_access_token: !!tokens.access_token,
+          has_refresh_token: !!tokens.refresh_token,
+          expires_in: tokens.expires_in
+        });
+        
+        // SALVAR TOKENS NO SUPABASE (única fonte de verdade)
+        await supabaseGoogleTokensService.saveTokens({
+          access_token: tokens.access_token,
+          refresh_token: tokens.refresh_token,
+          expires_in: tokens.expires_in,
+          scope: tokens.scope,
+          token_type: tokens.token_type
+        });
+        console.log('💾 Tokens salvos no Supabase com sucesso');
+        
+        // Salvar apenas estado de conexão no localStorage (NÃO tokens)
+        localStorage.setItem('google_calendar_connected', 'true');
         
         setStatus('success');
         

@@ -525,6 +525,49 @@ export class EvolutionService {
   }
 
   /**
+   * Busca a URL da foto de perfil de um contato do WhatsApp
+   */
+  async fetchProfilePicture(
+    clienteId: string,
+    phoneNumber: string
+  ): Promise<string | null> {
+    try {
+      const config = await this.getConfig(clienteId);
+      if (!config) {
+        return null;
+      }
+
+      let formattedNumber = phoneNumber.replace(/\D/g, '');
+      if (!formattedNumber) {
+        return null;
+      }
+
+      // Adicionar código do país (55 - Brasil) se necessário
+      if (formattedNumber.length === 11 || formattedNumber.length === 10) {
+        formattedNumber = `55${formattedNumber}`;
+      }
+
+      const jid = `${formattedNumber}@s.whatsapp.net`;
+      const endpoint = `/chat/fetchProfilePictureUrl/${config.evo_instance}`;
+      
+      const data = await this.makeRequest(config, endpoint, 'POST', { number: jid });
+      
+      const profileUrl = data?.profilePictureUrl || null;
+      console.log(`📷 Foto de perfil ${formattedNumber}: ${profileUrl ? '✅ OK' : '❌ Não disponível'}`);
+      
+      return profileUrl;
+    } catch (error: any) {
+      // Silenciar erros 404 (contato sem foto ou privacidade)
+      if (error?.message?.includes('404') || error?.message?.includes('not found')) {
+        console.log(`📷 Foto de perfil ${phoneNumber}: ❌ Privacidade ou sem foto`);
+      } else {
+        console.warn(`⚠️ Erro ao buscar foto de perfil para ${phoneNumber}:`, error?.message || error);
+      }
+      return null;
+    }
+  }
+
+  /**
    * Desconecta a instância
    */
   async disconnect(clienteId: string): Promise<boolean> {

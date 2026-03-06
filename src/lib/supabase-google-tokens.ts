@@ -19,11 +19,19 @@ export interface GoogleTokens {
   user_id: string;
   access_token: string;
   refresh_token?: string;
-  expires_at?: number; // Opcional por enquanto
-  scope: string;
-  token_type: string;
+  expires_at?: string;
+  scope?: string;
+  token_type?: string;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface SaveTokensInput {
+  access_token: string;
+  refresh_token?: string;
+  expires_in?: number;
+  scope?: string;
+  token_type?: string;
 }
 
 export class SupabaseGoogleTokensService {
@@ -75,23 +83,35 @@ export class SupabaseGoogleTokensService {
     }
   }
 
-  // Salvar tokens no Supabase
-  async saveTokens(tokens: Omit<GoogleTokens, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<GoogleTokens | null> {
+  // Salvar tokens no Supabase (UPSERT - insere ou atualiza)
+  async saveTokens(tokens: SaveTokensInput): Promise<GoogleTokens | null> {
     try {
       const userId = this.getCurrentUser();
       console.log('💾 Salvando tokens no Supabase para usuário:', userId);
+
+      // Calcular expires_at baseado em expires_in (segundos)
+      // expires_in vem do Google, geralmente ~3600 (1 hora)
+      const expiresAt = tokens.expires_in 
+        ? new Date(Date.now() + tokens.expires_in * 1000).toISOString()
+        : new Date(Date.now() + 3600 * 1000).toISOString(); // Default 1 hora
 
       const tokenData = {
         user_id: userId,
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
-        scope: tokens.scope,
-        token_type: tokens.token_type,
-        // expires_at não incluído por enquanto (coluna não existe na tabela)
+        expires_at: expiresAt,
+        scope: tokens.scope || 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events',
+        token_type: tokens.token_type || 'Bearer',
         updated_at: new Date().toISOString(),
       };
 
-      // Usar fetch diretamente para evitar problemas com o cliente Supabase
+      console.log('📤 Dados a salvar:', { 
+        user_id: tokenData.user_id, 
+        expires_at: tokenData.expires_at,
+        has_refresh_token: !!tokenData.refresh_token 
+      });
+
+      // Usar UPSERT: insere ou atualiza se user_id já existir
       const response = await fetch(`${supabaseUrl}/rest/v1/google_calendar_tokens`, {
         method: 'POST',
         headers: {
@@ -99,7 +119,7 @@ export class SupabaseGoogleTokensService {
           'Authorization': `Bearer ${supabaseAnonKey}`,
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Prefer': 'return=minimal'
+          'Prefer': 'resolution=merge-duplicates,return=representation'
         },
         body: JSON.stringify(tokenData)
       });
@@ -107,8 +127,9 @@ export class SupabaseGoogleTokensService {
       console.log('📡 Status da resposta:', response.status);
 
       if (response.ok) {
-        console.log('✅ Tokens salvos com sucesso');
-        return tokenData as GoogleTokens;
+        const savedData = await response.json();
+        console.log('✅ Tokens salvos com sucesso no Supabase');
+        return Array.isArray(savedData) ? savedData[0] : savedData;
       } else {
         const errorText = await response.text();
         console.error('❌ Erro na resposta:', errorText);
@@ -117,6 +138,45 @@ export class SupabaseGoogleTokensService {
     } catch (error) {
       console.error('❌ Erro ao salvar tokens no Supabase:', error);
       throw error;
+    }
+  }
+
+  // Atualizar apenas access_token após renovação
+  async updateAccessToken(accessToken: string, expiresIn: number): Promise<boolean> {
+    try {
+      const userId = this.getCurrentUser();
+      const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
+
+      console.log('🔄 Atualizando access_token no Supabase para usuário:', userId);
+
+      const response = await fetch(
+        `${supabaseUrl}/rest/v1/google_calendar_tokens?user_id=eq.${encodeURIComponent(userId)}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'apikey': supabaseAnonKey,
+            'Authorization': `Bearer ${supabaseAnonKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            access_token: accessToken,
+            expires_at: expiresAt,
+            updated_at: new Date().toISOString()
+          })
+        }
+      );
+
+      if (response.ok) {
+        console.log('✅ Access token atualizado no Supabase');
+        return true;
+      } else {
+        const errorText = await response.text();
+        console.error('❌ Erro ao atualizar access_token:', errorText);
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ Erro ao atualizar access_token no Supabase:', error);
+      return false;
     }
   }
 
@@ -192,41 +252,43 @@ export class SupabaseGoogleTokensService {
     }
   }
 
-  // Verificar se os tokens estão expirados
-  isTokenExpired(tokens: GoogleTokens): boolean {
+  // Verificar se os tokens estão expirados ou próximos de expirar
+  isTokenExpired(tokens: GoogleTokens, bufferMinutes: number = 5): boolean {
     if (!tokens.expires_at) {
-      return false; // Se não há data de expiração, assumimos que não expira
+      console.log('⚠️ Token sem expires_at - considerando como não expirado');
+      return false;
     }
 
     const now = Date.now();
-    const expiresAt = tokens.expires_at * 1000; // Converter para milissegundos
+    const expiresAt = new Date(tokens.expires_at).getTime();
+    const bufferTime = bufferMinutes * 60 * 1000;
     
-    return now >= expiresAt;
+    const isExpired = now >= (expiresAt - bufferTime);
+    
+    if (isExpired) {
+      console.log('⏰ Token expirado ou próximo de expirar');
+    }
+    
+    return isExpired;
   }
 
-  // Renovar tokens se necessário
-  async refreshTokensIfNeeded(tokens: GoogleTokens): Promise<GoogleTokens | null> {
-    if (!this.isTokenExpired(tokens)) {
-      console.log('✅ Tokens ainda válidos');
-      return tokens;
-    }
-
-    if (!tokens.refresh_token) {
-      console.log('❌ Token expirado e sem refresh_token');
-      return null;
-    }
-
+  // Verificar se há conexão válida (tem tokens no Supabase)
+  async hasValidConnection(): Promise<boolean> {
     try {
-      console.log('🔄 Renovando tokens expirados...');
-      
-      // Aqui você implementaria a lógica de renovação de tokens
-      // Por enquanto, vamos apenas retornar null para forçar nova autenticação
-      console.log('⚠️ Renovação de tokens não implementada, requer nova autenticação');
-      return null;
-    } catch (error) {
-      console.error('❌ Erro ao renovar tokens:', error);
-      return null;
+      const tokens = await this.getTokens();
+      return tokens !== null && !!tokens.refresh_token;
+    } catch {
+      return false;
     }
+  }
+
+  // Obter tempo restante até expiração (em milissegundos)
+  getTimeUntilExpiry(tokens: GoogleTokens): number {
+    if (!tokens.expires_at) {
+      return Infinity;
+    }
+    const expiresAt = new Date(tokens.expires_at).getTime();
+    return Math.max(0, expiresAt - Date.now());
   }
 }
 

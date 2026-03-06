@@ -678,6 +678,7 @@ export default function Pacientes() {
         </div>
         
         <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          {/* Botão Atualizar desativado temporariamente
           <Button
             variant="outline"
             size="sm"
@@ -688,7 +689,8 @@ export default function Pacientes() {
             <RefreshCw className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline text-xs sm:text-sm">{isRefreshing ? 'Atualizando...' : 'Atualizar'}</span>
           </Button>
-          <Button onClick={() => setIsNewPatientModalOpen(true)} size="sm" className="h-8 px-2 sm:px-3">
+          */}
+          <Button variant="ghost" onClick={() => setIsNewPatientModalOpen(true)} size="sm" className="h-8 px-2 sm:px-3 bg-[#303030] border border-[#2D2D2D] text-white shadow-none hover:bg-[#303030]/90 hover:text-white">
             <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span className="hidden sm:inline ml-1 text-xs sm:text-sm">Novo Paciente</span>
           </Button>

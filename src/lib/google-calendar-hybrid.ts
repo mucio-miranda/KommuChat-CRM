@@ -1,5 +1,6 @@
 import { GoogleCalendarEvent } from '@/types/google-calendar';
 import { sharedGoogleCredentialsService } from './google-service.ts';
+import { supabaseGoogleTokensService, GoogleTokens } from './supabase-google-tokens';
 
 // Scopes necessários para acessar o Google Calendar
 const SCOPES = [
@@ -34,10 +35,11 @@ async function generateCodeChallenge(verifier: string): Promise<string> {
 export class GoogleCalendarServiceHybrid {
   private accessToken: string | null = null;
   private currentCredentials: any = null;
+  private cachedTokens: GoogleTokens | null = null;
 
   constructor() {
-    // Carregar token salvo no localStorage
-    this.loadSavedToken();
+    // Tokens agora são carregados do Supabase sob demanda
+    console.log('🔧 GoogleCalendarServiceHybrid inicializado (tokens via Supabase)');
   }
 
   // Carregar credenciais do cliente atual do Supabase
@@ -66,68 +68,57 @@ export class GoogleCalendarServiceHybrid {
     }
   }
 
-  // Carregar token salvo
-  private loadSavedToken(): void {
+  // Carregar tokens do Supabase (única fonte de verdade)
+  private async loadTokensFromSupabase(): Promise<GoogleTokens | null> {
     try {
-      const savedTokens = localStorage.getItem('google_calendar_tokens');
-      if (savedTokens) {
-        const tokens = JSON.parse(savedTokens);
-        this.accessToken = tokens.access_token;
-        console.log('✅ Token carregado do localStorage');
-        
-        // Verificar se o token está expirado
-        if (tokens.expires_at && new Date() > new Date(tokens.expires_at)) {
-          console.log('⚠️ Token expirado, será necessário renovar');
-          this.accessToken = null;
-          localStorage.removeItem('google_calendar_tokens');
-        }
+      // Usar cache se disponível e recente (evitar muitas chamadas)
+      if (this.cachedTokens && this.accessToken) {
+        return this.cachedTokens;
       }
-    } catch (error) {
-      console.log('⚠️ Nenhum token salvo encontrado');
-    }
-  }
 
-  // Salvar token no localStorage
-  private saveToken(tokens: any): void {
-    try {
-      // Adicionar timestamp de expiração se não existir
-      if (!tokens.expires_at && tokens.expires_in) {
-        tokens.expires_at = Date.now() + (tokens.expires_in * 1000);
+      console.log('🔍 Buscando tokens do Supabase...');
+      const tokens = await supabaseGoogleTokensService.getTokens();
+      
+      if (tokens) {
+        this.cachedTokens = tokens;
+        this.accessToken = tokens.access_token;
+        console.log('✅ Tokens carregados do Supabase');
+        return tokens;
       }
       
-      localStorage.setItem('google_calendar_tokens', JSON.stringify(tokens));
-      this.accessToken = tokens.access_token;
-      console.log('✅ Token salvo no localStorage');
+      console.log('ℹ️ Nenhum token encontrado no Supabase');
+      return null;
     } catch (error) {
-      console.error('❌ Erro ao salvar token:', error);
+      console.error('❌ Erro ao carregar tokens do Supabase:', error);
+      return null;
     }
   }
 
   // Verificar se o token está expirado ou próximo da expiração
-  private isTokenExpiredOrNearExpiry(tokens: any, bufferMinutes: number = 5): boolean {
+  private isTokenExpiredOrNearExpiry(tokens: GoogleTokens, bufferMinutes: number = 5): boolean {
     if (!tokens.expires_at) {
-      return false; // Se não há data de expiração, assumir que não expira
+      return false;
     }
 
     const now = Date.now();
-    const expiresAt = tokens.expires_at;
-    const bufferTime = bufferMinutes * 60 * 1000; // Converter minutos para milissegundos
+    const expiresAt = new Date(tokens.expires_at).getTime();
+    const bufferTime = bufferMinutes * 60 * 1000;
 
     return now >= (expiresAt - bufferTime);
   }
 
-  // Renovar token usando refresh token
+  // Renovar token usando refresh token (atualiza no Supabase)
   async refreshAccessToken(): Promise<boolean> {
     try {
       console.log('🔄 Iniciando renovação de token...');
       
-      const savedTokens = localStorage.getItem('google_calendar_tokens');
-      if (!savedTokens) {
-        console.log('❌ Nenhum token salvo encontrado para renovação');
+      // Buscar tokens do Supabase
+      const tokens = await this.loadTokensFromSupabase();
+      if (!tokens) {
+        console.log('❌ Nenhum token encontrado no Supabase para renovação');
         return false;
       }
 
-      const tokens = JSON.parse(savedTokens);
       if (!tokens.refresh_token) {
         console.log('❌ Refresh token não encontrado - necessário nova autenticação');
         return false;
@@ -160,33 +151,36 @@ export class GoogleCalendarServiceHybrid {
       }
 
       const newTokens = await response.json();
-      console.log('✅ Token renovado com sucesso');
+      console.log('✅ Token renovado com sucesso pelo Google');
 
-      // Manter o refresh_token original se não foi fornecido um novo
-      if (!newTokens.refresh_token && tokens.refresh_token) {
-        newTokens.refresh_token = tokens.refresh_token;
+      // Atualizar access_token no Supabase
+      const success = await supabaseGoogleTokensService.updateAccessToken(
+        newTokens.access_token,
+        newTokens.expires_in || 3600
+      );
+
+      if (success) {
+        this.accessToken = newTokens.access_token;
+        this.cachedTokens = null; // Invalidar cache para forçar reload
+        console.log('✅ Token atualizado no Supabase');
       }
-
-      // Salvar novos tokens
-      this.saveToken(newTokens);
       
-      return true;
+      return success;
     } catch (error) {
       console.error('❌ Erro ao renovar token:', error);
       return false;
     }
   }
 
-  // Verificar e renovar token se necessário
+  // Verificar e renovar token se necessário (usa Supabase)
   async ensureValidToken(): Promise<boolean> {
     try {
-      const savedTokens = localStorage.getItem('google_calendar_tokens');
-      if (!savedTokens) {
-        console.log('❌ Nenhum token encontrado');
+      // Buscar tokens do Supabase
+      const tokens = await this.loadTokensFromSupabase();
+      if (!tokens) {
+        console.log('❌ Nenhum token encontrado no Supabase');
         return false;
       }
-
-      const tokens = JSON.parse(savedTokens);
       
       // Verificar se o token está expirado ou próximo da expiração
       if (this.isTokenExpiredOrNearExpiry(tokens)) {
@@ -194,12 +188,20 @@ export class GoogleCalendarServiceHybrid {
         return await this.refreshAccessToken();
       }
 
-      console.log('✅ Token ainda válido');
+      this.accessToken = tokens.access_token;
+      console.log('✅ Token válido carregado do Supabase');
       return true;
     } catch (error) {
       console.error('❌ Erro ao verificar token:', error);
       return false;
     }
+  }
+
+  // Limpar cache de tokens (forçar reload do Supabase)
+  clearTokenCache(): void {
+    this.cachedTokens = null;
+    this.accessToken = null;
+    console.log('🧹 Cache de tokens limpo');
   }
 
   // Gerar URL de autorização com PKCE
@@ -273,13 +275,15 @@ export class GoogleCalendarServiceHybrid {
       }
 
       const tokens = await response.json();
-      console.log('✅ Tokens recebidos com sucesso');
+      console.log('✅ Tokens recebidos com sucesso do Google');
       
       // Limpar code verifier após uso
       localStorage.removeItem('google_code_verifier');
       
-      // Salvar tokens
-      this.saveToken(tokens);
+      // Tokens serão salvos no Supabase pelo GoogleCallback.tsx
+      // Apenas atualizar variável local
+      this.accessToken = tokens.access_token;
+      this.cachedTokens = null; // Forçar reload na próxima vez
       
       return tokens;
     } catch (error) {
@@ -489,48 +493,60 @@ export class GoogleCalendarServiceHybrid {
     }
   }
 
-  // Verificar se está autenticado
+  // Verificar se está autenticado (tem access token em memória)
   isAuthenticated(): boolean {
     return !!this.accessToken;
   }
 
-  // Obter informações sobre o token atual
-  getTokenInfo(): { isValid: boolean; expiresAt?: Date; timeUntilExpiry?: number } {
+  // Obter access token atual (para uso em componentes que precisam fazer chamadas diretas)
+  getAccessToken(): string | null {
+    return this.accessToken;
+  }
+
+  // Verificar se há conexão válida no Supabase
+  async hasValidConnection(): Promise<boolean> {
     try {
-      const savedTokens = localStorage.getItem('google_calendar_tokens');
-      if (!savedTokens) {
-        return { isValid: false };
-      }
-
-      const tokens = JSON.parse(savedTokens);
-      if (!tokens.expires_at) {
-        return { isValid: true }; // Se não há data de expiração, assumir válido
-      }
-
-      const expiresAt = new Date(tokens.expires_at);
-      const now = new Date();
-      const timeUntilExpiry = expiresAt.getTime() - now.getTime();
-
-      return {
-        isValid: timeUntilExpiry > 0,
-        expiresAt,
-        timeUntilExpiry: Math.max(0, timeUntilExpiry)
-      };
-    } catch (error) {
-      console.error('❌ Erro ao obter informações do token:', error);
-      return { isValid: false };
+      const tokens = await this.loadTokensFromSupabase();
+      return tokens !== null && !!tokens.refresh_token;
+    } catch {
+      return false;
     }
+  }
+
+  // Obter informações sobre o token atual (do Supabase)
+  getTokenInfo(): { isValid: boolean; expiresAt?: Date; timeUntilExpiry?: number } {
+    // Usar cache se disponível
+    if (!this.cachedTokens) {
+      return { isValid: !!this.accessToken };
+    }
+
+    if (!this.cachedTokens.expires_at) {
+      return { isValid: true };
+    }
+
+    const expiresAt = new Date(this.cachedTokens.expires_at);
+    const now = new Date();
+    const timeUntilExpiry = expiresAt.getTime() - now.getTime();
+
+    return {
+      isValid: timeUntilExpiry > 0,
+      expiresAt,
+      timeUntilExpiry: Math.max(0, timeUntilExpiry)
+    };
   }
 
   // Método público para forçar renovação de token
   async forceRefreshToken(): Promise<boolean> {
     console.log('🔄 Forçando renovação de token...');
+    this.cachedTokens = null; // Limpar cache
     return await this.refreshAccessToken();
   }
 
-  // Validar se o token ainda é válido
+  // Validar se o token ainda é válido (teste real com API)
   async validateToken(): Promise<boolean> {
-    if (!this.accessToken) {
+    // Primeiro, garantir que temos um token
+    const hasToken = await this.ensureValidToken();
+    if (!hasToken || !this.accessToken) {
       return false;
     }
 
@@ -546,8 +562,7 @@ export class GoogleCalendarServiceHybrid {
 
       if (response.status === 401) {
         console.log('❌ Token inválido ou expirado');
-        this.accessToken = null;
-        localStorage.removeItem('google_calendar_tokens');
+        this.clearTokenCache();
         return false;
       }
 
@@ -558,17 +573,25 @@ export class GoogleCalendarServiceHybrid {
     }
   }
 
-  // Fazer logout
+  // Fazer logout (revoga no Google e deleta do Supabase)
   async revokeToken() {
     try {
+      // Revogar no Google
       if (this.accessToken) {
         await fetch(`https://oauth2.googleapis.com/revoke?token=${this.accessToken}`, {
           method: 'POST',
         });
+        console.log('✅ Token revogado no Google');
       }
-      this.accessToken = null;
-      localStorage.removeItem('google_calendar_tokens');
-      console.log('🧹 Tokens removidos');
+      
+      // Deletar do Supabase
+      await supabaseGoogleTokensService.deleteTokens();
+      console.log('✅ Tokens deletados do Supabase');
+      
+      // Limpar estado local
+      this.clearTokenCache();
+      
+      console.log('🧹 Logout completo');
     } catch (error) {
       console.error('Erro ao revogar token:', error);
     }
@@ -657,9 +680,14 @@ export class GoogleCalendarServiceHybrid {
   }
 
   // Deletar evento no Google Calendar
-  async deleteEvent(eventId: string, calendarId: string = DEFAULT_CALENDAR_ID): Promise<boolean> {
+  // deleteScope: 'single' = apenas esta instância, 'all' = toda a série recorrente
+  async deleteEvent(
+    eventId: string,
+    calendarId: string = DEFAULT_CALENDAR_ID,
+    deleteScope: 'single' | 'all' = 'single',
+    recurringEventId?: string
+  ): Promise<boolean> {
     try {
-      // Verificar e renovar token se necessário
       const tokenValid = await this.ensureValidToken();
       if (!tokenValid) {
         throw new Error('Token expirado - necessário nova autenticação');
@@ -669,9 +697,13 @@ export class GoogleCalendarServiceHybrid {
         throw new Error('Não autenticado');
       }
 
-      console.log('🗑️ Deletando evento no Google Calendar...', eventId);
+      const targetId = deleteScope === 'all' && recurringEventId
+        ? recurringEventId
+        : eventId;
 
-      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`;
+      console.log(`🗑️ Deletando evento (scope: ${deleteScope})...`, targetId);
+
+      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(targetId)}`;
       
       const response = await fetch(url, {
         method: 'DELETE',
@@ -686,7 +718,7 @@ export class GoogleCalendarServiceHybrid {
         throw new Error(`Erro ao deletar evento: ${response.status} ${response.statusText}`);
       }
 
-      console.log('✅ Evento deletado com sucesso:', eventId);
+      console.log('✅ Evento deletado com sucesso:', targetId);
       return true;
     } catch (error) {
       console.error('❌ Erro ao deletar evento:', error);

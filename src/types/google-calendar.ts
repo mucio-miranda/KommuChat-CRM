@@ -31,6 +31,8 @@ export interface GoogleCalendarEvent {
   htmlLink?: string;
   created?: string;
   updated?: string;
+  recurringEventId?: string;
+  recurrence?: string[];
   // Campos adicionais para eventos com informações de agenda
   calendarId?: string;
   calendarSummary?: string;

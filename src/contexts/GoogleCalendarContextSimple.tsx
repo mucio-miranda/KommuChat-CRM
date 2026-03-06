@@ -19,7 +19,7 @@ interface GoogleCalendarContextType {
   forceRefreshToken: () => Promise<boolean>;
   createEvent: (event: Partial<GoogleCalendarEvent>, calendarId?: string) => Promise<GoogleCalendarEvent>;
   updateEvent: (eventId: string, event: Partial<GoogleCalendarEvent>, calendarId?: string) => Promise<GoogleCalendarEvent>;
-  deleteEvent: (eventId: string, calendarId?: string) => Promise<boolean>;
+  deleteEvent: (eventId: string, calendarId?: string, deleteScope?: 'single' | 'all', recurringEventId?: string) => Promise<boolean>;
 }
 
 const GoogleCalendarContext = createContext<GoogleCalendarContextType | undefined>(undefined);
@@ -32,65 +32,20 @@ export function GoogleCalendarProvider({ children }: { children: React.ReactNode
   const [lastUserId, setLastUserId] = useState<string | null>(null);
   const { user, loading: authLoading } = useAuth();
 
-  // Função para salvar estado da conexão no localStorage (ULTRA-PERSISTENTE)
+  // Função para salvar estado da conexão no localStorage (cache local apenas)
   const saveConnectionState = (connected: boolean) => {
     try {
-      localStorage.setItem('google_calendar_connected', JSON.stringify(connected));
-      localStorage.setItem('google_calendar_ultra_persistent', JSON.stringify(true));
-      console.log('💾 Estado da conexão Google Calendar salvo (ULTRA-PERSISTENTE):', connected);
+      localStorage.setItem('google_calendar_connected', String(connected));
+      console.log('💾 Estado da conexão Google Calendar salvo:', connected);
     } catch (error) {
       console.error('❌ Erro ao salvar estado da conexão:', error);
     }
   };
 
-  // Função para carregar estado da conexão do localStorage (ULTRA-PERSISTENTE)
-  const loadConnectionState = (): boolean => {
-    try {
-      const savedState = localStorage.getItem('google_calendar_connected');
-      const ultraPersistent = localStorage.getItem('google_calendar_ultra_persistent');
-      
-      if (savedState && ultraPersistent) {
-        const parsedState = JSON.parse(savedState);
-        console.log('📅 Estado da conexão Google Calendar carregado (ULTRA-PERSISTENTE):', parsedState);
-        return parsedState;
-      }
-    } catch (error) {
-      console.error('❌ Erro ao carregar estado da conexão:', error);
-    }
-    return false;
-  };
-
   // Função para limpar estado da conexão do localStorage (APENAS quando usuário clica em desconectar)
   const clearConnectionState = () => {
     localStorage.removeItem('google_calendar_connected');
-    localStorage.removeItem('google_calendar_ultra_persistent');
     console.log('🧹 Estado da conexão Google Calendar limpo (desconexão manual)');
-  };
-
-  // Função para tentar renovar tokens automaticamente (ULTRA-PERSISTENTE)
-  const tryRenewTokens = async () => {
-    try {
-      const tokens = localStorage.getItem('google_calendar_tokens');
-      if (tokens) {
-        const tokenData = JSON.parse(tokens);
-        
-        // Verificar se o token está próximo do vencimento (renovar 5 minutos antes)
-        if (tokenData.expires_in) {
-          const now = Date.now();
-          const expiresAt = tokenData.created_at + (tokenData.expires_in * 1000);
-          const fiveMinutes = 5 * 60 * 1000;
-          
-          if (now > (expiresAt - fiveMinutes)) {
-            console.log('🔄 Token próximo do vencimento - tentando renovar...');
-            // Aqui poderia implementar renovação automática se necessário
-            // Por enquanto, apenas log
-            console.log('⚠️ Renovação automática não implementada - mantendo conexão ativa');
-          }
-        }
-      }
-    } catch (error) {
-      console.log('⚠️ Erro ao verificar renovação de tokens:', error);
-    }
   };
 
   // Efeito para recarregar eventos quando calendários selecionados mudarem
@@ -108,40 +63,20 @@ export function GoogleCalendarProvider({ children }: { children: React.ReactNode
       return;
     }
 
-    // Verificar se já existe uma conexão salva
+    // Verificar se já existe uma conexão salva no Supabase
     const initializeConnection = async () => {
-      console.log('🔄 GoogleCalendarContext: Verificando conexão...');
+      console.log('🔄 GoogleCalendarContext: Verificando conexão no Supabase...');
       
       if (!user) {
         console.log('❌ Usuário não autenticado - faça login primeiro');
-        // Limpar estado quando não há usuário
         setIsConnected(false);
         setEvents([]);
         return;
       }
 
       try {
-        // Verificar se o usuário mudou (ULTRA-PERSISTENTE)
-        const currentUserId = user.id;
-        if (lastUserId && lastUserId !== currentUserId) {
-          console.log('🔄 Usuário mudou - MANTENDO conexão Google Calendar (ULTRA-PERSISTENTE)...');
-          // NUNCA limpar tokens do Google Calendar - conexão ultra-persistente
-          // localStorage.removeItem('google_calendar_tokens'); // NUNCA REMOVER
-          
-          // Verificar se há tokens e forçar reconexão se necessário
-          const hasTokens = localStorage.getItem('google_calendar_tokens');
-          const hasConnectionState = localStorage.getItem('google_calendar_connected');
-          
-          if (hasTokens && hasConnectionState) {
-            console.log('🔗 Tokens encontrados - forçando reconexão automática...');
-            // Forçar reconexão sem limpar nada
-            setTimeout(async () => {
-              await refreshEvents();
-            }, 1000);
-          }
-        }
-        
         // Atualizar último usuário
+        const currentUserId = user.id;
         setLastUserId(currentUserId);
         
         // Definir cliente_id antes de verificar autenticação
@@ -151,50 +86,30 @@ export function GoogleCalendarProvider({ children }: { children: React.ReactNode
           supabaseGoogleTokensService.setCurrentUser(user.cliente_id);
         }
         
-        // Verificar se há estado de conexão salvo (ULTRA-PERSISTENTE)
-        const savedConnectionState = loadConnectionState();
-        const hasTokens = localStorage.getItem('google_calendar_tokens');
+        // Verificar se há tokens no Supabase (única fonte de verdade)
+        const hasValidConnection = await googleCalendarServiceHybrid.hasValidConnection();
         
-        // Estratégia ultra-persistente: se há tokens OU estado de conexão, manter conectado
-        if ((googleCalendarServiceHybrid.isAuthenticated() || hasTokens) && savedConnectionState) {
-          console.log('✅ Conexão Google Calendar encontrada (ULTRA-PERSISTENTE) - mantendo conectado');
+        if (hasValidConnection) {
+          console.log('✅ Conexão Google Calendar encontrada no Supabase - conectando...');
           setIsConnected(true);
-          
-          // Forçar salvamento do estado para garantir persistência
           saveConnectionState(true);
           
-          // Aguardar um tick para garantir que o estado seja atualizado
+          // Buscar eventos
           setTimeout(async () => {
-            console.log('🔄 Iniciando busca de eventos após conexão (ULTRA-PERSISTENTE)...');
+            console.log('🔄 Iniciando busca de eventos...');
             try {
-              // Tentar renovar tokens se necessário
-              await tryRenewTokens();
               await refreshEvents();
             } catch (error) {
               console.log('⚠️ Erro ao buscar eventos, mas mantendo conexão ativa:', error);
-              // Mesmo com erro, manter como conectado
             }
           }, 200);
-        } else if (hasTokens) {
-          // Se há tokens mas não há estado de conexão, forçar reconexão
-          console.log('🔗 Tokens encontrados sem estado - forçando reconexão (ULTRA-PERSISTENTE)');
-          setIsConnected(true);
-          saveConnectionState(true);
-          
-          setTimeout(async () => {
-            try {
-              await refreshEvents();
-            } catch (error) {
-              console.log('⚠️ Erro ao buscar eventos, mas mantendo conexão ativa:', error);
-            }
-          }, 500);
         } else {
-          console.log('❌ Nenhum token encontrado - necessário conectar Google Calendar');
+          console.log('❌ Nenhum token encontrado no Supabase - necessário conectar Google Calendar');
           setIsConnected(false);
+          clearConnectionState();
         }
       } catch (error) {
         console.error('❌ Erro ao inicializar conexão:', error);
-        // Em caso de erro, limpar estado
         setIsConnected(false);
         setEvents([]);
       }
@@ -220,10 +135,10 @@ export function GoogleCalendarProvider({ children }: { children: React.ReactNode
         supabaseGoogleTokensService.setCurrentUser(user.cliente_id);
       }
 
-      // Limpar dados antigos antes de iniciar nova conexão
-      localStorage.removeItem('google_calendar_tokens');
+      // Limpar cache e code verifier antigos
+      googleCalendarServiceHybrid.clearTokenCache();
       localStorage.removeItem('google_code_verifier');
-      console.log('🧹 Dados antigos limpos, iniciando nova conexão...');
+      console.log('🧹 Cache limpo, iniciando nova conexão...');
       
       const authUrl = await googleCalendarServiceHybrid.getAuthUrl();
       window.location.href = authUrl;
@@ -253,24 +168,24 @@ export function GoogleCalendarProvider({ children }: { children: React.ReactNode
 
   const getCalendarList = async () => {
     try {
-      // Buscar token do localStorage
-      const tokensData = localStorage.getItem('google_calendar_tokens');
-      if (!tokensData) {
-        throw new Error('Token de acesso não encontrado');
-      }
-
-      const tokens = JSON.parse(tokensData);
-      const accessToken = tokens.access_token;
-      
-      if (!accessToken) {
-        throw new Error('Token de acesso inválido');
+      // Garantir token válido via Supabase
+      const tokenValid = await googleCalendarServiceHybrid.ensureValidToken();
+      if (!tokenValid) {
+        throw new Error('Token de acesso não encontrado ou inválido');
       }
 
       console.log('🔍 Buscando lista de calendários...');
       
+      // getEvents já usa o accessToken internamente via ensureValidToken
+      const tokenInfo = googleCalendarServiceHybrid.getTokenInfo();
+      if (!tokenInfo.isValid) {
+        throw new Error('Token de acesso inválido');
+      }
+
+      // Usar getAllEventsFromAllCalendars que já tem a lógica de buscar calendários
       const response = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList', {
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
+          'Authorization': `Bearer ${googleCalendarServiceHybrid['accessToken']}`,
           'Content-Type': 'application/json',
         },
       });
@@ -291,14 +206,6 @@ export function GoogleCalendarProvider({ children }: { children: React.ReactNode
   };
 
   const refreshEvents = async () => {
-    // Estratégia ultra-persistente: tentar buscar eventos mesmo se não estiver "autenticado"
-    const hasTokens = localStorage.getItem('google_calendar_tokens');
-    
-    if (!googleCalendarServiceHybrid.isAuthenticated() && !hasTokens) {
-      console.log('❌ Nenhum token encontrado, pulando busca de eventos');
-      return;
-    }
-    
     console.log('🔄 F5 - Recarregamento completo do calendário iniciado...');
     setIsLoading(true);
     
@@ -309,13 +216,13 @@ export function GoogleCalendarProvider({ children }: { children: React.ReactNode
       // Pequeno delay para feedback visual
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Verificar e renovar token automaticamente se necessário
-      console.log('🔍 Verificando validade do token...');
+      // Verificar e renovar token automaticamente se necessário (via Supabase)
+      console.log('🔍 Verificando validade do token no Supabase...');
       const tokenValid = await googleCalendarServiceHybrid.ensureValidToken();
       if (!tokenValid) {
         console.log('❌ Token inválido e não foi possível renovar - necessário nova autenticação');
         setIsConnected(false);
-        saveConnectionState(false);
+        clearConnectionState();
         setEvents([]);
         return;
       }
@@ -326,22 +233,21 @@ export function GoogleCalendarProvider({ children }: { children: React.ReactNode
       console.log('📅 Total de eventos recebidos de todas as agendas:', calendarEvents.length);
       
       // Agrupar eventos por calendário para debug
-      const eventsByCalendar = calendarEvents.reduce((acc, event) => {
+      const eventsByCalendar = calendarEvents.reduce((acc: Record<string, number>, event: any) => {
         const calId = event.calendarId || 'sem-id';
         const calName = event.calendarSummary || 'Sem nome';
         const key = `${calName} (${calId})`;
         acc[key] = (acc[key] || 0) + 1;
         return acc;
-      }, {} as Record<string, number>);
+      }, {});
       
       console.log('📊 Eventos por calendário:', eventsByCalendar);
       
-      // REMOVIDO: Filtro de calendários selecionados - agora mostra TODOS os eventos
       // Filtrar eventos apenas dos calendários selecionados (se houver filtro ativo)
       let filteredEvents = calendarEvents;
       
       if (selectedCalendars.length > 0) {
-        filteredEvents = calendarEvents.filter(event => {
+        filteredEvents = calendarEvents.filter((event: any) => {
           return selectedCalendars.includes(event.calendarId || '');
         });
         console.log(`📅 Filtro ativo: ${selectedCalendars.length} calendários selecionados`);
@@ -351,39 +257,36 @@ export function GoogleCalendarProvider({ children }: { children: React.ReactNode
       }
       
       setEvents(filteredEvents as GoogleCalendarEvent[]);
-      console.log('✅ Calendário recarregado com sucesso (F5)');
+      console.log('✅ Calendário recarregado com sucesso');
       
       // Garantir que o estado de conexão seja salvo após sucesso
       saveConnectionState(true);
+      setIsConnected(true);
       
-      // Feedback visual adicional
-      console.log('🎉 F5 concluído - Calendário atualizado!');
-      
-    } catch (error) {
-      console.error('❌ Erro ao recarregar calendário (F5):', error);
+    } catch (error: any) {
+      console.error('❌ Erro ao recarregar calendário:', error);
       
       // Verificar se é erro de token expirado
       if (error.message && (error.message.includes('Token expirado') || error.message.includes('nova autenticação'))) {
         console.log('🔄 Token expirado - desconectando automaticamente');
         setIsConnected(false);
-        saveConnectionState(false);
+        clearConnectionState();
         setEvents([]);
         return;
       }
       
-      // ESTRATÉGIA ULTRA-PERSISTENTE: NÃO desconectar automaticamente para outros erros
-      // Mesmo com erro, manter como conectado se há tokens
-      if (hasTokens) {
-        console.log('🔗 Tokens encontrados - mantendo conexão ativa mesmo com erro');
+      // Para outros erros, verificar se ainda há conexão válida
+      const stillValid = await googleCalendarServiceHybrid.hasValidConnection();
+      if (stillValid) {
+        console.log('🔗 Conexão ainda válida no Supabase - mantendo conectado');
         setIsConnected(true);
-        saveConnectionState(true);
+      } else {
+        setIsConnected(false);
+        clearConnectionState();
       }
-      
-      // Log do erro mas não desconectar
-      console.log('⚠️ Erro ignorado - conexão mantida (ULTRA-PERSISTENTE)');
     } finally {
       setIsLoading(false);
-      console.log('🏁 F5 - Recarregamento do calendário finalizado');
+      console.log('🏁 Recarregamento do calendário finalizado');
     }
   };
 
@@ -442,11 +345,10 @@ export function GoogleCalendarProvider({ children }: { children: React.ReactNode
   };
 
   // Deletar evento
-  const deleteEvent = async (eventId: string, calendarId?: string) => {
+  const deleteEvent = async (eventId: string, calendarId?: string, deleteScope: 'single' | 'all' = 'single', recurringEventId?: string) => {
     try {
       setIsLoading(true);
-      await googleCalendarServiceHybrid.deleteEvent(eventId, calendarId);
-      // Recarregar eventos após deletar
+      await googleCalendarServiceHybrid.deleteEvent(eventId, calendarId, deleteScope, recurringEventId);
       await refreshEvents();
       return true;
     } catch (error) {
