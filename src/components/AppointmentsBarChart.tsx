@@ -165,6 +165,11 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
       return getYearLabels().map((y) => ({ name: y, consultas: 0 }));
     }
 
+    // Não contabilizar eventos recorrentes (igual aos metric-cards)
+    const nonRecurringEvents = calendarEvents.filter(
+      (event) => !event.recurringEventId && (event.recurrence?.length ?? 0) === 0
+    );
+
     if (selectedPeriod === "week") {
       const hoje = new Date();
       const hojeBrasil = new Date(hoje.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
@@ -175,7 +180,7 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
       fimSemana.setDate(inicioSemana.getDate() + 6);
       fimSemana.setHours(23, 59, 59, 999);
       const counts = new Array(7).fill(0);
-      calendarEvents.forEach((event) => {
+      nonRecurringEvents.forEach((event) => {
         const eventStart = event.start?.dateTime || event.start?.date;
         if (!eventStart) return;
         try {
@@ -190,7 +195,7 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
     if (selectedPeriod === "month") {
       const { monthLabels, monthMapping } = getLast6Months();
       const counts = new Array(6).fill(0);
-      calendarEvents.forEach((event) => {
+      nonRecurringEvents.forEach((event) => {
         const eventStart = event.start?.dateTime || event.start?.date;
         if (!eventStart) return;
         try {
@@ -206,7 +211,7 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
     const yearLabels = getYearLabels();
     const counts = new Array(4).fill(0);
     const currentYear = new Date().getFullYear();
-    calendarEvents.forEach((event) => {
+    nonRecurringEvents.forEach((event) => {
       const eventStart = event.start?.dateTime || event.start?.date;
       if (!eventStart) return;
       try {

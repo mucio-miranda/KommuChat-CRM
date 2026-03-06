@@ -115,18 +115,20 @@ const Index = () => {
     return list;
   }, [rows]);
 
-  const { calendarEventsThisMonth, calendarEventsLastMonth } = useMemo(() => {
-    if (!isCalendarConnected || calendarEvents.length === 0) return { calendarEventsThisMonth: 0, calendarEventsLastMonth: 0 };
+  const { calendarEventsThisMonthTotal, calendarEventsThisMonthUpToDay, calendarEventsLastMonthUpToDay } = useMemo(() => {
+    if (!isCalendarConnected || calendarEvents.length === 0) {
+      return { calendarEventsThisMonthTotal: 0, calendarEventsThisMonthUpToDay: 0, calendarEventsLastMonthUpToDay: 0 };
+    }
     const now = new Date();
     const nowBrasil = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
     const currentMonth = nowBrasil.getMonth();
     const currentYear = nowBrasil.getFullYear();
+    const dayOfMonth = nowBrasil.getDate();
     const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
     const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
 
     const countForMonth = (month: number, year: number) =>
       calendarEvents.filter((event) => {
-        // Não contabilizar eventos recorrentes (instâncias ou mestre da série)
         if (event.recurringEventId || (event.recurrence?.length ?? 0) > 0) return false;
         const eventStart = event.start?.dateTime || event.start?.date;
         if (!eventStart) return false;
@@ -139,9 +141,25 @@ const Index = () => {
         }
       }).length;
 
+    const countForMonthUpToDay = (month: number, year: number, upToDay: number) =>
+      calendarEvents.filter((event) => {
+        if (event.recurringEventId || (event.recurrence?.length ?? 0) > 0) return false;
+        const eventStart = event.start?.dateTime || event.start?.date;
+        if (!eventStart) return false;
+        try {
+          const d = new Date(eventStart);
+          const db = new Date(d.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+          if (db.getMonth() !== month || db.getFullYear() !== year) return false;
+          return db.getDate() <= upToDay;
+        } catch {
+          return false;
+        }
+      }).length;
+
     return {
-      calendarEventsThisMonth: countForMonth(currentMonth, currentYear),
-      calendarEventsLastMonth: countForMonth(prevMonth, prevYear),
+      calendarEventsThisMonthTotal: countForMonth(currentMonth, currentYear),
+      calendarEventsThisMonthUpToDay: countForMonthUpToDay(currentMonth, currentYear, dayOfMonth),
+      calendarEventsLastMonthUpToDay: countForMonthUpToDay(prevMonth, prevYear, dayOfMonth),
     };
   }, [calendarEvents, isCalendarConnected]);
 
@@ -152,7 +170,6 @@ const Index = () => {
     const nowBrasil = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
     const curMonth = nowBrasil.getMonth();
     const curYear = nowBrasil.getFullYear();
-    const dayOfMonth = nowBrasil.getDate();
     const prevMonth = curMonth === 0 ? 11 : curMonth - 1;
     const prevYear = curMonth === 0 ? curYear - 1 : curYear;
 
@@ -163,18 +180,6 @@ const Index = () => {
         if (isNaN(d.getTime())) return false;
         const db = new Date(d.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
         return db.getMonth() === m && db.getFullYear() === y;
-      } catch { return false; }
-    };
-
-    // Mesmo período: do dia 1 até o dia atual do mês (para comparação justa entre meses)
-    const isInMonthUpToDay = (dateStr: string | null | undefined, m: number, y: number, upToDay: number) => {
-      if (!dateStr) return false;
-      try {
-        const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return false;
-        const db = new Date(d.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-        if (db.getMonth() !== m || db.getFullYear() !== y) return false;
-        return db.getDate() <= upToDay;
       } catch { return false; }
     };
 
@@ -193,9 +198,11 @@ const Index = () => {
       if (da === null || da === undefined) return false;
       return String(da).trim() !== '';
     }).length;
-    // Trend proporcional: compara do dia 1 ao dia atual deste mês vs mesmo período no mês anterior
-    const consultasThisMonth = list.filter(r => isInMonthUpToDay(r.data_agendamento, curMonth, curYear, dayOfMonth)).length;
-    const consultasLastMonth = list.filter(r => isInMonthUpToDay(r.data_agendamento, prevMonth, prevYear, dayOfMonth)).length;
+    // Pacientes ativos: % no mês atual em relação ao total (ex.: 2 de 10 = 20%)
+    const consultasNoMesAtual = list.filter(r => isInMonth(r.data_agendamento, curMonth, curYear)).length;
+    const percentualPacientesAtivosNoMes = consultasAgendadas > 0
+      ? Math.round((consultasNoMesAtual / consultasAgendadas) * 100)
+      : 0;
 
     const conversao = totalPacientes ? Math.round((consultasAgendadas / totalPacientes) * 100) : 0;
 
@@ -209,19 +216,19 @@ const Index = () => {
     const followUpThisMonth = list.filter(r => isFollowUp(r) && isInMonth(r.created_at || r.updated_at, curMonth, curYear)).length;
     const followUpLastMonth = list.filter(r => isFollowUp(r) && isInMonth(r.created_at || r.updated_at, prevMonth, prevYear)).length;
 
-    // Consultas no mês (calendar events)
-    const calendarTrend = calcTrend(calendarEventsThisMonth, calendarEventsLastMonth);
+    // Consultas no mês: valor = total do mês; % = mesmo período vs mês anterior
+    const calendarTrend = calcTrend(calendarEventsThisMonthUpToDay, calendarEventsLastMonthUpToDay);
 
     return {
       metrics: [
-        { title: "Contatos", value: String(totalPacientes), trend: calcTrend(pacientesThisMonth, pacientesLastMonth), icon: Users },
-        { title: "Pacientes ativos", value: String(consultasAgendadas), trend: calcTrend(consultasThisMonth, consultasLastMonth), icon: Calendar },
-        { title: "Consultas no mês", value: String(calendarEventsThisMonth), trend: calendarTrend, icon: MessageCircle },
+        { title: "Contatos", value: String(totalPacientes), trend: calcTrend(pacientesThisMonth, pacientesLastMonth), icon: MessageCircle },
+        { title: "Pacientes", value: String(consultasAgendadas), trend: percentualPacientesAtivosNoMes, icon: Users },
+        { title: "Consultas no mês", value: String(calendarEventsThisMonthTotal), trend: calendarTrend, icon: Calendar },
         // { title: "Follow Up", value: String(followUpCount), trend: calcTrend(followUpThisMonth, followUpLastMonth), icon: UserX },
       ],
       conversionRate: conversao,
     };
-  }, [sorted, calendarEventsThisMonth, calendarEventsLastMonth]);
+  }, [sorted, calendarEventsThisMonthTotal, calendarEventsThisMonthUpToDay, calendarEventsLastMonthUpToDay]);
 
   return (
     <Layout
