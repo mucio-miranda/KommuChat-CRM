@@ -27,6 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useProfilePicture } from '@/hooks/useProfilePicture';
 import { evolutionService } from '@/lib/evolution-service';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Switch } from '@/components/ui/switch';
 
 // Tipos e helpers para WhatsApp
 import { PatientWithWhatsApp, WhatsAppChatMessage } from '@/lib/whatsapp-types';
@@ -118,6 +119,9 @@ export default function Automatizacoes() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editingName, setEditingName] = useState('');
   const [isSavingName, setIsSavingName] = useState(false);
+  const [isTogglingAtendimento, setIsTogglingAtendimento] = useState(false);
+
+  const checkTrue = (val: unknown) => String(val) === 'true' || val === true;
 
   // Carregar pacientes quando conectar ou iniciar
   useEffect(() => {
@@ -436,6 +440,47 @@ export default function Automatizacoes() {
     }
   };
 
+  const handleToggleAtendimento = async () => {
+    if (!selectedPatient || !user || !supabase) return;
+
+    const currentVal = checkTrue(selectedPatient.atendimentofinal);
+    const newVal = !currentVal;
+
+    setPatients(prev => prev.map(p =>
+      p.id === selectedPatient.id ? { ...p, atendimentofinal: newVal } : p
+    ));
+    setSelectedPatient(prev => prev ? { ...prev, atendimentofinal: newVal } : null);
+
+    setIsTogglingAtendimento(true);
+    try {
+      const tableName = await getClienteTableName();
+      const { error } = await supabase
+        .from(tableName)
+        .update({ atendimentofinal: newVal })
+        .eq('id', selectedPatient.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Status atualizado',
+        description: `Atendimento ${newVal ? 'desativado' : 'ativado'} com sucesso.`,
+      });
+    } catch (err) {
+      console.error('Erro ao atualizar atendimento:', err);
+      setPatients(prev => prev.map(p =>
+        p.id === selectedPatient.id ? { ...p, atendimentofinal: currentVal } : p
+      ));
+      setSelectedPatient(prev => prev ? { ...prev, atendimentofinal: currentVal } : null);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível atualizar o status.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsTogglingAtendimento(false);
+    }
+  };
+
   const getStatusBadge = () => {
     switch (connection.status) {
       case 'connected':
@@ -658,6 +703,15 @@ export default function Automatizacoes() {
                         <p className="text-xs text-muted-foreground">
                           {formatPhoneNumber(getPatientPhone(selectedPatient))}
                         </p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">Atendimento</span>
+                        <Switch
+                          checked={!checkTrue(selectedPatient.atendimentofinal)}
+                          onCheckedChange={handleToggleAtendimento}
+                          disabled={isTogglingAtendimento}
+                          title={checkTrue(selectedPatient.atendimentofinal) ? 'Reativar atendimento' : 'Desativar atendimento'}
+                        />
                       </div>
                     </div>
 

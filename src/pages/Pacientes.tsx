@@ -726,16 +726,6 @@ export default function Pacientes() {
                 </SelectContent>
               </Select>
 
-              <Select value={fonteFilter} onValueChange={setFonteFilter}>
-                <SelectTrigger className="w-full sm:w-48 h-8 sm:h-9 md:h-10 text-xs sm:text-sm border-muted-foreground/20">
-                  <SelectValue placeholder="Fonte" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas" className="text-xs sm:text-sm">Todas</SelectItem>
-                  <SelectItem value="ia" className="text-xs sm:text-sm">IA</SelectItem>
-                  <SelectItem value="humano" className="text-xs sm:text-sm">Humano</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
         </CardContent>
@@ -804,24 +794,6 @@ export default function Pacientes() {
                     >
                       Status
                       {sortField === 'status' ? (
-                        sortDirection === 'asc' ? 
-                          <ChevronUp className="w-4 h-4" /> : 
-                          <ChevronDown className="w-4 h-4" />
-                      ) : (
-                        <div className="flex flex-col">
-                          <ChevronUp className="w-3 h-3 opacity-30" />
-                          <ChevronDown className="w-3 h-3 opacity-30 -mt-1" />
-                        </div>
-                      )}
-                    </button>
-                  </th>
-                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">
-                    <button
-                      onClick={() => handleSort('fonte')}
-                      className="flex items-center gap-1 hover:text-foreground transition-colors"
-                    >
-                      Fonte
-                      {sortField === 'fonte' ? (
                         sortDirection === 'asc' ? 
                           <ChevronUp className="w-4 h-4" /> : 
                           <ChevronDown className="w-4 h-4" />
@@ -941,14 +913,6 @@ export default function Pacientes() {
                       <StatusBadge status={getPatientStatus(patient)} />
                     </td>
                     <td className="py-4 px-2">
-                      <Badge 
-                        variant={patient.fonte === 'ia' ? 'default' : 'secondary'}
-                        className="text-xs"
-                      >
-                        {patient.fonte === 'ia' ? 'IA' : 'Humano'}
-                      </Badge>
-                    </td>
-                    <td className="py-4 px-2">
                       <div className="text-sm">
                         <div className="text-foreground font-medium">
                           <EditDatePopover 
@@ -1054,12 +1018,6 @@ export default function Pacientes() {
                         </div>
                       )}
                     </div>
-                    <Badge 
-                      variant={patient.fonte === 'ia' ? 'default' : 'secondary'}
-                      className="text-[9px] sm:text-[10px] flex-shrink-0 h-4 sm:h-5 px-1.5 sm:px-2"
-                    >
-                      {patient.fonte === 'ia' ? 'IA' : 'Humano'}
-                    </Badge>
                   </div>
 
                   {/* Email e Telefone */}
