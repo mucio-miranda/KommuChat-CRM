@@ -221,7 +221,7 @@ const Index = () => {
 
     return {
       metrics: [
-        { title: "Contatos", value: String(totalPacientes), trend: calcTrend(pacientesThisMonth, pacientesLastMonth), icon: MessageCircle },
+        { title: "Contatos", value: String(totalPacientes), trend: undefined, icon: MessageCircle },
         { title: "Pacientes", value: String(consultasAgendadas), trend: percentualPacientesAtivosNoMes, icon: Users },
         { title: "Consultas no mês", value: String(calendarEventsThisMonthTotal), trend: calendarTrend, icon: Calendar },
         // { title: "Follow Up", value: String(followUpCount), trend: calcTrend(followUpThisMonth, followUpLastMonth), icon: UserX },
