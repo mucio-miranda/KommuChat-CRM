@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useLayoutEffect } from 'react';
 import { WhatsAppChatMessage } from '@/lib/whatsapp-types';
 import { cn } from '@/lib/utils';
 
@@ -16,12 +16,11 @@ interface WhatsAppChatProps {
 export function WhatsAppChat({ messages, patientName, shouldScrollToBottom = false }: WhatsAppChatProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Scroll automático para a última mensagem (apenas quando solicitado)
-  useEffect(() => {
-    if (shouldScrollToBottom && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [shouldScrollToBottom]);
+  // Scroll automático para o fim antes da pintura (useLayoutEffect), assim o chat já abre no final
+  useLayoutEffect(() => {
+    if (!shouldScrollToBottom || !messages.length) return;
+    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+  }, [shouldScrollToBottom, messages.length]);
 
   if (messages.length === 0) {
     return (

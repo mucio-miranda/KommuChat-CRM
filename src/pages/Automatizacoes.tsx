@@ -130,7 +130,10 @@ export default function Automatizacoes() {
   // Carregar mensagens quando selecionar paciente
   useEffect(() => {
     if (selectedPatient) {
-      loadMessagesFromPatient(selectedPatient);
+      loadMessagesFromPatient(selectedPatient, () => {
+        setShouldScrollToBottom(true);
+        setTimeout(() => setShouldScrollToBottom(false), 500);
+      });
     }
   }, [selectedPatient]);
 
@@ -197,7 +200,8 @@ export default function Automatizacoes() {
   }, [supabase, user?.cliente_id]);
 
   // Carregar mensagens de um paciente específico
-  const loadMessagesFromPatient = (patient: PatientWithWhatsApp) => {
+  // onLoaded: chamado após as mensagens estarem no estado (para scroll ao fim ao abrir o chat)
+  const loadMessagesFromPatient = (patient: PatientWithWhatsApp, onLoaded?: () => void) => {
     setLoadingMessages(true);
     try {
       const interactions = parseWhatsAppMessages(patient.whatsapp);
@@ -209,6 +213,8 @@ export default function Automatizacoes() {
       setMessages([]);
     } finally {
       setLoadingMessages(false);
+      // Dispara scroll no mesmo ciclo para já abrir no final (antes da pintura)
+      if (onLoaded) onLoaded();
     }
   };
 
@@ -364,10 +370,7 @@ export default function Automatizacoes() {
 
   const handleSelectPatient = (patient: PatientWithWhatsApp) => {
     setSelectedPatient(patient);
-    // Ativar scroll automático ao abrir nova conversa
-    setShouldScrollToBottom(true);
-    // Resetar após um curto delay para não scrollar em refreshes futuros
-    setTimeout(() => setShouldScrollToBottom(false), 500);
+    // Scroll ao fim é disparado em loadMessagesFromPatient (onLoaded) quando as mensagens carregam
   };
 
   const handleStartEditName = (currentName: string) => {
