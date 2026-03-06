@@ -65,7 +65,7 @@ function MessageBubble({ message, patientName }: MessageBubbleProps) {
         className={cn(
           'max-w-[75%] rounded-2xl px-4 py-2.5 shadow-sm',
           isOutbound
-            ? 'bg-emerald-500 text-white rounded-tr-sm'
+            ? 'bg-[#2E2E2E] text-white rounded-tr-sm'
             : 'bg-white dark:bg-zinc-800 text-foreground rounded-tl-sm border border-border'
         )}
       >
@@ -73,7 +73,7 @@ function MessageBubble({ message, patientName }: MessageBubbleProps) {
         <div
           className={cn(
             'text-xs font-medium mb-1',
-            isOutbound ? 'text-emerald-100' : 'text-muted-foreground'
+            isOutbound ? 'text-zinc-300' : 'text-muted-foreground'
           )}
         >
           {isOutbound ? message.from : (message.from || patientName)}
@@ -88,7 +88,7 @@ function MessageBubble({ message, patientName }: MessageBubbleProps) {
         <div
           className={cn(
             'text-[10px] mt-1.5 text-right',
-            isOutbound ? 'text-emerald-200' : 'text-muted-foreground'
+            isOutbound ? 'text-zinc-400' : 'text-muted-foreground'
           )}
         >
           {message.formattedTime}
