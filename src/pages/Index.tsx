@@ -126,6 +126,8 @@ const Index = () => {
 
     const countForMonth = (month: number, year: number) =>
       calendarEvents.filter((event) => {
+        // Não contabilizar eventos recorrentes (instâncias ou mestre da série)
+        if (event.recurringEventId || (event.recurrence?.length ?? 0) > 0) return false;
         const eventStart = event.start?.dateTime || event.start?.date;
         if (!eventStart) return false;
         try {
@@ -150,6 +152,7 @@ const Index = () => {
     const nowBrasil = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
     const curMonth = nowBrasil.getMonth();
     const curYear = nowBrasil.getFullYear();
+    const dayOfMonth = nowBrasil.getDate();
     const prevMonth = curMonth === 0 ? 11 : curMonth - 1;
     const prevYear = curMonth === 0 ? curYear - 1 : curYear;
 
@@ -160,6 +163,18 @@ const Index = () => {
         if (isNaN(d.getTime())) return false;
         const db = new Date(d.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
         return db.getMonth() === m && db.getFullYear() === y;
+      } catch { return false; }
+    };
+
+    // Mesmo período: do dia 1 até o dia atual do mês (para comparação justa entre meses)
+    const isInMonthUpToDay = (dateStr: string | null | undefined, m: number, y: number, upToDay: number) => {
+      if (!dateStr) return false;
+      try {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return false;
+        const db = new Date(d.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+        if (db.getMonth() !== m || db.getFullYear() !== y) return false;
+        return db.getDate() <= upToDay;
       } catch { return false; }
     };
 
@@ -178,8 +193,9 @@ const Index = () => {
       if (da === null || da === undefined) return false;
       return String(da).trim() !== '';
     }).length;
-    const consultasThisMonth = list.filter(r => isInMonth(r.data_agendamento, curMonth, curYear)).length;
-    const consultasLastMonth = list.filter(r => isInMonth(r.data_agendamento, prevMonth, prevYear)).length;
+    // Trend proporcional: compara do dia 1 ao dia atual deste mês vs mesmo período no mês anterior
+    const consultasThisMonth = list.filter(r => isInMonthUpToDay(r.data_agendamento, curMonth, curYear, dayOfMonth)).length;
+    const consultasLastMonth = list.filter(r => isInMonthUpToDay(r.data_agendamento, prevMonth, prevYear, dayOfMonth)).length;
 
     const conversao = totalPacientes ? Math.round((consultasAgendadas / totalPacientes) * 100) : 0;
 
