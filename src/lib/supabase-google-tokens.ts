@@ -112,7 +112,7 @@ export class SupabaseGoogleTokensService {
       });
 
       // Usar UPSERT: insere ou atualiza se user_id já existir
-      const response = await fetch(`${supabaseUrl}/rest/v1/google_calendar_tokens`, {
+      const response = await fetch(`${supabaseUrl}/rest/v1/google_calendar_tokens?on_conflict=user_id`, {
         method: 'POST',
         headers: {
           'apikey': supabaseAnonKey,
@@ -130,11 +130,40 @@ export class SupabaseGoogleTokensService {
         const savedData = await response.json();
         console.log('✅ Tokens salvos com sucesso no Supabase');
         return Array.isArray(savedData) ? savedData[0] : savedData;
-      } else {
-        const errorText = await response.text();
-        console.error('❌ Erro na resposta:', errorText);
-        throw new Error(`Erro ao salvar tokens: ${response.status} ${response.statusText}`);
       }
+
+      // Fallback: se o UPSERT falhar (ex: constraint duplicada no banco), tentar PATCH direto
+      if (response.status === 409) {
+        console.warn('⚠️ UPSERT falhou com 409, tentando PATCH como fallback...');
+        const patchResponse = await fetch(
+          `${supabaseUrl}/rest/v1/google_calendar_tokens?user_id=eq.${encodeURIComponent(userId)}`,
+          {
+            method: 'PATCH',
+            headers: {
+              'apikey': supabaseAnonKey,
+              'Authorization': `Bearer ${supabaseAnonKey}`,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Prefer': 'return=representation'
+            },
+            body: JSON.stringify(tokenData)
+          }
+        );
+
+        if (patchResponse.ok) {
+          const savedData = await patchResponse.json();
+          console.log('✅ Tokens atualizados via PATCH no Supabase');
+          return Array.isArray(savedData) ? savedData[0] : savedData;
+        } else {
+          const errorText = await patchResponse.text();
+          console.error('❌ Erro no PATCH de fallback:', errorText);
+          throw new Error(`Erro ao salvar tokens: ${patchResponse.status} ${patchResponse.statusText}`);
+        }
+      }
+
+      const errorText = await response.text();
+      console.error('❌ Erro na resposta:', errorText);
+      throw new Error(`Erro ao salvar tokens: ${response.status} ${response.statusText}`);
     } catch (error) {
       console.error('❌ Erro ao salvar tokens no Supabase:', error);
       throw error;
