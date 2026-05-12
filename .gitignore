@@ -56,17 +56,33 @@ Desktop.ini
 *~
 
 # Debug, test and setup scripts (may contain credentials)
+scripts/
 test-*.js
+test-*.cjs
 check-*.js
+check-*.cjs
 debug-*.js
 diagnose-*.js
 fix-*.js
 investigate-*.js
 find-*.js
+find-*.cjs
 setup-*.js
 create-*.js
 validate-*.js
+clear-*.js
+force-*.js
 
 # Build outputs
 build/
 out/
+
+# Markdown files (except README)
+*.md
+!README.md
+
+# SQL scripts (historical, not executed by the app)
+sql/
+
+# Build archives
+*.zip
