@@ -32,7 +32,7 @@ const getMenuItems = (userRole: string) => {
     { title: "Chat", url: "/chat", icon: MessageCircle },
   ];
 
-  if (userRole === 'admin_clinica' || userRole === 'admin') {
+  if (userRole === 'admin') {
     baseItems.push({ title: "Usuários", url: "/funcionarios", icon: UserPlus });
   }
 
@@ -63,11 +63,11 @@ export function AppSidebar() {
   };
 
   const userInitial = user?.nome?.charAt(0)?.toUpperCase() || 'U';
-  const roleBadge = user?.role === 'admin_clinica' || user?.role === 'admin' ? 'Admin' : 'User';
+  const roleBadge = user?.role === 'admin' ? 'Admin' : 'User';
 
   return (
     <Sidebar className="border-r border-sidebar-border bg-sidebar">
-      <SidebarHeader className="h-16 flex items-center px-4 pt-2 pb-0 border-b border-sidebar-border">
+      <SidebarHeader className="h-16 flex items-start justify-start pl-6 pr-4 pt-2 pb-0 border-b border-sidebar-border">
         <Logo size="md" />
       </SidebarHeader>
 
