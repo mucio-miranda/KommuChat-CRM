@@ -18,6 +18,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSupabase } from "@/hooks/useSupabase";
 import { useGoogleCalendar } from "@/contexts/GoogleCalendarContextSimple";
 import { toast } from "@/components/ui/use-toast";
+import { isHolidayEvent } from "@/lib/date-utils";
 import { convertToBrazilDateString, getTodayBrazilString, filterByToday, filterByCurrentMonth } from "@/lib/date-utils";
 
 type Row = {
@@ -129,7 +130,7 @@ const Index = () => {
 
     const countForMonth = (month: number, year: number) =>
       calendarEvents.filter((event) => {
-        if (event.recurringEventId || (event.recurrence?.length ?? 0) > 0) return false;
+        if (event.recurringEventId || (event.recurrence?.length ?? 0) > 0 || isHolidayEvent(event)) return false;
         const eventStart = event.start?.dateTime || event.start?.date;
         if (!eventStart) return false;
         try {
@@ -143,7 +144,7 @@ const Index = () => {
 
     const countForMonthUpToDay = (month: number, year: number, upToDay: number) =>
       calendarEvents.filter((event) => {
-        if (event.recurringEventId || (event.recurrence?.length ?? 0) > 0) return false;
+        if (event.recurringEventId || (event.recurrence?.length ?? 0) > 0 || isHolidayEvent(event)) return false;
         const eventStart = event.start?.dateTime || event.start?.date;
         if (!eventStart) return false;
         try {

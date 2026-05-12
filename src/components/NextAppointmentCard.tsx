@@ -2,6 +2,7 @@ import { Clock, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useGoogleCalendar } from "@/contexts/GoogleCalendarContextSimple";
 import { useMemo } from "react";
+import { isHolidayEvent } from "@/lib/date-utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 function parseEventDate(start: { dateTime?: string; date?: string }): Date {
@@ -23,6 +24,7 @@ export function NextAppointmentCard() {
     const now = new Date();
     const futureEvents = events
       .filter((e) => {
+        if (isHolidayEvent(e)) return false;
         const eventDate = parseEventDate(e.start);
         return eventDate.getTime() >= now.getTime();
       })

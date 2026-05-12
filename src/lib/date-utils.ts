@@ -2,6 +2,12 @@
  * Utilitários para manipulação segura de datas
  */
 
+export function isHolidayEvent(event: { calendarSummary?: string; organizer?: { email: string } }): boolean {
+  if (event.calendarSummary && /feriado|holiday/i.test(event.calendarSummary)) return true;
+  if (event.organizer?.email?.includes('#holiday@group.v.calendar.google.com')) return true;
+  return false;
+}
+
 /**
  * Converte uma data para string no formato YYYY-MM-DD no fuso horário do Brasil
  * @param dateString - String da data ou objeto Date

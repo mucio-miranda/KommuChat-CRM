@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/select";
 import { useGoogleCalendar } from "@/contexts/GoogleCalendarContextSimple";
 import { googleCalendarServiceHybrid } from "@/lib/google-calendar-hybrid";
+import { isHolidayEvent } from "@/lib/date-utils";
 import {
   LineChart,
   Line,
@@ -167,7 +168,7 @@ export function AppointmentsBarChart({ rows }: AppointmentsBarChartProps) {
 
     // Não contabilizar eventos recorrentes (igual aos metric-cards)
     const nonRecurringEvents = calendarEvents.filter(
-      (event) => !event.recurringEventId && (event.recurrence?.length ?? 0) === 0
+      (event) => !event.recurringEventId && (event.recurrence?.length ?? 0) === 0 && !isHolidayEvent(event)
     );
 
     if (selectedPeriod === "week") {
