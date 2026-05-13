@@ -20,6 +20,7 @@ dist-ssr
 .env.production.local
 *.env
 kommu-env-example.txt
+.env.example
 
 # Database and credentials
 *credentials*
