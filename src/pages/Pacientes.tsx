@@ -190,47 +190,28 @@ export default function Pacientes() {
       if (iaError) {
         console.error('Erro ao buscar pacientes IA:', iaError);
       } else if (iaData) {
-        // Adicionar fonte IA aos dados
+        // fonte derivado do chatid: n8n usa formato WhatsApp com '@' (ex: 5511999@s.whatsapp.net)
+        // pacientes manuais têm chatid = telefone simples (sem '@')
         iaPatients = iaData.map(patient => ({
           ...patient,
-          fonte: 'ia' as const,
+          fonte: patient.chatid?.includes('@') ? 'ia' as const : 'humano' as const,
           status: getPatientStatus({ ...patient, fonte: 'ia' })
         }));
-        
-        // Remover duplicatas baseado no chatid
-        iaPatients = iaPatients.filter((patient, index, self) => 
-          index === self.findIndex(p => p.chatid === patient.chatid)
-        );
-        
-        console.log('✅ PACIENTES - Dados IA carregados:', iaPatients.length, 'registros');
+
+        // Remover duplicatas de chatid apenas para pacientes IA
+        const seen = new Set<string>();
+        iaPatients = iaPatients.filter(patient => {
+          if (!patient.chatid?.includes('@')) return true;
+          if (seen.has(patient.chatid)) return false;
+          seen.add(patient.chatid);
+          return true;
+        });
+
+        console.log('✅ PACIENTES - Dados carregados:', iaPatients.length, 'registros');
       }
 
-      // 2. Carregar pacientes manuais (se usuário logado)
-      let manualPatients: Patient[] = [];
-      if (user) {
-        console.log('🎯 PACIENTES - Carregando pacientes manuais...');
-        
-        const { data: manualData, error: manualError } = await supabaseWrite
-          .from('pacientes_manuais')
-          .select('*')
-          .eq('cliente_id', user.cliente_id); // CORRIGIDO: usar cliente_id em vez de user.id
-
-        if (manualError) {
-          console.error('Erro ao buscar pacientes manuais:', manualError);
-        } else if (manualData) {
-          // Adicionar fonte humano aos dados
-          manualPatients = manualData.map(patient => ({
-            ...patient,
-            fonte: 'humano' as const,
-            status: patient.status || 'novo'
-          }));
-          
-          console.log('✅ PACIENTES - Dados manuais carregados:', manualPatients.length, 'registros');
-        }
-      }
-
-      // 3. Unificar e ordenar dados
-      const allPatients = [...iaPatients, ...manualPatients];
+      // 3. Ordenar dados
+      const allPatients = [...iaPatients];
       
       // Ordenar por data de atualização (mais recente primeiro)
       const sortedPatients = allPatients.sort((a, b) => {
@@ -275,37 +256,15 @@ export default function Pacientes() {
     try {
       let error = null;
       
-      if (patient.fonte === 'humano') {
-        // Update paciente manual
-        // Nota: Se a tabela manual não tiver a coluna topoucall, isso pode gerar erro.
-        // Assumindo que o usuário quer replicar o comportamento.
-        const { error: updateError } = await supabaseWrite!
-          .from('pacientes_manuais')
-          .update({ 
-            data_agendamento: dateStr,
-            // Para manuais, mantemos string por segurança ou removemos se não existir
-            topoucall: topoucallValue 
-          })
-          .eq('id', patient.id)
-          .eq('cliente_id', user.cliente_id);
-          
-        error = updateError;
-      } else {
-        // Update paciente IA
-        // Para tabelas IA, geralmente topoucall é boolean ou string 'true'/'false'.
-        // Vamos enviar boolean para garantir compatibilidade se for coluna boolean.
-        const topoucallBoolean = !!newDate;
+      const { error: updateError } = await supabase!
+        .from(iaTableName)
+        .update({
+          data_agendamento: dateStr,
+          topoucall: !!newDate,
+        })
+        .eq('id', patient.id);
 
-        const { error: updateError } = await supabase!
-          .from(iaTableName)
-          .update({ 
-            data_agendamento: dateStr,
-            topoucall: topoucallBoolean
-          })
-          .eq('id', patient.id);
-          
-        error = updateError;
-      }
+      error = updateError;
 
       if (error) {
         console.error('Erro ao atualizar data:', error);
@@ -357,28 +316,12 @@ export default function Pacientes() {
     try {
       let error = null;
       
-      if (patient.fonte === 'humano') {
-        // Update paciente manual
-        const { error: updateError } = await supabaseWrite!
-          .from('pacientes_manuais')
-          .update({ 
-            atendimentofinal: String(newFieldVal)
-          })
-          .eq('id', patient.id)
-          .eq('cliente_id', user.cliente_id);
-          
-        error = updateError;
-      } else {
-        // Update paciente IA
-        const { error: updateError } = await supabase!
-          .from(iaTableName)
-          .update({ 
-            atendimentofinal: newFieldVal
-          })
-          .eq('id', patient.id);
-          
-        error = updateError;
-      }
+      const { error: updateError } = await supabase!
+        .from(iaTableName)
+        .update({ atendimentofinal: newFieldVal })
+        .eq('id', patient.id);
+
+      error = updateError;
 
       if (error) {
         throw error;
@@ -424,26 +367,10 @@ export default function Pacientes() {
     }
 
     try {
-      let error = null;
-      
-      if (patient.fonte === 'humano') {
-        // Update paciente manual
-        const { error: updateError } = await supabaseWrite!
-          .from('pacientes_manuais')
-          .update({ nome: editingName.trim() })
-          .eq('id', patient.id)
-          .eq('cliente_id', user.cliente_id);
-          
-        error = updateError;
-      } else {
-        // Update paciente IA
-        const { error: updateError } = await supabase!
-          .from(iaTableName)
-          .update({ nome: editingName.trim() })
-          .eq('id', patient.id);
-          
-        error = updateError;
-      }
+      const { error } = await supabase!
+        .from(iaTableName)
+        .update({ nome: editingName.trim() })
+        .eq('id', patient.id);
 
       if (error) {
         console.error('Erro ao atualizar nome:', error);
@@ -452,17 +379,17 @@ export default function Pacientes() {
           description: "Não foi possível atualizar o nome. Verifique suas permissões.",
           variant: "destructive",
         });
-      } else {
-        toast({
-          title: "Nome atualizado",
-          description: "Nome do paciente atualizado com sucesso!",
-        });
-        // Atualizar estado local
-        setPatients(prev => prev.map(p => 
-          p.id === patient.id ? { ...p, nome: editingName.trim() } : p
-        ));
-        handleCancelEditName();
+        return;
       }
+
+      toast({
+        title: "Nome atualizado",
+        description: "Nome do paciente atualizado com sucesso!",
+      });
+      setPatients(prev => prev.map(p =>
+        p.id === patient.id ? { ...p, nome: editingName.trim() } : p
+      ));
+      handleCancelEditName();
     } catch (err) {
       console.error('Erro inesperado:', err);
       toast({
@@ -490,16 +417,15 @@ export default function Pacientes() {
 
   // Função para confirmar exclusão
   const confirmDeletePatient = async () => {
-    if (!patientToDelete || !supabaseWrite || !user) {
+    if (!patientToDelete || !supabase || !user) {
       return;
     }
 
     try {
-      const { error } = await supabaseWrite
-        .from('pacientes_manuais')
+      const { error } = await supabase
+        .from(iaTableName)
         .delete()
-        .eq('id', patientToDelete.id)
-        .eq('cliente_id', user.cliente_id); // Garantir que só exclui pacientes do próprio usuário
+        .eq('id', patientToDelete.id);
 
       if (error) {
         console.error('Erro ao excluir paciente:', error);
@@ -1080,6 +1006,7 @@ export default function Pacientes() {
         isOpen={isNewPatientModalOpen}
         onClose={() => setIsNewPatientModalOpen(false)}
         onPatientAdded={() => loadData(false)}
+        iaTableName={iaTableName}
       />
 
       {/* Diálogo de Confirmação de Exclusão */}

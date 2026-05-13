@@ -371,43 +371,21 @@ export function CreateEventModal({
         try {
           const dateStr = startDateTime.toISOString();
           
-          if (selectedPatient.fonte === 'humano') {
-            // Update paciente manual
-            const { error: updateError } = await supabaseWrite!
-              .from('pacientes_manuais')
-              .update({ 
-                data_agendamento: dateStr,
-                topoucall: "true"
-              })
-              .eq('id', selectedPatient.id)
-              .eq('cliente_id', user.cliente_id);
-            
-            if (updateError) {
-              console.error('Erro ao atualizar paciente manual:', updateError);
-              toast({
-                title: "Aviso",
-                description: "Evento salvo, mas houve um erro ao atualizar o agendamento do paciente.",
-                variant: "default",
-              });
-            }
-          } else {
-            // Update paciente IA
-            const { error: updateError } = await supabase!
-              .from(iaTableName)
-              .update({ 
-                data_agendamento: dateStr,
-                topoucall: true
-              })
-              .eq('id', selectedPatient.id);
-            
-            if (updateError) {
-              console.error('Erro ao atualizar paciente IA:', updateError);
-              toast({
-                title: "Aviso",
-                description: "Evento salvo, mas houve um erro ao atualizar o agendamento do paciente.",
-                variant: "default",
-              });
-            }
+          const { error: updateError } = await supabase!
+            .from(iaTableName)
+            .update({
+              data_agendamento: dateStr,
+              topoucall: true,
+            })
+            .eq('id', selectedPatient.id);
+
+          if (updateError) {
+            console.error('Erro ao atualizar paciente:', updateError);
+            toast({
+              title: "Aviso",
+              description: "Evento salvo, mas houve um erro ao atualizar o agendamento do paciente.",
+              variant: "default",
+            });
           }
         } catch (patientError) {
           console.error('Erro ao atualizar paciente:', patientError);
@@ -499,33 +477,16 @@ export function CreateEventModal({
       // Remover agendamento do paciente (se houver paciente associado)
       if (patientMetadata && user) {
         try {
-          if (patientMetadata.patientSource === 'humano') {
-            // Update paciente manual
-            const { error: updateError } = await supabaseWrite!
-              .from('pacientes_manuais')
-              .update({ 
-                data_agendamento: null,
-                topoucall: "false"
-              })
-              .eq('id', patientMetadata.patientId)
-              .eq('cliente_id', user.cliente_id);
-            
-            if (updateError) {
-              console.error('Erro ao atualizar paciente manual:', updateError);
-            }
-          } else {
-            // Update paciente IA
-            const { error: updateError } = await supabase!
-              .from(iaTableName)
-              .update({ 
-                data_agendamento: null,
-                topoucall: false
-              })
-              .eq('id', patientMetadata.patientId);
-            
-            if (updateError) {
-              console.error('Erro ao atualizar paciente IA:', updateError);
-            }
+          const { error: updateError } = await supabase!
+            .from(iaTableName)
+            .update({
+              data_agendamento: null,
+              topoucall: false,
+            })
+            .eq('id', patientMetadata.patientId);
+
+          if (updateError) {
+            console.error('Erro ao atualizar paciente:', updateError);
           }
         } catch (patientError) {
           console.error('Erro ao atualizar paciente ao deletar evento:', patientError);

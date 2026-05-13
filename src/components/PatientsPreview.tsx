@@ -134,49 +134,29 @@ export function PatientsPreview() {
 
       let iaPatients = [];
       if (iaError) {
-        console.error('Erro ao buscar pacientes IA:', iaError);
+        console.error('Erro ao buscar pacientes:', iaError);
       } else if (iaData) {
-        // Adicionar fonte IA aos dados
+        // fonte derivado do chatid: n8n usa formato WhatsApp com '@'
         iaPatients = iaData.map(patient => ({
           ...patient,
-          fonte: 'ia' as const,
+          fonte: patient.chatid?.includes('@') ? 'ia' as const : 'humano' as const,
           status: getPatientStatus({ ...patient, fonte: 'ia' })
         }));
-        
-        // Remover duplicatas baseado no chatid
-        iaPatients = iaPatients.filter((patient, index, self) => 
-          index === self.findIndex(p => p.chatid === patient.chatid)
-        );
-        
-        console.log('✅ PACIENTES PREVIEW - Dados IA carregados:', iaPatients.length, 'registros');
+
+        // Remover duplicatas de chatid apenas para pacientes IA
+        const seen = new Set<string>();
+        iaPatients = iaPatients.filter(patient => {
+          if (!patient.chatid?.includes('@')) return true;
+          if (seen.has(patient.chatid)) return false;
+          seen.add(patient.chatid);
+          return true;
+        });
+
+        console.log('✅ PACIENTES PREVIEW - Dados carregados:', iaPatients.length, 'registros');
       }
 
-      // 2. Carregar pacientes manuais (se usuário logado)
-      let manualPatients = [];
-      if (user && supabaseWrite) {
-        console.log('🎯 PACIENTES PREVIEW - Carregando pacientes manuais...');
-        
-        const { data: manualData, error: manualError } = await supabaseWrite
-          .from('pacientes_manuais')
-          .select('*')
-          .eq('cliente_id', user.cliente_id);
-
-        if (manualError) {
-          console.error('Erro ao buscar pacientes manuais:', manualError);
-        } else if (manualData) {
-          // Adicionar fonte humano aos dados
-          manualPatients = manualData.map(patient => ({
-            ...patient,
-            fonte: 'humano' as const,
-            status: patient.status || 'novo'
-          }));
-          
-          console.log('✅ PACIENTES PREVIEW - Dados manuais carregados:', manualPatients.length, 'registros');
-        }
-      }
-
-      // 3. Unificar e ordenar dados (igual à página /pacientes)
-      const allPatients = [...iaPatients, ...manualPatients];
+      // 3. Ordenar dados
+      const allPatients = [...iaPatients];
       
       // Ordenar por data de atualização (mais recente primeiro)
       const sortedPatients = allPatients.sort((a, b) => {

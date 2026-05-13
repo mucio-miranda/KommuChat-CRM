@@ -57,43 +57,22 @@ export function usePatientsSearch() {
       setIaTableName(currentIaTableName);
       console.log('📋 usePatientsSearch: Tabela IA:', currentIaTableName);
 
-      // Buscar pacientes da IA (sem ordenação, pois nem todas as tabelas têm created_at)
+      // Buscar todos os pacientes da tabela unificada
       const { data: iaPatients, error: iaError } = await supabase
         .from(currentIaTableName)
         .select('*');
 
       if (iaError) {
-        console.error('❌ Erro ao buscar pacientes IA:', iaError);
+        console.error('❌ Erro ao buscar pacientes:', iaError);
       } else {
-        console.log('✅ Pacientes IA encontrados:', iaPatients?.length || 0);
+        console.log('✅ Pacientes encontrados:', iaPatients?.length || 0);
       }
 
-      // Buscar pacientes manuais (com ordenação, pois sabemos que a tabela tem created_at)
-      let manualPatients = null;
-      let manualError = null;
-      
-      if (supabaseWrite) {
-        const result = await supabaseWrite
-          .from('pacientes_manuais')
-          .select('*')
-          .eq('cliente_id', user.cliente_id)
-          .order('created_at', { ascending: false });
-        
-        manualPatients = result.data;
-        manualError = result.error;
-      }
-
-      if (manualError) {
-        console.error('❌ Erro ao buscar pacientes manuais:', manualError);
-      } else {
-        console.log('✅ Pacientes manuais encontrados:', manualPatients?.length || 0);
-      }
-
-      // Combinar pacientes marcando a fonte
-      const allPatients: Patient[] = [
-        ...(iaPatients || []).map(p => ({ ...p, fonte: 'ia' as const })),
-        ...(manualPatients || []).map(p => ({ ...p, fonte: 'humano' as const }))
-      ];
+      // fonte derivado do chatid: n8n usa formato WhatsApp com '@'
+      const allPatients: Patient[] = (iaPatients || []).map(p => ({
+        ...p,
+        fonte: p.chatid?.includes('@') ? 'ia' as const : 'humano' as const,
+      }));
       console.log('📊 Total de pacientes antes do filtro:', allPatients.length);
 
       // TEMPORÁRIO: Removendo filtro de setdata para debug

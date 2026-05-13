@@ -1,16 +1,8 @@
 import { useState } from "react";
-import { X, Save, User, Mail, Phone, FileText } from "lucide-react";
+import { X, Save, User, Mail, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -25,27 +17,24 @@ interface NewPatientModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPatientAdded: () => void;
+  iaTableName: string;
 }
 
 interface NewPatientData {
   nome: string;
   email: string;
   telefone: string;
-  status: string;
-  observacoes: string;
 }
 
-export function NewPatientModal({ isOpen, onClose, onPatientAdded }: NewPatientModalProps) {
+export function NewPatientModal({ isOpen, onClose, onPatientAdded, iaTableName }: NewPatientModalProps) {
   const [formData, setFormData] = useState<NewPatientData>({
     nome: "",
     email: "",
     telefone: "",
-    status: "novo",
-    observacoes: ""
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { write: supabaseWrite } = useSupabase();
+  const { read: supabase } = useSupabase();
   const { user } = useAuth();
 
   const handleInputChange = (field: keyof NewPatientData, value: string) => {
@@ -67,7 +56,7 @@ export function NewPatientModal({ isOpen, onClose, onPatientAdded }: NewPatientM
       return;
     }
 
-    if (!supabaseWrite) {
+    if (!supabase) {
       toast({
         title: "Erro",
         description: "Erro de conexão com o banco de dados",
@@ -85,29 +74,20 @@ export function NewPatientModal({ isOpen, onClose, onPatientAdded }: NewPatientM
       return;
     }
 
-    console.log('🔍 Debug - Criando paciente:', {
-      nome: formData.nome.trim(),
-      email: formData.email.trim() || null,
-      telefone: formData.telefone.trim() || null,
-      status: formData.status,
-      observacoes: formData.observacoes.trim() || null,
-      cliente_id: user.cliente_id, // CORRIGIDO: usar cliente_id em vez de user.id
-      user_id: user.id,
-      user_email: user.email
-    });
+    const telefone = formData.telefone.trim() || null;
+    const highId = Math.floor(10_000_000 + Math.random() * 90_000_000);
 
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabaseWrite
-        .from('pacientes_manuais')
+      const { data, error } = await supabase
+        .from(iaTableName)
         .insert([{
+          id: highId,
           nome: formData.nome.trim(),
           email: formData.email.trim() || null,
-          telefone: formData.telefone.trim() || null,
-          status: formData.status,
-          observacoes: formData.observacoes.trim() || null,
-          cliente_id: user.cliente_id // CORRIGIDO: usar cliente_id em vez de user.id
+          telefone,
+          chatid: telefone,
         }])
         .select();
 
@@ -131,8 +111,6 @@ export function NewPatientModal({ isOpen, onClose, onPatientAdded }: NewPatientM
         nome: "",
         email: "",
         telefone: "",
-        status: "novo",
-        observacoes: ""
       });
 
       // Fechar modal e atualizar lista
@@ -157,8 +135,6 @@ export function NewPatientModal({ isOpen, onClose, onPatientAdded }: NewPatientM
         nome: "",
         email: "",
         telefone: "",
-        status: "novo",
-        observacoes: ""
       });
       onClose();
     }
@@ -219,46 +195,6 @@ export function NewPatientModal({ isOpen, onClose, onPatientAdded }: NewPatientM
               value={formData.telefone}
               onChange={(e) => handleInputChange("telefone", e.target.value)}
               disabled={isLoading}
-            />
-          </div>
-
-          {/* Status */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              Status Inicial
-            </Label>
-            <Select
-              value={formData.status}
-              onValueChange={(value) => handleInputChange("status", value)}
-              disabled={isLoading}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="novo">Novo</SelectItem>
-                <SelectItem value="followup">Em atendimento</SelectItem>
-                <SelectItem value="topoucall">Agendado</SelectItem>
-                <SelectItem value="atendimentofinal">Atendimento desativado</SelectItem>
-                <SelectItem value="cancelou_agendamento">Cancelou Agendamento</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Observações */}
-          <div className="space-y-2">
-            <Label htmlFor="observacoes" className="flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              Observações
-            </Label>
-            <Textarea
-              id="observacoes"
-              placeholder="Observações adicionais sobre o paciente..."
-              value={formData.observacoes}
-              onChange={(e) => handleInputChange("observacoes", e.target.value)}
-              disabled={isLoading}
-              rows={3}
             />
           </div>
 
