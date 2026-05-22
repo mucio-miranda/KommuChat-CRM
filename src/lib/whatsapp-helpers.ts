@@ -307,6 +307,20 @@ export function getPatientPhone(patient: PatientWithWhatsApp): string {
 }
 
 /**
+ * Retorna o formato alternativo do número brasileiro (com/sem o 9 extra)
+ * Ex: 5583991377388 (13 dig) → 558391377388 (12 dig), e vice-versa
+ */
+export function getBrazilianAlternativePhone(phone: string): string | null {
+  if (phone.length === 13 && phone.startsWith('55')) {
+    return phone.slice(0, 4) + phone.slice(5);
+  }
+  if (phone.length === 12 && phone.startsWith('55')) {
+    return phone.slice(0, 4) + '9' + phone.slice(4);
+  }
+  return null;
+}
+
+/**
  * Formata número de telefone para exibição
  */
 export function formatPhoneNumber(phone: string): string {

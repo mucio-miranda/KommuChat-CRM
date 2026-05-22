@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { evolutionService } from '@/lib/evolution-service';
 
 interface CacheEntry {
@@ -12,21 +12,60 @@ interface ProfilePictureCache {
 
 const CACHE_KEY = 'whatsapp_profile_pictures_cache';
 const CACHE_TTL_SUCCESS = 24 * 60 * 60 * 1000; // 24 horas para fotos encontradas
-const CACHE_TTL_FAILURE = 30 * 60 * 1000; // 30 minutos para falhas (permite retry mais rápido)
-const BATCH_DELAY = 50; // Delay entre requests em ms
-const MAX_CONCURRENT_REQUESTS = 5; // Aumentado para melhor performance
+const CACHE_TTL_FAILURE = 30 * 60 * 1000; // 30 minutos para falhas
+const BATCH_DELAY = 50;
+const MAX_CONCURRENT_REQUESTS = 5;
 
 // In-memory cache for faster access
 let memoryCache: ProfilePictureCache = {};
 
-// Verifica se uma entrada de cache é válida baseado no TTL apropriado
 const isCacheEntryValid = (entry: CacheEntry): boolean => {
   const now = Date.now();
   const ttl = entry.url ? CACHE_TTL_SUCCESS : CACHE_TTL_FAILURE;
   return now - entry.timestamp < ttl;
 };
 
-// Load cache from localStorage on module init
+// Retorna o formato alternativo do número brasileiro (com/sem o 9 extra)
+// Ex: 5583991377388 (13 dig) → 558391377388 (12 dig), e vice-versa
+const getBrazilianAlternativePhone = (phone: string): string | null => {
+  if (phone.length === 13 && phone.startsWith('55')) {
+    return phone.slice(0, 4) + phone.slice(5);
+  }
+  if (phone.length === 12 && phone.startsWith('55')) {
+    return phone.slice(0, 4) + '9' + phone.slice(4);
+  }
+  return null;
+};
+
+// Busca no cache tentando o número original e o formato alternativo.
+// Retorna o entry com URL se encontrar, senão retorna o original (null ou undefined).
+const lookupCache = (phone: string): { url: string | null; found: boolean } => {
+  const entry = memoryCache[phone];
+  if (entry && isCacheEntryValid(entry) && entry.url) {
+    return { url: entry.url, found: true };
+  }
+
+  const alt = getBrazilianAlternativePhone(phone);
+  if (alt) {
+    const altEntry = memoryCache[alt];
+    if (altEntry && isCacheEntryValid(altEntry) && altEntry.url) {
+      // Salva sob o número original para evitar repetir a busca alternativa
+      memoryCache[phone] = altEntry;
+      return { url: altEntry.url, found: true };
+    }
+  }
+
+  // Ambos os formatos têm null válido — não precisa buscar de novo
+  const originalNullValid = entry && isCacheEntryValid(entry) && !entry.url;
+  const altEntry = alt ? memoryCache[alt] : null;
+  const altNullValid = altEntry && isCacheEntryValid(altEntry) && !altEntry.url;
+  if (originalNullValid && altNullValid) {
+    return { url: null, found: true };
+  }
+
+  return { url: null, found: false };
+};
+
 const loadCacheFromStorage = (): ProfilePictureCache => {
   try {
     const stored = localStorage.getItem(CACHE_KEY);
@@ -46,7 +85,6 @@ const loadCacheFromStorage = (): ProfilePictureCache => {
   return {};
 };
 
-// Save cache to localStorage
 const saveCacheToStorage = (cache: ProfilePictureCache) => {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
@@ -55,10 +93,8 @@ const saveCacheToStorage = (cache: ProfilePictureCache) => {
   }
 };
 
-// Initialize memory cache from localStorage
 memoryCache = loadCacheFromStorage();
 
-// Pending requests queue for batching
 interface PendingRequest {
   phoneNumber: string;
   resolve: (url: string | null) => void;
@@ -69,43 +105,45 @@ let isProcessingBatch = false;
 
 const processBatch = async (clienteId: string) => {
   if (isProcessingBatch || pendingRequests.length === 0) return;
-  
+
   isProcessingBatch = true;
-  
-  // Take a batch of requests
+
   const batch = pendingRequests.splice(0, MAX_CONCURRENT_REQUESTS);
-  
-  // Process each request with a small delay between them
+
   for (const request of batch) {
     const { phoneNumber, resolve } = request;
-    
+
     try {
-      const url = await evolutionService.fetchProfilePicture(clienteId, phoneNumber);
-      
-      // Update cache
-      const entry: CacheEntry = { url, timestamp: Date.now() };
-      memoryCache[phoneNumber] = entry;
+      let url = await evolutionService.fetchProfilePicture(clienteId, phoneNumber);
+
+      // Se não encontrou, tenta o formato alternativo brasileiro
+      if (!url) {
+        const alt = getBrazilianAlternativePhone(phoneNumber);
+        if (alt) {
+          url = await evolutionService.fetchProfilePicture(clienteId, alt);
+          if (url) {
+            // Cacheia sob o formato alternativo também
+            memoryCache[alt] = { url, timestamp: Date.now() };
+          }
+        }
+      }
+
+      memoryCache[phoneNumber] = { url, timestamp: Date.now() };
       saveCacheToStorage(memoryCache);
-      
       resolve(url);
     } catch (error) {
-      // On error, cache null to avoid repeated failed requests
-      const entry: CacheEntry = { url: null, timestamp: Date.now() };
-      memoryCache[phoneNumber] = entry;
+      memoryCache[phoneNumber] = { url: null, timestamp: Date.now() };
       saveCacheToStorage(memoryCache);
-      
       resolve(null);
     }
-    
-    // Small delay between requests to avoid rate limiting
+
     if (batch.indexOf(request) < batch.length - 1) {
       await new Promise(r => setTimeout(r, BATCH_DELAY));
     }
   }
-  
+
   isProcessingBatch = false;
-  
-  // Process next batch if there are more pending requests
+
   if (pendingRequests.length > 0) {
     setTimeout(() => processBatch(clienteId), BATCH_DELAY);
   }
@@ -124,34 +162,29 @@ export const useProfilePicture = (
       return;
     }
 
-    // Normalize phone number (remove non-digits)
     const normalizedPhone = phoneNumber.replace(/\D/g, '');
     if (!normalizedPhone) {
       setProfilePicture(null);
       return;
     }
 
-    // Check memory cache first
-    const cached = memoryCache[normalizedPhone];
-    if (cached && isCacheEntryValid(cached)) {
-      setProfilePicture(cached.url);
+    const { url, found } = lookupCache(normalizedPhone);
+    if (found) {
+      setProfilePicture(url);
       return;
     }
 
-    // Reset fetched ref when phone changes
     fetchedRef.current = false;
 
-    // Queue the request
     if (!fetchedRef.current) {
       fetchedRef.current = true;
-      
+
       const promise = new Promise<string | null>((resolve) => {
         pendingRequests.push({ phoneNumber: normalizedPhone, resolve });
       });
 
       promise.then(setProfilePicture);
-      
-      // Start processing if not already
+
       processBatch(clienteId);
     }
   }, [phoneNumber, clienteId]);
@@ -175,21 +208,19 @@ export const useProfilePictures = (
       const newPictures = new Map<string, string | null>();
       const phonesToFetch: string[] = [];
 
-      // Check cache for each phone number
       for (const phone of phoneNumbers) {
         const normalizedPhone = phone.replace(/\D/g, '');
         if (!normalizedPhone) continue;
 
-        const cached = memoryCache[normalizedPhone];
-        if (cached && isCacheEntryValid(cached)) {
-          newPictures.set(normalizedPhone, cached.url);
+        const { url, found } = lookupCache(normalizedPhone);
+        if (found) {
+          newPictures.set(normalizedPhone, url);
         } else if (!loadedRef.current.has(normalizedPhone)) {
           phonesToFetch.push(normalizedPhone);
           loadedRef.current.add(normalizedPhone);
         }
       }
 
-      // Update with cached values first
       if (newPictures.size > 0) {
         setPictures(prev => {
           const merged = new Map(prev);
@@ -198,7 +229,6 @@ export const useProfilePictures = (
         });
       }
 
-      // Fetch uncached pictures
       for (const phone of phonesToFetch) {
         const promise = new Promise<string | null>((resolve) => {
           pendingRequests.push({ phoneNumber: phone, resolve });
@@ -213,7 +243,6 @@ export const useProfilePictures = (
         });
       }
 
-      // Start processing
       if (phonesToFetch.length > 0) {
         processBatch(clienteId);
       }

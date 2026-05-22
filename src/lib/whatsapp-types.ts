@@ -30,6 +30,7 @@ export interface PatientWithWhatsApp {
   name?: string;
   telefone?: string;
   phone?: string;
+  setdata?: string;
   whatsapp?: WhatsAppInteraction[] | string | null;
   /** Outros campos dinâmicos do paciente */
   [key: string]: any;
