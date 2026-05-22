@@ -35,13 +35,11 @@ import {
   parseWhatsAppMessages,
   interactionsToMessages,
   filterPatientsWithWhatsApp,
-  sortPatientsByLastMessage,
-  getLastMessagePreview,
-  getLastMessageTimestamp,
   formatTimestamp,
   getPatientName,
   getPatientPhone,
-  formatPhoneNumber
+  formatPhoneNumber,
+  getBrazilianAlternativePhone
 } from '@/lib/whatsapp-helpers';
 import { WhatsAppChat, WhatsAppChatContainer, WhatsAppChatSkeleton } from '@/components/WhatsAppChat';
 
@@ -186,15 +184,16 @@ export default function Automatizacoes() {
         return;
       }
 
-      // Filtrar apenas pacientes que têm conversas no WhatsApp
       const patientsData = (data || []) as PatientWithWhatsApp[];
-      const patientsWithWhatsApp = filterPatientsWithWhatsApp(patientsData);
-      
-      // Ordenar por última mensagem (mais recente primeiro)
-      const sortedPatients = sortPatientsByLastMessage(patientsWithWhatsApp);
-
-      console.log(`✅ Encontrados ${sortedPatients.length} pacientes com conversas WhatsApp`);
-      setPatients(sortedPatients);
+      const filtered = filterPatientsWithWhatsApp(patientsData);
+      const sorted = [...filtered].sort((a, b) => {
+        if (!a.setdata && !b.setdata) return 0;
+        if (!a.setdata) return 1;
+        if (!b.setdata) return -1;
+        return new Date(b.setdata).getTime() - new Date(a.setdata).getTime();
+      });
+      console.log(`✅ Encontrados ${sorted.length} pacientes com conversas WhatsApp`);
+      setPatients(sorted);
 
     } catch (error) {
       console.error('Erro ao carregar pacientes:', error);
@@ -203,12 +202,21 @@ export default function Automatizacoes() {
     }
   }, [supabase, user?.cliente_id]);
 
-  // Carregar mensagens de um paciente específico
-  // onLoaded: chamado após as mensagens estarem no estado (para scroll ao fim ao abrir o chat)
-  const loadMessagesFromPatient = (patient: PatientWithWhatsApp, onLoaded?: () => void) => {
+  // Busca o whatsapp de um paciente específico e carrega as mensagens
+  const loadMessagesFromPatient = async (patient: PatientWithWhatsApp, onLoaded?: () => void) => {
+    if (!supabase) return;
     setLoadingMessages(true);
     try {
-      const interactions = parseWhatsAppMessages(patient.whatsapp);
+      const tableName = await getClienteTableName();
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('whatsapp')
+        .eq('id', patient.id)
+        .single();
+
+      if (error) throw error;
+
+      const interactions = parseWhatsAppMessages(data?.whatsapp);
       const chatMessages = interactionsToMessages(interactions);
       setMessages(chatMessages);
       console.log(`✅ Carregadas ${chatMessages.length} mensagens do paciente ${getPatientName(patient)}`);
@@ -217,7 +225,6 @@ export default function Automatizacoes() {
       setMessages([]);
     } finally {
       setLoadingMessages(false);
-      // Dispara scroll no mesmo ciclo para já abrir no final (antes da pintura)
       if (onLoaded) onLoaded();
     }
   };
@@ -239,12 +246,12 @@ export default function Automatizacoes() {
 
     const refreshConversations = async () => {
       console.log('🔄 Refresh automático das conversas...');
-      
-      // Recarregar lista de pacientes
+
       if (!supabase) return;
-      
+
       try {
         const tableName = await getClienteTableName();
+
         const { data, error } = await supabase
           .from(tableName)
           .select('*');
@@ -254,17 +261,26 @@ export default function Automatizacoes() {
           return;
         }
 
-        const patientsData = (data || []) as PatientWithWhatsApp[];
-        const patientsWithWhatsApp = filterPatientsWithWhatsApp(patientsData);
-        const sortedPatients = sortPatientsByLastMessage(patientsWithWhatsApp);
-        
-        setPatients(sortedPatients);
+        const patientsData2 = (data || []) as PatientWithWhatsApp[];
+        const filtered2 = filterPatientsWithWhatsApp(patientsData2);
+        const sorted2 = [...filtered2].sort((a, b) => {
+          if (!a.setdata && !b.setdata) return 0;
+          if (!a.setdata) return 1;
+          if (!b.setdata) return -1;
+          return new Date(b.setdata).getTime() - new Date(a.setdata).getTime();
+        });
+        setPatients(sorted2);
 
-        // Se tem um paciente selecionado, atualizar suas mensagens também
+        // Se tem paciente selecionado, atualizar suas mensagens separadamente
         if (selectedPatientIdRef.current) {
-          const updatedPatient = sortedPatients.find(p => p.id === selectedPatientIdRef.current);
-          if (updatedPatient) {
-            const interactions = parseWhatsAppMessages(updatedPatient.whatsapp);
+          const { data: whatsappData, error: whatsappError } = await supabase
+            .from(tableName)
+            .select('whatsapp')
+            .eq('id', selectedPatientIdRef.current)
+            .single();
+
+          if (!whatsappError && whatsappData) {
+            const interactions = parseWhatsAppMessages(whatsappData.whatsapp);
             const chatMessages = interactionsToMessages(interactions);
             setMessages(chatMessages);
           }
@@ -338,21 +354,27 @@ export default function Automatizacoes() {
 
     setSendingMessage(true);
     try {
-      // Formatar número para WhatsApp (apenas dígitos + @s.whatsapp.net)
       const cleanPhone = phone.replace(/\D/g, '');
-      const whatsappNumber = cleanPhone.length === 11 
-        ? `55${cleanPhone}@s.whatsapp.net` 
-        : `${cleanPhone}@s.whatsapp.net`;
+      const withCountry = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
+      const whatsappNumber = `${withCountry}@s.whatsapp.net`;
 
-      // Adicionar marcador invisível para diferenciar mensagens do CRM das mensagens da IA
-      const ZERO_WIDTH_SPACE = '\u200B';
+      const ZERO_WIDTH_SPACE = '​';
       const markedMessage = `${ZERO_WIDTH_SPACE}${messageText}`;
 
-      await evolutionService.sendMessage(
-        user.cliente_id,
-        whatsappNumber,
-        markedMessage
-      );
+      try {
+        await evolutionService.sendMessage(user.cliente_id, whatsappNumber, markedMessage);
+      } catch (sendError: any) {
+        if (sendError?.message?.includes('"exists":false')) {
+          const altPhone = getBrazilianAlternativePhone(withCountry);
+          if (altPhone) {
+            await evolutionService.sendMessage(user.cliente_id, `${altPhone}@s.whatsapp.net`, markedMessage);
+          } else {
+            throw sendError;
+          }
+        } else {
+          throw sendError;
+        }
+      }
       
       setMessageText('');
       console.log('✅ Mensagem enviada com sucesso');
@@ -583,10 +605,8 @@ export default function Automatizacoes() {
                   ) : (
                     <div className="divide-y">
                       {filteredPatients.map((patient) => {
-                        const interactions = parseWhatsAppMessages(patient.whatsapp);
-                        const lastTimestamp = getLastMessageTimestamp(interactions);
                         const isSelected = selectedPatient?.id === patient.id;
-                        
+
                         return (
                           <div
                             key={patient.id}
@@ -597,38 +617,28 @@ export default function Automatizacoes() {
                           >
                             <div className="flex items-start gap-3">
                               {/* Avatar */}
-                              <ContactAvatar 
-                                phoneNumber={getPatientPhone(patient)} 
+                              <ContactAvatar
+                                phoneNumber={getPatientPhone(patient)}
                                 clienteId={user?.cliente_id}
                                 name={getPatientName(patient)}
                               />
-                              
+
                               {/* Info */}
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between gap-2">
                                   <p className="font-medium truncate text-sm">
                                     {getPatientName(patient)}
                                   </p>
-                                  {lastTimestamp && (
+                                  {patient.setdata && (
                                     <span className="text-xs text-muted-foreground flex-shrink-0">
-                                      {formatTimestamp(lastTimestamp)}
+                                      {formatTimestamp(patient.setdata)}
                                     </span>
                                   )}
                                 </div>
                                 <p className="text-xs text-muted-foreground truncate">
                                   {formatPhoneNumber(getPatientPhone(patient))}
                                 </p>
-                                <p className="text-xs text-muted-foreground truncate mt-0.5">
-                                  {getLastMessagePreview(interactions)}
-                                </p>
                               </div>
-                              
-                              {/* Badge de quantidade */}
-                              {interactions.length > 0 && (
-                                <Badge variant="secondary" className="flex-shrink-0 text-xs">
-                                  {interactions.length}
-                                </Badge>
-                              )}
                             </div>
                           </div>
                         );
