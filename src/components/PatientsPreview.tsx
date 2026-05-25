@@ -184,15 +184,6 @@ export function PatientsPreview() {
     loadData();
   }, [loadData]);
 
-  // Refresh automático desabilitado temporariamente para debug
-  // useEffect(() => {
-  //   const interval = setInterval(() => {
-  //     console.log('🔄 PATIENTS PREVIEW - Iniciando refresh automático...');
-  //     loadData(true);
-  //   }, 30000); // 30 segundos
-
-  //   return () => clearInterval(interval);
-  // }, [loadData]);
 
   // Filtrar pacientes quando o termo de busca muda (igual à página /pacientes)
   useEffect(() => {

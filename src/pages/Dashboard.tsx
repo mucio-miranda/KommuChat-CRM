@@ -11,8 +11,6 @@ import { MetricCard } from "@/components/MetricCard";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSupabase } from "@/hooks/useSupabase";
-// WhatsApp será adicionado em breve
-// import { useWhatsApp } from "@/contexts/WhatsAppContext";
 import { toast } from "@/components/ui/use-toast";
 
 // Tipagem mínima da tabela
@@ -40,7 +38,6 @@ export default function Dashboard() {
   // WhatsApp será adicionado em breve
   // const { connection: whatsappConnection, chats: whatsappChats } = useWhatsApp();
   const [rows, setRows] = useState<Row[] | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const load = async () => {
@@ -49,8 +46,7 @@ export default function Dashboard() {
         if (!supabaseRead) {
           console.log('❌ Supabase não disponível');
           setRows([]);
-          setLoading(false);
-          return;
+            return;
         }
 
         let tableName = "kommuchat_mvp"; // Tabela padrão para visitantes
@@ -99,7 +95,6 @@ export default function Dashboard() {
         setRows([]);
         toast({ title: "Erro ao buscar informações.", description: "Entre em contato com o suporte.", variant: "destructive" });
       } finally {
-        setLoading(false);
       }
     };
     load();

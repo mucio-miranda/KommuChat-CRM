@@ -87,7 +87,6 @@ const PatientAvatar: React.FC<{ patient: Patient; clienteId: string | undefined;
 export default function Pacientes() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
-  const [fonteFilter] = useState("todas");
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [isNewPatientModalOpen, setIsNewPatientModalOpen] = useState(false);
@@ -579,9 +578,7 @@ export default function Pacientes() {
     const patientStatus = getPatientStatus(patient);
     const matchesStatus = statusFilter === "todos" || patientStatus === statusFilter;
 
-    const matchesFonte = fonteFilter === "todas" || patient.fonte === fonteFilter;
-
-    return passesSetdataFilter && matchesSearch && matchesStatus && matchesFonte;
+    return passesSetdataFilter && matchesSearch && matchesStatus;
   }));
 
   const totalPages = Math.ceil(filteredPatients.length / PATIENTS_PER_PAGE);

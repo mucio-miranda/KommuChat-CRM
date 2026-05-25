@@ -70,19 +70,6 @@ export function Layout({ children, defaultSidebarOpen = true, lastRefresh, isRef
                   </span>
                 )}
 
-                {/* Botão Atualizar desativado temporariamente
-                {onRefresh && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={onRefresh}
-                    disabled={isRefreshing}
-                    className="ml-2 h-8 text-xs rounded-lg dark:bg-[#292929] dark:text-white dark:border-[#292929] dark:hover:bg-white/10 dark:hover:text-white dark:hover:[background-image:none]"
-                  >
-                    {isRefreshing ? 'Atualizando...' : 'Atualizar'}
-                  </Button>
-                )}
-                */}
               </div>
               
               <div className="flex items-center gap-3">
