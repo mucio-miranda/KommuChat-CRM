@@ -142,15 +142,32 @@ export const WhatsAppSetup: React.FC<WhatsAppSetupProps> = ({
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
               Atualizar Chats
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDisconnect}
-              className="flex items-center gap-2 text-orange-600 hover:text-orange-700"
-            >
-              <LogOut className="w-4 h-4" />
-              Desconectar
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Desconectar
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Desconectar WhatsApp?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Isso irá encerrar a sessão atual. Você precisará escanear o QR Code novamente para reconectar.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDisconnect}>
+                    Sim, desconectar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button

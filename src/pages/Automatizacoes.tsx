@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,7 @@ import { useProfilePicture } from '@/hooks/useProfilePicture';
 import { evolutionService } from '@/lib/evolution-service';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 // Tipos e helpers para WhatsApp
 import { PatientWithWhatsApp, WhatsAppChatMessage } from '@/lib/whatsapp-types';
@@ -539,6 +540,7 @@ export default function Automatizacoes() {
                 variant="ghost"
                 size="icon"
                 title="Atualizar conversas"
+                className="hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10"
               >
                 {loadingPatients ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -546,15 +548,32 @@ export default function Automatizacoes() {
                   <RefreshCw className="w-4 h-4" />
                 )}
               </Button>
-              <Button 
-                onClick={logout}
-                variant="destructive"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <LogOut className="w-4 h-4" />
-                Desconectar
-              </Button>
+              <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2 text-foreground dark:text-white bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20 border-border dark:border-white/20 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Desconectar
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Desconectar WhatsApp?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Isso irá encerrar a sessão atual. Você precisará escanear o QR Code novamente para reconectar.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={logout}>
+                    Sim, desconectar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             </div>
           </div>
 
