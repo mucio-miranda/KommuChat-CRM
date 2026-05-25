@@ -1,15 +1,18 @@
 import { useState, useEffect, useCallback } from "react";
-import { 
-  Search, 
-  Plus, 
+import {
+  Search,
+  Plus,
   RefreshCw,
   ChevronUp,
   ChevronDown,
   Trash2,
   Pencil,
   Check,
-  X
+  X,
+  User
 } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useProfilePicture } from "@/hooks/useProfilePicture";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Layout } from "@/components/Layout";
 import { NewPatientModal } from "@/components/NewPatientModal";
@@ -61,6 +64,31 @@ interface Patient {
   fonte: 'ia' | 'humano'; // Fonte dos dados: IA ou Humano
 }
 
+const getInitials = (name: string): string => {
+  if (!name) return '';
+  const words = name.trim().split(/\s+/).filter(w => w.length > 0);
+  if (words.length === 0) return '';
+  if (words.length === 1) return words[0].substring(0, 2).toUpperCase();
+  return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+};
+
+const PatientAvatar: React.FC<{ patient: Patient; clienteId: string | undefined; size?: string }> = ({ patient, clienteId, size = "w-9 h-9" }) => {
+  const phone = patient.chatid?.includes('@') ? patient.chatid.split('@')[0] : patient.telefone;
+  const profilePicture = useProfilePicture(phone, clienteId);
+  const initials = getInitials(patient.nome || '');
+
+  return (
+    <Avatar className={`${size} flex-shrink-0`}>
+      {profilePicture && (
+        <AvatarImage src={profilePicture} alt="Foto" className="object-cover" />
+      )}
+      <AvatarFallback className="text-xs bg-muted">
+        {initials || <User className="w-4 h-4" />}
+      </AvatarFallback>
+    </Avatar>
+  );
+};
+
 export default function Pacientes() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
@@ -94,21 +122,18 @@ export default function Pacientes() {
 
   // Função para determinar o status baseado nos campos do Supabase
   const getPatientStatus = (patient: Patient): "followup" | "topoucall" | "atendimentofinal" | "cancelou_agendamento" | "novo" => {
-    // Verificar se tem data_agendamento com ano 9999 (cancelou agendamento)
     if (patient.data_agendamento) {
       try {
         const dataAgendamento = new Date(patient.data_agendamento);
         const ano = dataAgendamento.getFullYear();
-        if (ano === 9999) {
-          return "cancelou_agendamento";
-        }
+        if (ano === 9999) return "cancelou_agendamento";
+        return "topoucall";
       } catch (error) {
         console.error('Erro ao processar data_agendamento:', error);
       }
     }
-    
+
     if (checkTrue(patient.atendimentofinal)) return "atendimentofinal";
-    if (checkTrue(patient.topoucall)) return "topoucall";
     if (checkTrue(patient.followup)) return "followup";
     if (checkTrue(patient.follow)) return "followup";
     return "novo";
@@ -779,7 +804,9 @@ export default function Pacientes() {
                     className="border-b border-border/50 hover:bg-muted/30 transition-smooth"
                   >
                     <td className="py-4 px-2">
-                      <div>
+                      <div className="flex items-center gap-3">
+                        <PatientAvatar patient={patient} clienteId={user?.cliente_id} />
+                        <div>
                         <div className="flex items-center gap-2 group">
                           {editingPatientId === patient.id ? (
                             <div className="flex items-center gap-1">
@@ -828,6 +855,7 @@ export default function Pacientes() {
                           )}
                         </div>
                         <div className="text-sm text-muted-foreground">{patient.email || "Email não informado"}</div>
+                        </div>
                       </div>
                     </td>
                     <td className="py-4 px-2">
@@ -871,7 +899,7 @@ export default function Pacientes() {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDeletePatient(patient)}
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            className="h-8 w-8 p-0 text-muted-foreground hover:text-muted-foreground hover:bg-muted/50"
                             title="Excluir paciente"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -894,7 +922,8 @@ export default function Pacientes() {
               >
                 <div className="space-y-1.5 sm:space-y-2">
                   {/* Nome e Badge */}
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-2">
+                    <PatientAvatar patient={patient} clienteId={user?.cliente_id} size="w-8 h-8" />
                     <div className="flex-1 min-w-0">
                       {editingPatientId === patient.id ? (
                         <div className="flex items-center gap-1">
@@ -976,7 +1005,7 @@ export default function Pacientes() {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDeletePatient(patient)}
-                            className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            className="h-6 w-6 p-0 text-muted-foreground hover:text-muted-foreground hover:bg-muted/50"
                             title="Excluir paciente"
                           >
                             <Trash2 className="h-3 w-3" />

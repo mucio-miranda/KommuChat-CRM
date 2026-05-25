@@ -10,7 +10,7 @@ interface StatusBadgeProps {
 const statusConfig = {
   novo: {
     label: "Novo",
-    className: "bg-accent/10 text-accent border-accent/20"
+    className: "bg-muted text-muted-foreground border-border"
   },
   followup: {
     label: "Em atendimento",
