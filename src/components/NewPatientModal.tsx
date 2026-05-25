@@ -88,6 +88,8 @@ export function NewPatientModal({ isOpen, onClose, onPatientAdded, iaTableName }
           email: formData.email.trim() || null,
           telefone,
           chatid: telefone,
+          followup: true,
+          follow: 'followup4',
         }])
         .select();
 

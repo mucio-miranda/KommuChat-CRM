@@ -1,11 +1,8 @@
 import { Layout } from "@/components/Layout";
-import { 
-  Users, 
-  Calendar, 
-  TrendingUp,
+import {
+  Users,
+  Calendar,
   MessageCircle,
-  RefreshCw,
-  UserX
 } from "lucide-react";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { MetricCard } from "@/components/MetricCard";
@@ -19,7 +16,6 @@ import { useSupabase } from "@/hooks/useSupabase";
 import { useGoogleCalendar } from "@/contexts/GoogleCalendarContextSimple";
 import { toast } from "@/components/ui/use-toast";
 import { isHolidayEvent } from "@/lib/date-utils";
-import { convertToBrazilDateString, getTodayBrazilString, filterByToday, filterByCurrentMonth } from "@/lib/date-utils";
 
 type Row = {
   id: string;
@@ -87,7 +83,7 @@ const Index = () => {
       console.error('Erro ao carregar dados:', e);
       setRows([]);
       if (!isAutoRefresh) {
-        toast({ description: "Não foi possível carregar dados do Supabase." });
+        toast({ title: "Erro ao buscar informações.", description: "Entre em contato com o suporte.", variant: "destructive" });
       }
     } finally {
       setLoading(false);

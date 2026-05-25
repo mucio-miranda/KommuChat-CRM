@@ -1,16 +1,13 @@
-import { 
-  Users, 
-  Calendar, 
-  CheckCircle, 
-  Clock, 
-  MessageSquare, 
+import {
+  Users,
+  Calendar,
+  CheckCircle,
+  Clock,
   TrendingUp,
   MessageCircle,
-  AlertCircle
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { MetricCard } from "@/components/MetricCard";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSupabase } from "@/hooks/useSupabase";
@@ -39,7 +36,7 @@ type Row = {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { read: supabaseRead, write: supabaseWrite, config: supabaseConfig } = useSupabase();
+  const { read: supabaseRead, config: supabaseConfig } = useSupabase();
   // WhatsApp será adicionado em breve
   // const { connection: whatsappConnection, chats: whatsappChats } = useWhatsApp();
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -100,7 +97,7 @@ export default function Dashboard() {
       } catch (e: any) {
         console.error('❌ Erro geral:', e);
         setRows([]);
-        toast({ description: "Não foi possível carregar dados do Supabase." });
+        toast({ title: "Erro ao buscar informações.", description: "Entre em contato com o suporte.", variant: "destructive" });
       } finally {
         setLoading(false);
       }

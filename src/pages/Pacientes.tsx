@@ -49,7 +49,6 @@ interface Patient {
   email: string;
   telefone: string;
   chatid?: string;
-  status: string;
   setdata?: string;
   followup?: string;
   follow?: string;
@@ -57,10 +56,7 @@ interface Patient {
   atendimentofinal?: string;
   atende_humano?: string;
   data_agendamento?: string;
-  observacoes?: string;
-  created_at?: string;
-  updated_at?: string;
-  fonte: 'ia' | 'humano'; // Fonte dos dados: IA ou Humano
+  fonte: 'ia' | 'humano';
 }
 
 const getInitials = (name: string): string => {
@@ -103,6 +99,10 @@ export default function Pacientes() {
   const [sortField, setSortField] = useState<string>("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   
+  // Paginação
+  const [currentPage, setCurrentPage] = useState(1);
+  const PATIENTS_PER_PAGE = 20;
+
   // Estados para exclusão
   const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -204,7 +204,7 @@ export default function Pacientes() {
 
       const { data: iaData, error: iaError } = await supabase
         .from(tableName)
-        .select('*');
+        .select('id, nome, telefone, chatid, atende_humano, email, setdata, followup, follow, topoucall, atendimentofinal, data_agendamento');
 
       if (iaError) {
         console.error('Erro ao buscar pacientes IA:', iaError);
@@ -234,8 +234,8 @@ export default function Pacientes() {
       
       // Ordenar por data de atualização (mais recente primeiro)
       const sortedPatients = allPatients.sort((a, b) => {
-        const dateA = a.updated_at || a.created_at || '';
-        const dateB = b.updated_at || b.created_at || '';
+        const dateA = a.setdata || '';
+        const dateB = b.setdata || '';
         return new Date(dateB).getTime() - new Date(dateA).getTime();
       });
 
@@ -509,8 +509,8 @@ export default function Pacientes() {
           break;
         case 'data':
           // Ordenar por data de atualização
-          aValue = new Date(a.setdata || a.updated_at || a.created_at || 0).getTime();
-          bValue = new Date(b.setdata || b.updated_at || b.created_at || 0).getTime();
+          aValue = new Date(a.setdata || 0).getTime();
+          bValue = new Date(b.setdata || 0).getTime();
           break;
         case 'status':
           // Ordenar por status
@@ -563,24 +563,32 @@ export default function Pacientes() {
     return () => clearInterval(interval);
   }, [loadData]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter]);
+
   const filteredPatients = sortPatients(patients.filter(patient => {
-    // Filtrar pacientes da IA que não têm setdata preenchida
-    // Mas incluir pacientes manuais independente do setdata
     const hasSetdata = patient.setdata !== null && patient.setdata !== undefined && patient.setdata !== '';
     const isManualPatient = patient.fonte === 'humano';
     const passesSetdataFilter = isManualPatient || hasSetdata;
-    
+
     const matchesSearch = patient.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          patient.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          patient.telefone?.includes(searchTerm);
-    
+
     const patientStatus = getPatientStatus(patient);
     const matchesStatus = statusFilter === "todos" || patientStatus === statusFilter;
-    
+
     const matchesFonte = fonteFilter === "todas" || patient.fonte === fonteFilter;
-    
+
     return passesSetdataFilter && matchesSearch && matchesStatus && matchesFonte;
   }));
+
+  const totalPages = Math.ceil(filteredPatients.length / PATIENTS_PER_PAGE);
+  const paginatedPatients = filteredPatients.slice(
+    (currentPage - 1) * PATIENTS_PER_PAGE,
+    currentPage * PATIENTS_PER_PAGE
+  );
 
   if (loading) {
     return (
@@ -656,10 +664,17 @@ export default function Pacientes() {
             <CardTitle className="text-sm sm:text-base md:text-lg font-semibold">
               {filteredPatients.length} paciente{filteredPatients.length !== 1 ? 's' : ''}
             </CardTitle>
-            
-            <Badge variant="outline" className="text-[10px] sm:text-xs h-5 sm:h-6">
-              Total: {patients.length}
-            </Badge>
+
+            <div className="flex items-center gap-2">
+              {totalPages > 1 && (
+                <span className="text-[10px] sm:text-xs text-muted-foreground">
+                  Pág. {currentPage}/{totalPages}
+                </span>
+              )}
+              <Badge variant="outline" className="text-[10px] sm:text-xs h-5 sm:h-6">
+                Total: {patients.length}
+              </Badge>
+            </div>
           </div>
         </CardHeader>
         
@@ -765,7 +780,7 @@ export default function Pacientes() {
                 </tr>
               </thead>
               <tbody>
-                {filteredPatients.map((patient) => (
+                {paginatedPatients.map((patient) => (
                   <tr 
                     key={patient.id} 
                     className="border-b border-border/50 hover:bg-muted/30 transition-smooth"
@@ -850,7 +865,7 @@ export default function Pacientes() {
                     <td className="py-4 px-2">
                       <div className="text-sm">
                         <div className="text-foreground font-medium">
-                          {formatDate(patient.setdata || patient.updated_at || patient.created_at)}
+                          {formatDate(patient.setdata)}
                         </div>
                       </div>
                     </td>
@@ -882,7 +897,7 @@ export default function Pacientes() {
 
           {/* Mobile Card View */}
           <div className="md:hidden">
-            {filteredPatients.map((patient) => (
+            {paginatedPatients.map((patient) => (
               <div 
                 key={patient.id} 
                 className="border-b border-border/50 last:border-0 p-2.5 sm:p-3 hover:bg-muted/20 transition-colors active:bg-muted/40"
@@ -965,7 +980,7 @@ export default function Pacientes() {
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="text-[9px] sm:text-[10px] text-muted-foreground whitespace-nowrap">
-                          {formatDate(patient.setdata || patient.updated_at || patient.created_at)}
+                          {formatDate(patient.setdata)}
                         </div>
                         {patient.fonte === 'humano' && (
                           <Button
@@ -990,6 +1005,34 @@ export default function Pacientes() {
             <div className="text-center py-12">
               <div className="text-muted-foreground">
                 Nenhum paciente encontrado com os filtros aplicados.
+              </div>
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-3 sm:px-6 py-3 border-t border-border">
+              <span className="text-xs text-muted-foreground">
+                {(currentPage - 1) * PATIENTS_PER_PAGE + 1}–{Math.min(currentPage * PATIENTS_PER_PAGE, filteredPatients.length)} de {filteredPatients.length}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => p - 1)}
+                  disabled={currentPage === 1}
+                  className="h-8 px-3 text-xs"
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => p + 1)}
+                  disabled={currentPage === totalPages}
+                  className="h-8 px-3 text-xs"
+                >
+                  Próxima
+                </Button>
               </div>
             </div>
           )}

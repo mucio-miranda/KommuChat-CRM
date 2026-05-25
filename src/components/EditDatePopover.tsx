@@ -13,9 +13,8 @@ interface EditDateModalProps {
   patientFonte?: 'ia' | 'humano';
 }
 
-export function EditDatePopover({ 
-  initialDate, 
-  onSave, 
+export function EditDatePopover({
+  initialDate,
   isLoading = false,
   patientId,
   patientName,
@@ -66,7 +65,7 @@ export function EditDatePopover({
       onClick={handleClick}
       disabled={isLoading}
       className={cn(
-        "h-8 w-full justify-start text-left font-normal hover:bg-muted/50 px-2",
+        "h-8 w-full justify-start text-left font-normal hover:bg-muted/50 hover:text-foreground px-2",
         !date && "text-muted-foreground"
       )}
     >
