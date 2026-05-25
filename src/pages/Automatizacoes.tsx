@@ -34,7 +34,6 @@ import { PatientWithWhatsApp, WhatsAppChatMessage } from '@/lib/whatsapp-types';
 import {
   parseWhatsAppMessages,
   interactionsToMessages,
-  filterPatientsWithWhatsApp,
   formatTimestamp,
   getPatientName,
   getPatientPhone,
@@ -137,7 +136,7 @@ export default function Automatizacoes() {
         setTimeout(() => setShouldScrollToBottom(false), 500);
       });
     }
-  }, [selectedPatient]);
+  }, [selectedPatient?.id]);
 
   // Função para buscar a tabela configurada do cliente
   const getClienteTableName = async (): Promise<string> => {
@@ -177,21 +176,16 @@ export default function Automatizacoes() {
 
       const { data, error } = await supabase
         .from(tableName)
-        .select('*');
+        .select('id, nome, telefone, lembrete, data_agendamento, atendimentofinal, topoucall, follow, followup, setdata, email, atende_humano, chatid')
+        .not('whatsapp', 'is', null)
+        .order('setdata', { ascending: false });
 
       if (error) {
         console.error('Erro ao buscar pacientes:', error);
         return;
       }
 
-      const patientsData = (data || []) as PatientWithWhatsApp[];
-      const filtered = filterPatientsWithWhatsApp(patientsData);
-      const sorted = [...filtered].sort((a, b) => {
-        if (!a.setdata && !b.setdata) return 0;
-        if (!a.setdata) return 1;
-        if (!b.setdata) return -1;
-        return new Date(b.setdata).getTime() - new Date(a.setdata).getTime();
-      });
+      const sorted = (data || []) as PatientWithWhatsApp[];
       console.log(`✅ Encontrados ${sorted.length} pacientes com conversas WhatsApp`);
       setPatients(sorted);
 
@@ -203,14 +197,15 @@ export default function Automatizacoes() {
   }, [supabase, user?.cliente_id]);
 
   // Busca o whatsapp de um paciente específico e carrega as mensagens
-  const loadMessagesFromPatient = async (patient: PatientWithWhatsApp, onLoaded?: () => void) => {
+  // silent=true: não mostra skeleton (usado em refreshes em background para não resetar o scroll)
+  const loadMessagesFromPatient = async (patient: PatientWithWhatsApp, onLoaded?: () => void, silent = false) => {
     if (!supabase) return;
-    setLoadingMessages(true);
+    if (!silent) setLoadingMessages(true);
     try {
       const tableName = await getClienteTableName();
       const { data, error } = await supabase
         .from(tableName)
-        .select('whatsapp')
+        .select('whatsapp, atendimentofinal')
         .eq('id', patient.id)
         .single();
 
@@ -219,6 +214,9 @@ export default function Automatizacoes() {
       const interactions = parseWhatsAppMessages(data?.whatsapp);
       const chatMessages = interactionsToMessages(interactions);
       setMessages(chatMessages);
+      if (data?.atendimentofinal !== undefined) {
+        setSelectedPatient(prev => prev ? { ...prev, atendimentofinal: data.atendimentofinal } : prev);
+      }
       console.log(`✅ Carregadas ${chatMessages.length} mensagens do paciente ${getPatientName(patient)}`);
     } catch (error) {
       console.error('Erro ao carregar mensagens:', error);
@@ -254,23 +252,17 @@ export default function Automatizacoes() {
 
         const { data, error } = await supabase
           .from(tableName)
-          .select('*');
+          .select('*')
+          .not('whatsapp', 'is', null)
+          .order('setdata', { ascending: false });
 
         if (error) {
           console.error('Erro no refresh automático:', error);
           return;
         }
 
-        const patientsData2 = (data || []) as PatientWithWhatsApp[];
-        const filtered2 = filterPatientsWithWhatsApp(patientsData2);
-        const sorted2 = [...filtered2].sort((a, b) => {
-          if (!a.setdata && !b.setdata) return 0;
-          if (!a.setdata) return 1;
-          if (!b.setdata) return -1;
-          return new Date(b.setdata).getTime() - new Date(a.setdata).getTime();
-        });
-        setPatients(sorted2);
-
+        setPatients((data || []) as PatientWithWhatsApp[]);
+  
         // Se tem paciente selecionado, atualizar suas mensagens separadamente
         if (selectedPatientIdRef.current) {
           const { data: whatsappData, error: whatsappError } = await supabase
@@ -338,7 +330,7 @@ export default function Automatizacoes() {
       // Buscar versão atualizada do paciente
       const updatedPatient = patients.find(p => p.id === selectedPatient.id);
       if (updatedPatient) {
-        loadMessagesFromPatient(updatedPatient);
+        loadMessagesFromPatient(updatedPatient, undefined, true);
       }
     }
   };

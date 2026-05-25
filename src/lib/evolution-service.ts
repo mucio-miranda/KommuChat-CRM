@@ -484,44 +484,42 @@ export class EvolutionService {
   }
 
   /**
-   * Lista conversas
+   * Lista conversas com última mensagem (tenta v2 e v1 da Evolution API)
    */
   async listConversations(clienteId: string): Promise<EvolutionConversation[]> {
+    const config = await this.getConfig(clienteId);
+    if (!config) throw new Error('Configuração da Evolution API não encontrada');
+
+    let data: any;
+
+    // Evolution API v2: POST /chat/findChats/{instance}
     try {
-      const config = await this.getConfig(clienteId);
-      if (!config) {
-        throw new Error('Configuração da Evolution API não encontrada');
-      }
-
-      const endpoint = `/chat/fetchChats/${config.evo_instance}`;
-      const data = await this.makeRequest(config, endpoint, 'GET');
-
-      // A Evolution API pode retornar em diferentes formatos
-      let chats: any[] = [];
-      if (Array.isArray(data)) {
-        chats = data;
-      } else if (data.chats) {
-        chats = data.chats;
-      } else if (data.data) {
-        chats = data.data;
-      }
-
-      // Transformar para formato padronizado
-      return chats.map((chat: any) => ({
-        id: chat.id || chat.jid || chat.remoteJid || '',
-        name: chat.name || chat.pushName || chat.contact?.name || 'Sem nome',
-        unreadCount: chat.unreadCount || chat.unread || 0,
-        lastMessage: chat.lastMessage ? {
-          message: chat.lastMessage.message?.conversation || 
-                   chat.lastMessage.message?.extendedTextMessage?.text || 
-                   '[Mídia]' || '',
-          timestamp: chat.lastMessage.messageTimestamp || Date.now()
-        } : undefined
-      }));
-    } catch (error) {
-      console.error('❌ Erro ao listar conversas:', error);
-      return [];
+      data = await this.makeRequest(config, `/chat/findChats/${config.evo_instance}`, 'POST', {});
+    } catch {
+      // Evolution API v1: GET /chat/fetchChats/{instance}
+      data = await this.makeRequest(config, `/chat/fetchChats/${config.evo_instance}`, 'GET');
     }
+
+    let chats: any[] = [];
+    if (Array.isArray(data)) {
+      chats = data;
+    } else if (data?.chats) {
+      chats = data.chats;
+    } else if (data?.data) {
+      chats = data.data;
+    }
+
+    return chats.map((chat: any) => ({
+      id: chat.id || chat.remoteJid || chat.jid || '',
+      name: chat.name || chat.pushName || chat.contact?.name || 'Sem nome',
+      unreadCount: chat.unreadCount || chat.unread || 0,
+      lastMessage: chat.lastMessage ? {
+        message: chat.lastMessage.message?.conversation ||
+                 chat.lastMessage.message?.extendedTextMessage?.text ||
+                 '[Mídia]',
+        timestamp: chat.lastMessage.messageTimestamp || Date.now()
+      } : undefined
+    }));
   }
 
   /**
