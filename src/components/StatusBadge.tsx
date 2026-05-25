@@ -13,7 +13,7 @@ const statusConfig = {
     className: "bg-muted text-muted-foreground border-border"
   },
   followup: {
-    label: "Em atendimento",
+    label: "Em contato",
     className: "bg-primary/10 text-primary border-primary/20"
   },
   topoucall: {
@@ -21,11 +21,11 @@ const statusConfig = {
     className: "bg-success/10 text-success border-success/20"
   },
   cancelou_agendamento: {
-    label: "Cancelou Agendamento",
+    label: "Cancelado",
     className: "bg-primary/10 text-primary border-primary/20"
   },
   atendimentofinal: {
-    label: "Atendimento desativado",
+    label: "Desativado",
     className: "bg-muted text-muted-foreground border-border"
   }
 };

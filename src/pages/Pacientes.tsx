@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import {
   Search,
   Plus,
-  RefreshCw,
   ChevronUp,
   ChevronDown,
   Trash2,
@@ -92,11 +91,9 @@ const PatientAvatar: React.FC<{ patient: Patient; clienteId: string | undefined;
 export default function Pacientes() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
-  const [fonteFilter, setFonteFilter] = useState("todas");
+  const [fonteFilter] = useState("todas");
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [isNewPatientModalOpen, setIsNewPatientModalOpen] = useState(false);
   const [updatingPatientId, setUpdatingPatientId] = useState<number | null>(null);
   // Estado para armazenar o nome da tabela IA atual
@@ -169,15 +166,12 @@ export default function Pacientes() {
   // Função para carregar dados dos pacientes (IA + Manual)
   const loadData = useCallback(async (isAutoRefresh = false) => {
     try {
-      if (isAutoRefresh) {
-        setIsRefreshing(true);
-      } else {
+      if (!isAutoRefresh) {
         setLoading(true);
       }
-      
+
       if (!supabase || !supabaseWrite) {
         setLoading(false);
-        setIsRefreshing(false);
         return;
       }
 
@@ -246,8 +240,6 @@ export default function Pacientes() {
       });
 
       setPatients(sortedPatients);
-      setLastUpdate(new Date());
-      
       console.log('✅ PACIENTES - Total unificado:', sortedPatients.length, 'pacientes');
       
       if (isAutoRefresh) {
@@ -265,7 +257,6 @@ export default function Pacientes() {
       }
     } finally {
       setLoading(false);
-      setIsRefreshing(false);
     }
   }, [supabase, supabaseWrite, supabaseConfig, user, toast]);
 
@@ -616,38 +607,6 @@ export default function Pacientes() {
   return (
     <Layout>
       <div className="space-y-3 md:space-y-5 px-1 sm:px-2 md:px-0">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
-        <div className="flex-1">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">Pacientes</h1>
-          <p className="text-xs sm:text-sm md:text-base text-muted-foreground mt-0.5 sm:mt-1">
-            Gerencie todos os seus pacientes
-          </p>
-          <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 hidden sm:block">
-            Última atualização: {lastUpdate.toLocaleTimeString('pt-BR')}
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-          {/* Botão Atualizar desativado temporariamente
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => loadData(false)}
-            disabled={isRefreshing}
-            className="flex items-center gap-1.5 h-8 px-2 sm:px-3"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline text-xs sm:text-sm">{isRefreshing ? 'Atualizando...' : 'Atualizar'}</span>
-          </Button>
-          */}
-          <Button variant="ghost" onClick={() => setIsNewPatientModalOpen(true)} size="sm" className="h-8 px-2 sm:px-3 bg-[#303030] border border-[#2D2D2D] text-white shadow-none hover:bg-[#303030]/90 hover:text-white">
-            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span className="hidden sm:inline ml-1 text-xs sm:text-sm">Novo Paciente</span>
-          </Button>
-        </div>
-      </div>
-
       {/* Filters */}
       <Card className="shadow-soft border-0 sm:border">
         <CardContent className="p-2.5 sm:p-4 md:p-6">
@@ -670,10 +629,10 @@ export default function Pacientes() {
                 <SelectContent>
                   <SelectItem value="todos" className="text-xs sm:text-sm">Todos</SelectItem>
                   <SelectItem value="novo" className="text-xs sm:text-sm">Novo</SelectItem>
-                  <SelectItem value="followup" className="text-xs sm:text-sm">Em atendimento</SelectItem>
+                  <SelectItem value="followup" className="text-xs sm:text-sm">Em contato</SelectItem>
                   <SelectItem value="topoucall" className="text-xs sm:text-sm">Agendado</SelectItem>
-                  <SelectItem value="atendimentofinal" className="text-xs sm:text-sm">Atendimento desativado</SelectItem>
-                  <SelectItem value="cancelou_agendamento" className="text-xs sm:text-sm">Cancelou Agendamento</SelectItem>
+                  <SelectItem value="atendimentofinal" className="text-xs sm:text-sm">Desativado</SelectItem>
+                  <SelectItem value="cancelou_agendamento" className="text-xs sm:text-sm">Cancelado</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -681,6 +640,14 @@ export default function Pacientes() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Novo Paciente */}
+      <div className="flex justify-end">
+        <Button variant="ghost" onClick={() => setIsNewPatientModalOpen(true)} size="sm" className="h-8 px-2 sm:px-3 bg-[#303030] border border-[#2D2D2D] text-white shadow-none hover:bg-[#303030]/90 hover:text-white">
+          <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span className="ml-1 text-xs sm:text-sm">Novo Paciente</span>
+        </Button>
+      </div>
 
       {/* Results */}
       <Card className="shadow-soft border-0 sm:border">
