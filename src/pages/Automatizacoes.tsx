@@ -178,7 +178,7 @@ export default function Automatizacoes() {
         .from(tableName)
         .select('id, nome, telefone, lembrete, data_agendamento, atendimentofinal, topoucall, follow, followup, setdata, email, atende_humano, chatid')
         .not('whatsapp', 'is', null)
-        .order('setdata', { ascending: false });
+        .order('setdata', { ascending: false, nullsFirst: false });
 
       if (error) {
         console.error('Erro ao buscar pacientes:', error);
@@ -252,9 +252,9 @@ export default function Automatizacoes() {
 
         const { data, error } = await supabase
           .from(tableName)
-          .select('*')
+          .select('id, nome, telefone, lembrete, data_agendamento, atendimentofinal, topoucall, follow, followup, setdata, email, atende_humano, chatid')
           .not('whatsapp', 'is', null)
-          .order('setdata', { ascending: false });
+          .order('setdata', { ascending: false, nullsFirst: false });
 
         if (error) {
           console.error('Erro no refresh automático:', error);
