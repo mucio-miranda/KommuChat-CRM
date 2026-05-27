@@ -86,8 +86,6 @@ KommuChat-CRM/
 └── scripts/            # Scripts de build e deploy
 ```
 
-### Multi-tenant
-Cada clínica/profissional opera com uma tabela isolada no Supabase. O sistema suporta dois projetos Supabase distintos: um para dados de pacientes (leitura) e outro para dados do CRM (escrita), garantindo isolamento e segurança.
 
 ---
 
