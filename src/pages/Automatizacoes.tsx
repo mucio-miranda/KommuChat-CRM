@@ -527,7 +527,7 @@ export default function Automatizacoes() {
             <div className="flex items-center gap-3">
               <MessageCircle className="w-6 h-6 text-red-500" />
               <div>
-                <h1 className="text-lg font-semibold">Chat</h1>
+                <h1 className="text-lg font-semibold">Whatsapp</h1>
                 <p className="text-xs text-muted-foreground">
                   {patients.length} conversa{patients.length !== 1 ? 's' : ''}
                 </p>
