@@ -488,8 +488,9 @@ export function CreateEventModal({
         selectedEvent.recurringEventId
       );
 
-      // Remover agendamento do paciente (se houver paciente associado)
-      if (patientMetadata && user) {
+      // Remover agendamento do paciente (se houver paciente associado via metadata ou auto-seleção)
+      const patientIdToUpdate = patientMetadata?.patientId ?? selectedPatient?.id ?? null;
+      if (patientIdToUpdate && user) {
         try {
           const { error: updateError } = await supabase!
             .from(iaTableName)
@@ -497,7 +498,7 @@ export function CreateEventModal({
               data_agendamento: null,
               topoucall: false,
             })
-            .eq('id', patientMetadata.patientId);
+            .eq('id', patientIdToUpdate);
 
           if (updateError) {
             console.error('Erro ao atualizar paciente:', updateError);
