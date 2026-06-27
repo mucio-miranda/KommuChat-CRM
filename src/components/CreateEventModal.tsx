@@ -172,6 +172,20 @@ export function CreateEventModal({
             p => p.id === patientMetadata.patientId && p.fonte === patientMetadata.patientSource
           );
           setSelectedPatient(patient || null);
+        } else if (!patientMetadata && patients.length > 0) {
+          // Evento criado pela IA (sem metadata): buscar paciente por data_agendamento
+          const eventStartStr = selectedEvent.start?.dateTime || selectedEvent.start?.date;
+          if (eventStartStr) {
+            const truncToMin = (d: Date) => Math.floor(d.getTime() / 60000) * 60000;
+            const eventMs = truncToMin(new Date(eventStartStr));
+            const matchingPatient = patients.find(p => {
+              if (!p.data_agendamento) return false;
+              return truncToMin(new Date(p.data_agendamento)) === eventMs;
+            });
+            setSelectedPatient(matchingPatient || null);
+          } else {
+            setSelectedPatient(null);
+          }
         } else {
           setSelectedPatient(null);
         }
