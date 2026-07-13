@@ -546,11 +546,11 @@ export function CreateEventModal({
           <div className="space-y-2">
             <Label htmlFor="title" className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
-              Título do Evento *
+              Nome completo do paciente *
             </Label>
             <Input
               id="title"
-              placeholder="Ex: Consulta com João Silva"
+              placeholder="Ex: João da Silva"
               value={formData.title}
               onChange={(e) => handleInputChange("title", e.target.value)}
               required
@@ -567,7 +567,12 @@ export function CreateEventModal({
             <PatientCombobox
               patients={patients}
               value={selectedPatient ? { id: selectedPatient.id, fonte: selectedPatient.fonte } : null}
-              onSelect={setSelectedPatient}
+              onSelect={(patient) => {
+                setSelectedPatient(patient);
+                if (patient && !formData.title.trim()) {
+                  handleInputChange("title", patient.nome);
+                }
+              }}
               disabled={isLoading}
               loading={patientsLoading}
             />
