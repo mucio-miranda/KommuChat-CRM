@@ -431,6 +431,14 @@ export default function Calendario() {
       // Limpar parâmetros da URL
       setSearchParams({});
     } 
+    // Se deve abrir modal de novo evento sem paciente (botão Nova Consulta do header)
+    else if (openModal === 'true' && !patientId) {
+      setModalMode('create');
+      setSelectedEvent(null);
+      setPreSelectedPatient(null);
+      setIsCreateEventModalOpen(true);
+      setSearchParams({});
+    }
     // Se deve abrir modal com paciente pré-selecionado
     else if (openModal === 'true' && patientId && patientName && patientFonte) {
       const preSelected = {

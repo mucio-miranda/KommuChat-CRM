@@ -78,7 +78,13 @@ export function Layout({ children, defaultSidebarOpen = true, lastRefresh, isRef
                 <Button
                   size="sm"
                   className="h-9 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold rounded-lg px-4"
-                  onClick={() => navigate('/calendario')}
+                  onClick={() => {
+                    if (location.pathname === '/calendario') {
+                      navigate('/calendario?openModal=true');
+                    } else {
+                      navigate('/calendario');
+                    }
+                  }}
                 >
                   + Nova Consulta
                 </Button>
