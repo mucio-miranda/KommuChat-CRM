@@ -1078,6 +1078,7 @@ export default function Pacientes() {
         onClose={() => setIsNewPatientModalOpen(false)}
         onPatientAdded={() => loadData(false)}
         iaTableName={iaTableName}
+        patients={patients}
       />
 
       {/* Modal para Editar Paciente */}

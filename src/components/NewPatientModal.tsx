@@ -13,12 +13,14 @@ import { useToast } from "@/hooks/use-toast";
 import { useSupabase } from "@/hooks/useSupabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { normalizePhone } from "@/hooks/usePatientsSearch";
+import { Patient } from "@/types/patient";
 
 interface NewPatientModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPatientAdded: () => void;
   iaTableName: string;
+  patients?: Patient[];
 }
 
 interface NewPatientData {
@@ -27,51 +29,49 @@ interface NewPatientData {
   telefone: string;
 }
 
-export function NewPatientModal({ isOpen, onClose, onPatientAdded, iaTableName }: NewPatientModalProps) {
+export function NewPatientModal({ isOpen, onClose, onPatientAdded, iaTableName, patients = [] }: NewPatientModalProps) {
   const [formData, setFormData] = useState<NewPatientData>({
     nome: "",
     email: "",
     telefone: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const { toast } = useToast();
   const { read: supabase } = useSupabase();
   const { user } = useAuth();
 
   const handleInputChange = (field: keyof NewPatientData, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setFormData(prev => ({ ...prev, [field]: value }));
+
+    if (field === 'telefone') {
+      const normalized = value.trim() ? normalizePhone(value.trim()) : null;
+      if (normalized) {
+        const duplicate = patients.find(p => p.chatid === normalized || p.telefone === normalized);
+        setPhoneError(duplicate ? `Já existe um paciente com este contato: ${duplicate.nome}` : null);
+      } else {
+        setPhoneError(null);
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    if (phoneError) return;
+
     if (!formData.nome.trim()) {
-      toast({
-        title: "Erro",
-        description: "Nome é obrigatório",
-        variant: "destructive",
-      });
+      toast({ title: "Erro", description: "Nome é obrigatório", variant: "destructive" });
       return;
     }
 
     if (!supabase) {
-      toast({
-        title: "Erro",
-        description: "Erro de conexão com o banco de dados",
-        variant: "destructive",
-      });
+      toast({ title: "Erro", description: "Erro de conexão com o banco de dados", variant: "destructive" });
       return;
     }
 
     if (!user) {
-      toast({
-        title: "Erro",
-        description: "Você precisa estar logado para criar pacientes",
-        variant: "destructive",
-      });
+      toast({ title: "Erro", description: "Você precisa estar logado para criar pacientes", variant: "destructive" });
       return;
     }
 
@@ -96,37 +96,21 @@ export function NewPatientModal({ isOpen, onClose, onPatientAdded, iaTableName }
 
       if (error) {
         console.error('Erro ao criar paciente:', error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível criar o paciente",
-          variant: "destructive",
-        });
+        toast({ title: "Erro", description: "Não foi possível criar o paciente", variant: "destructive" });
         return;
       }
 
-      toast({
-        title: "Sucesso",
-        description: "Paciente criado com sucesso!",
-      });
+      console.log('Paciente criado:', data);
+      toast({ title: "Sucesso", description: "Paciente criado com sucesso!" });
 
-      // Limpar formulário
-      setFormData({
-        nome: "",
-        email: "",
-        telefone: "",
-      });
-
-      // Fechar modal e atualizar lista
+      setFormData({ nome: "", email: "", telefone: "" });
+      setPhoneError(null);
       onClose();
       onPatientAdded();
 
     } catch (error) {
       console.error('Erro ao criar paciente:', error);
-      toast({
-        title: "Erro",
-        description: "Erro inesperado ao criar paciente",
-        variant: "destructive",
-      });
+      toast({ title: "Erro", description: "Erro inesperado ao criar paciente", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -134,11 +118,8 @@ export function NewPatientModal({ isOpen, onClose, onPatientAdded, iaTableName }
 
   const handleClose = () => {
     if (!isLoading) {
-      setFormData({
-        nome: "",
-        email: "",
-        telefone: "",
-      });
+      setFormData({ nome: "", email: "", telefone: "" });
+      setPhoneError(null);
       onClose();
     }
   };
@@ -198,21 +179,20 @@ export function NewPatientModal({ isOpen, onClose, onPatientAdded, iaTableName }
               value={formData.telefone}
               onChange={(e) => handleInputChange("telefone", e.target.value)}
               disabled={isLoading}
+              className={phoneError ? "border-destructive focus-visible:ring-destructive" : ""}
             />
+            {phoneError && (
+              <p className="text-xs text-destructive">{phoneError}</p>
+            )}
           </div>
 
           {/* Botões */}
           <div className="flex justify-end gap-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-              disabled={isLoading}
-            >
+            <Button type="button" variant="outline" onClick={handleClose} disabled={isLoading}>
               <X className="w-4 h-4 mr-2" />
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading || !!phoneError}>
               <Save className="w-4 h-4 mr-2" />
               {isLoading ? "Salvando..." : "Salvar Paciente"}
             </Button>
