@@ -62,15 +62,17 @@ export function PatientsPreview() {
     return "novo";
   };
 
-  // Função para formatar o telefone
+  // Formata para exibição sem o código do país: (83) 99137-7388
   const formatPhone = (phone: string): string => {
     if (!phone) return "N/A";
-    // Remove caracteres não numéricos
-    const cleanPhone = phone.replace(/\D/g, '');
-    if (cleanPhone.length === 11) {
-      return `(${cleanPhone.slice(0,2)}) ${cleanPhone.slice(2,7)}-${cleanPhone.slice(7)}`;
-    } else if (cleanPhone.length === 10) {
-      return `(${cleanPhone.slice(0,2)}) ${cleanPhone.slice(2,6)}-${cleanPhone.slice(6)}`;
+    let digits = phone.replace(/\D/g, '');
+    if (digits.startsWith('55') && digits.length >= 12) {
+      digits = digits.slice(2);
+    }
+    if (digits.length === 11) {
+      return `(${digits.slice(0,2)}) ${digits.slice(2,7)}-${digits.slice(7)}`;
+    } else if (digits.length === 10) {
+      return `(${digits.slice(0,2)}) ${digits.slice(2,6)}-${digits.slice(6)}`;
     }
     return phone;
   };

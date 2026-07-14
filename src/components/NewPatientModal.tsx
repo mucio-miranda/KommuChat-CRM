@@ -12,6 +12,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useSupabase } from "@/hooks/useSupabase";
 import { useAuth } from "@/contexts/AuthContext";
+import { normalizePhone } from "@/hooks/usePatientsSearch";
 
 interface NewPatientModalProps {
   isOpen: boolean;
@@ -74,7 +75,7 @@ export function NewPatientModal({ isOpen, onClose, onPatientAdded, iaTableName }
       return;
     }
 
-    const telefone = formData.telefone.trim() || null;
+    const telefone = formData.telefone.trim() ? normalizePhone(formData.telefone.trim()) : null;
     const highId = Math.floor(10_000_000 + Math.random() * 90_000_000);
 
     setIsLoading(true);

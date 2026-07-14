@@ -12,6 +12,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useSupabase } from "@/hooks/useSupabase";
 import { Patient } from "@/types/patient";
+import { normalizePhone } from "@/hooks/usePatientsSearch";
 
 interface EditPatientModalProps {
   isOpen: boolean;
@@ -54,7 +55,7 @@ export function EditPatientModal({ isOpen, onClose, onPatientUpdated, iaTableNam
       return;
     }
 
-    const telefone = formData.telefone.trim() || null;
+    const telefone = formData.telefone.trim() ? normalizePhone(formData.telefone.trim()) : null;
 
     setIsLoading(true);
 
