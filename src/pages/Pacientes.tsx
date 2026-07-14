@@ -15,6 +15,7 @@ import { useProfilePicture } from "@/hooks/useProfilePicture";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Layout } from "@/components/Layout";
 import { NewPatientModal } from "@/components/NewPatientModal";
+import { EditPatientModal } from "@/components/EditPatientModal";
 import { EditDatePopover } from "@/components/EditDatePopover";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -105,6 +106,10 @@ export default function Pacientes() {
   // Estados para exclusão
   const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  // Estados para edição
+  const [patientToEdit, setPatientToEdit] = useState<Patient | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
   // Estados para edição de nome
   const [editingPatientId, setEditingPatientId] = useState<number | null>(null);
@@ -413,6 +418,12 @@ export default function Pacientes() {
         variant: "destructive",
       });
     }
+  };
+
+  // Função para abrir modal de edição
+  const handleEditPatient = (patient: Patient) => {
+    setPatientToEdit(patient);
+    setIsEditModalOpen(true);
   };
 
   // Função para abrir diálogo de confirmação de exclusão
@@ -874,15 +885,26 @@ export default function Pacientes() {
                           title={checkTrue(patient.atendimentofinal) ? "Reativar atendimento" : "Finalizar atendimento"}
                         />
                         {patient.fonte === 'humano' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeletePatient(patient)}
-                            className="h-8 w-8 p-0 text-muted-foreground hover:text-muted-foreground hover:bg-muted/50"
-                            title="Excluir paciente"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditPatient(patient)}
+                              className="h-8 w-8 p-0 text-muted-foreground hover:text-muted-foreground hover:bg-muted/50"
+                              title="Editar paciente"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeletePatient(patient)}
+                              className="h-8 w-8 p-0 text-muted-foreground hover:text-muted-foreground hover:bg-muted/50"
+                              title="Excluir paciente"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
                         )}
                       </div>
                     </td>
@@ -980,15 +1002,26 @@ export default function Pacientes() {
                           {formatDate(patient.setdata)}
                         </div>
                         {patient.fonte === 'humano' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeletePatient(patient)}
-                            className="h-6 w-6 p-0 text-muted-foreground hover:text-muted-foreground hover:bg-muted/50"
-                            title="Excluir paciente"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditPatient(patient)}
+                              className="h-6 w-6 p-0 text-muted-foreground hover:text-muted-foreground hover:bg-muted/50"
+                              title="Editar paciente"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeletePatient(patient)}
+                              className="h-6 w-6 p-0 text-muted-foreground hover:text-muted-foreground hover:bg-muted/50"
+                              title="Excluir paciente"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </>
                         )}
                       </div>
                     </div>
@@ -1043,6 +1076,15 @@ export default function Pacientes() {
         onClose={() => setIsNewPatientModalOpen(false)}
         onPatientAdded={() => loadData(false)}
         iaTableName={iaTableName}
+      />
+
+      {/* Modal para Editar Paciente */}
+      <EditPatientModal
+        isOpen={isEditModalOpen}
+        onClose={() => { setIsEditModalOpen(false); setPatientToEdit(null); }}
+        onPatientUpdated={() => loadData(false)}
+        iaTableName={iaTableName}
+        patient={patientToEdit}
       />
 
       {/* Diálogo de Confirmação de Exclusão */}
