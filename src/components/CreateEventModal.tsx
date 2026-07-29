@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { Calendar, X, Save, Clock, MapPin, Users, FileText, ChevronDown, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Calendar, X, Save, Clock, MapPin, Users, FileText, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,8 +16,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -39,6 +37,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Patient, EventPatientMetadata } from "@/types/patient";
 import { PatientCombobox } from "@/components/PatientCombobox";
 import { DatePickerPopover } from "@/components/DatePickerPopover";
+import { TimePickerPopover } from "@/components/TimePickerPopover";
+import { NewPatientModal } from "@/components/NewPatientModal";
+import { EditPatientModal } from "@/components/EditPatientModal";
 
 interface CreateEventModalProps {
   isOpen: boolean;
@@ -83,8 +84,11 @@ export function CreateEventModal({
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const { toast } = useToast();
   const { createEvent, updateEvent, deleteEvent, isConnected } = useGoogleCalendar();
-  const { patients, loading: patientsLoading, iaTableName } = usePatientsSearch();
-  const { write: supabaseWrite, read: supabase } = useSupabase();
+  const { patients, loading: patientsLoading, iaTableName, refreshPatients } = usePatientsSearch();
+  const [isNewPatientModalOpen, setIsNewPatientModalOpen] = useState(false);
+  const [isEditPatientModalOpen, setIsEditPatientModalOpen] = useState(false);
+  const [patientToEdit, setPatientToEdit] = useState<Patient | null>(null);
+  const { read: supabase } = useSupabase();
   const { user } = useAuth();
 
   // Debug: Log quando pacientes são carregados
@@ -108,8 +112,6 @@ export function CreateEventModal({
     }
   }, [preSelectedPatient, patients, isOpen, modalMode]);
 
-  const startTimeRef = useRef<HTMLInputElement>(null);
-  const endTimeRef = useRef<HTMLInputElement>(null);
 
   // Função helper para converter data de eventos corretamente
   const parseEventDate = (start: { dateTime?: string; date?: string }): Date => {
@@ -262,7 +264,7 @@ export function CreateEventModal({
     setFormData((prev) => {
       const updated = { ...prev, [field]: value };
 
-      // Recalcular hora de término quando duração mudar
+      // Recalcular hora de término quando duração ou hora de início mudar
       if (field === "duracao_minutos" || field === "startTime") {
         if (updated.startTime) {
           updated.endTime = calculateEndTime(
@@ -270,10 +272,10 @@ export function CreateEventModal({
             updated.duracao_minutos
           );
         }
-        // Se mudou a data de início, atualizar data de término também
-        if (field === "startDate") {
-          updated.endDate = value;
-        }
+      }
+      // Se mudou a data de início, atualizar data de término também
+      if (field === "startDate") {
+        updated.endDate = value;
       }
 
       return updated;
@@ -533,202 +535,185 @@ export function CreateEventModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            {modalMode === 'edit' ? 'Editar Evento' : 'Novo Evento no Calendário'}
+      <DialogContent className="sm:max-w-[580px] max-h-[90vh] overflow-y-auto p-0">
+        {/* Header */}
+        <DialogHeader className="px-6 pt-6 pb-4 border-b">
+          <DialogTitle className="flex items-center gap-3 text-base font-semibold">
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 shrink-0">
+              <Calendar className="w-4 h-4 text-primary" />
+            </div>
+            {modalMode === 'edit' ? 'Editar Agendamento' : 'Novo Agendamento'}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Título */}
-          <div className="space-y-2">
-            <Label htmlFor="title" className="flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              Nome completo do paciente *
-            </Label>
-            <Input
-              id="title"
-              placeholder="Ex: João da Silva"
-              value={formData.title}
-              onChange={(e) => handleInputChange("title", e.target.value)}
-              required
-              disabled={isLoading}
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-6">
 
-          {/* Seleção de Paciente */}
-          <div className="space-y-2">
-            <Label htmlFor="patient" className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Paciente
-            </Label>
-            <PatientCombobox
-              patients={patients}
-              value={selectedPatient ? { id: selectedPatient.id, fonte: selectedPatient.fonte } : null}
-              onSelect={(patient) => {
-                setSelectedPatient(patient);
-                if (patient && !formData.title.trim()) {
-                  handleInputChange("title", patient.nome);
-                }
-              }}
-              disabled={isLoading}
-              loading={patientsLoading}
-            />
-            {selectedPatient && (
-              <p className="text-xs text-muted-foreground">
-                A data deste agendamento será sincronizada com o lembrete de consulta do paciente.
-              </p>
-            )}
-          </div>
-
-          {/* Data e Hora de Início */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="startDate" className="flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                Data Início *
+          {/* Bloco: Paciente */}
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="patient" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Paciente
               </Label>
-              <DatePickerPopover
-                value={formData.startDate}
-                onChange={(date) => handleInputChange("startDate", date)}
+              <PatientCombobox
+                patients={patients}
+                value={selectedPatient ? { id: selectedPatient.id, fonte: selectedPatient.fonte } : null}
+                onSelect={(patient) => {
+                  setSelectedPatient(patient);
+                  if (patient && !formData.title.trim()) {
+                    handleInputChange("title", patient.nome);
+                  }
+                }}
                 disabled={isLoading}
+                loading={patientsLoading}
+                onCreatePatient={() => setIsNewPatientModalOpen(true)}
+                onEditPatient={(patient) => {
+                  setPatientToEdit(patient);
+                  setIsEditPatientModalOpen(true);
+                }}
+              />
+              {selectedPatient && (
+                <p className="text-xs text-muted-foreground">
+                  A data deste agendamento será sincronizada com o lembrete de consulta do paciente.
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="title" className="flex items-center gap-1.5 text-sm font-medium">
+                Nome completo do paciente *
+              </Label>
+              <Input
+                id="title"
+                placeholder="Ex: João da Silva"
+                value={formData.title}
+                onChange={(e) => handleInputChange("title", e.target.value)}
                 required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="startTime">Hora Início *</Label>
-              <div className="relative">
-                <Input
-                  ref={startTimeRef}
-                  id="startTime"
-                  type="time"
-                  value={formData.startTime}
-                  onChange={(e) => handleInputChange("startTime", e.target.value)}
-                  required
-                  disabled={isLoading}
-                  className="pr-10"
-                />
-                <ChevronDown 
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground transition-colors" 
-                  onClick={() => {
-                    if (startTimeRef.current) {
-                      startTimeRef.current.showPicker?.() || startTimeRef.current.click();
-                    }
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Duração */}
-          <div className="space-y-2">
-            <Label htmlFor="duracao_minutos">Duração (minutos)</Label>
-            <Select
-              value={formData.duracao_minutos}
-              onValueChange={(value) =>
-                handleInputChange("duracao_minutos", value)
-              }
-              disabled={isLoading}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="30">30 minutos</SelectItem>
-                <SelectItem value="45">45 minutos</SelectItem>
-                <SelectItem value="60">1 hora</SelectItem>
-                <SelectItem value="90">1h 30min</SelectItem>
-                <SelectItem value="120">2 horas</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Data e Hora de Término */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="endDate">Data Término</Label>
-              <DatePickerPopover
-                value={formData.endDate}
-                onChange={(date) => handleInputChange("endDate", date)}
                 disabled={isLoading}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="endTime">Hora Término</Label>
-              <div className="relative">
-                <Input
-                  ref={endTimeRef}
-                  id="endTime"
-                  type="time"
-                  value={formData.endTime}
-                  onChange={(e) => handleInputChange("endTime", e.target.value)}
+          </div>
+
+          {/* Seção: Quando */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5 whitespace-nowrap">
+                <Clock className="w-3.5 h-3.5" />
+                Quando
+              </span>
+              <div className="flex-1 border-t" />
+            </div>
+
+            {/* Duração — primeiro */}
+            <div className="space-y-1.5">
+              <Label htmlFor="duracao_minutos" className="text-xs text-muted-foreground font-medium">Duração</Label>
+              <Select
+                value={formData.duracao_minutos}
+                onValueChange={(value) => {
+                  if (value === "1440") {
+                    setFormData(prev => ({
+                      ...prev,
+                      duracao_minutos: "1440",
+                      startTime: "00:00",
+                      endTime: "00:00",
+                    }));
+                  } else {
+                    handleInputChange("duracao_minutos", value);
+                  }
+                }}
+                disabled={isLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="30">30 minutos</SelectItem>
+                  <SelectItem value="45">45 minutos</SelectItem>
+                  <SelectItem value="60">1 hora</SelectItem>
+                  <SelectItem value="90">1h 30min</SelectItem>
+                  <SelectItem value="120">2 horas</SelectItem>
+                  <SelectItem value="1440">Dia inteiro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Data + Hora de início */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="startDate" className="text-xs text-muted-foreground font-medium">Data *</Label>
+                <DatePickerPopover
+                  value={formData.startDate}
+                  onChange={(date) => handleInputChange("startDate", date)}
                   disabled={isLoading}
-                  className="pr-10"
                 />
-                <ChevronDown 
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground transition-colors" 
-                  onClick={() => {
-                    if (endTimeRef.current) {
-                      endTimeRef.current.showPicker?.() || endTimeRef.current.click();
-                    }
-                  }}
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground font-medium">Hora de início *</Label>
+                <TimePickerPopover
+                  value={formData.startTime}
+                  onChange={(t) => handleInputChange("startTime", t)}
+                  disabled={isLoading || formData.duracao_minutos === "1440"}
                 />
               </div>
             </div>
           </div>
 
-          {/* Localização */}
-          <div className="space-y-2">
-            <Label htmlFor="location" className="flex items-center gap-2">
-              <MapPin className="w-4 h-4" />
-              Localização
-            </Label>
-            <Input
-              id="location"
-              placeholder="Endereço ou sala"
-              value={formData.location}
-              onChange={(e) => handleInputChange("location", e.target.value)}
-              disabled={isLoading}
-            />
+          {/* Seção: Detalhes */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5 whitespace-nowrap">
+                <FileText className="w-3.5 h-3.5" />
+                Detalhes
+              </span>
+              <div className="flex-1 border-t" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="location" className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                <MapPin className="w-3.5 h-3.5" />
+                Localização
+              </Label>
+              <Input
+                id="location"
+                placeholder="Endereço ou sala"
+                value={formData.location}
+                onChange={(e) => handleInputChange("location", e.target.value)}
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="attendees" className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                <Users className="w-3.5 h-3.5" />
+                Participantes
+              </Label>
+              <Input
+                id="attendees"
+                type="text"
+                placeholder="email1@exemplo.com, email2@exemplo.com"
+                value={formData.attendees}
+                onChange={(e) => handleInputChange("attendees", e.target.value)}
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="description" className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                <FileText className="w-3.5 h-3.5" />
+                Descrição
+              </Label>
+              <Textarea
+                id="description"
+                placeholder="Observações sobre o evento..."
+                value={formData.description}
+                onChange={(e) => handleInputChange("description", e.target.value)}
+                disabled={isLoading}
+                rows={3}
+              />
+            </div>
           </div>
 
-          {/* Participantes */}
-          <div className="space-y-2">
-            <Label htmlFor="attendees" className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Participantes (emails, separados por vírgula)
-            </Label>
-            <Input
-              id="attendees"
-              type="text"
-              placeholder="email1@exemplo.com, email2@exemplo.com"
-              value={formData.attendees}
-              onChange={(e) => handleInputChange("attendees", e.target.value)}
-              disabled={isLoading}
-            />
-          </div>
-
-          {/* Descrição */}
-          <div className="space-y-2">
-            <Label htmlFor="description" className="flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              Descrição
-            </Label>
-            <Textarea
-              id="description"
-              placeholder="Observações sobre o evento..."
-              value={formData.description}
-              onChange={(e) => handleInputChange("description", e.target.value)}
-              disabled={isLoading}
-              rows={3}
-            />
-          </div>
-
-          {/* Botões */}
-          <div className="flex justify-between items-center gap-2 pt-4 border-t">
-            {/* Botão Deletar (apenas em modo de edição) */}
+          {/* Rodapé */}
+          <div className="flex justify-between items-center gap-2 pt-2 border-t">
             {modalMode === 'edit' && selectedEvent && (
               <Button
                 type="button"
@@ -738,26 +723,19 @@ export function CreateEventModal({
                 className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
               >
                 <Trash2 className="w-4 h-4 mr-2" />
-                Deletar Evento
+                Deletar
               </Button>
             )}
-
-            {/* Botões de ação principal */}
             <div className="flex gap-2 ml-auto">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleClose}
-                disabled={isLoading}
-              >
+              <Button type="button" variant="outline" onClick={handleClose} disabled={isLoading}>
                 <X className="w-4 h-4 mr-2" />
                 Cancelar
               </Button>
               <Button type="submit" disabled={isLoading || !isConnected}>
                 <Save className="w-4 h-4 mr-2" />
-                {isLoading 
-                  ? (modalMode === 'edit' ? "Salvando..." : "Criando...") 
-                  : (modalMode === 'edit' ? "Salvar Alterações" : "Criar Evento")
+                {isLoading
+                  ? (modalMode === 'edit' ? "Salvando..." : "Criando...")
+                  : (modalMode === 'edit' ? "Salvar" : "Criar Evento")
                 }
               </Button>
             </div>
@@ -817,6 +795,28 @@ export function CreateEventModal({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Modal Novo Paciente */}
+      <NewPatientModal
+        isOpen={isNewPatientModalOpen}
+        onClose={() => setIsNewPatientModalOpen(false)}
+        onPatientAdded={() => { refreshPatients(); }}
+        iaTableName={iaTableName}
+        patients={patients}
+      />
+
+      {/* Modal Editar Paciente */}
+      <EditPatientModal
+        isOpen={isEditPatientModalOpen}
+        onClose={() => { setIsEditPatientModalOpen(false); setPatientToEdit(null); }}
+        onPatientUpdated={() => {
+          refreshPatients();
+          setIsEditPatientModalOpen(false);
+          setPatientToEdit(null);
+        }}
+        iaTableName={iaTableName}
+        patient={patientToEdit}
+      />
     </Dialog>
   );
 }

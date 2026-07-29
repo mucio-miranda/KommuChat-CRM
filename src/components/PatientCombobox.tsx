@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { Check, ChevronsUpDown, User, X } from "lucide-react";
+import { Check, ChevronsUpDown, User, X, Pencil, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -15,7 +14,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Badge } from "@/components/ui/badge";
 import { Patient } from "@/types/patient";
 import { formatPhone } from "@/hooks/usePatientsSearch";
 
@@ -25,6 +23,8 @@ interface PatientComboboxProps {
   onSelect: (patient: Patient | null) => void;
   disabled?: boolean;
   loading?: boolean;
+  onCreatePatient?: () => void;
+  onEditPatient?: (patient: Patient) => void;
 }
 
 export function PatientCombobox({
@@ -33,18 +33,16 @@ export function PatientCombobox({
   onSelect,
   disabled = false,
   loading = false,
+  onCreatePatient,
+  onEditPatient,
 }: PatientComboboxProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  console.log('🔍 PatientCombobox: Total de pacientes recebidos:', patients.length);
-
-  // Encontrar o paciente selecionado
-  const selectedPatient = value 
+  const selectedPatient = value
     ? patients.find(p => p.id === value.id && p.fonte === value.fonte)
     : null;
 
-  // Filtrar pacientes baseado na busca
   const filteredPatients = patients.filter(patient => {
     const search = searchQuery.toLowerCase();
     return (
@@ -53,8 +51,6 @@ export function PatientCombobox({
       patient.telefone?.includes(search)
     );
   });
-  
-  console.log('🔍 PatientCombobox: Pacientes após filtro de busca:', filteredPatients.length);
 
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -91,13 +87,13 @@ export function PatientCombobox({
                 {selectedPatient.nome} - {formatPhone(selectedPatient.telefone)}
               </span>
             ) : (
-              <span className="text-muted-foreground">Selecionar paciente (opcional)</span>
+              <span className="text-muted-foreground">Selecionar paciente</span>
             )}
           </div>
           <div className="flex items-center gap-1 shrink-0 ml-2">
             {selectedPatient && !disabled && !loading && (
               <X
-                className="h-4 w-4 opacity-50 hover:opacity-10"
+                className="h-4 w-4 opacity-50 hover:opacity-100"
                 onClick={handleClear}
               />
             )}
@@ -116,10 +112,10 @@ export function PatientCombobox({
             <CommandEmpty>Nenhum paciente encontrado.</CommandEmpty>
             <CommandGroup>
               {filteredPatients.map((patient) => {
-                const isSelected = 
-                  selectedPatient?.id === patient.id && 
+                const isSelected =
+                  selectedPatient?.id === patient.id &&
                   selectedPatient?.fonte === patient.fonte;
-                
+
                 return (
                   <CommandItem
                     key={`${patient.fonte}-${patient.id}`}
@@ -129,18 +125,16 @@ export function PatientCombobox({
                       setOpen(false);
                       setSearchQuery("");
                     }}
-                    className="cursor-pointer !hover:bg-gray-100 !dark:hover:bg-gray-800 !aria-selected:bg-gray-100 !dark:aria-selected:bg-gray-800 hover:text-foreground aria-selected:text-foreground data-[selected='true']:bg-gray-100"
+                    className="cursor-pointer rounded-md hover:bg-accent aria-selected:bg-accent data-[selected='true']:bg-accent transition-colors"
                   >
                     <Check
                       className={cn(
-                        "mr-2 h-4 w-4 text-primary",
+                        "mr-2 h-4 w-4 text-primary shrink-0",
                         isSelected ? "opacity-100" : "opacity-0"
                       )}
                     />
                     <div className="flex flex-col flex-1 overflow-hidden gap-0.5">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium truncate text-sm text-foreground">{patient.nome}</span>
-                      </div>
+                      <span className="font-medium truncate text-sm text-foreground">{patient.nome}</span>
                       <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
                         <span>{formatPhone(patient.telefone)}</span>
                         {patient.email && (
@@ -151,11 +145,43 @@ export function PatientCombobox({
                         )}
                       </div>
                     </div>
+                    {onEditPatient && (
+                      <button
+                        type="button"
+                        className="ml-2 p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground shrink-0"
+                        title="Editar paciente"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setOpen(false);
+                          onEditPatient(patient);
+                        }}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                    )}
                   </CommandItem>
                 );
               })}
             </CommandGroup>
           </CommandList>
+
+          {onCreatePatient && (
+            <div className="border-t p-1">
+              <button
+                type="button"
+                className="flex items-center gap-2 w-full px-2 py-1.5 text-sm text-primary rounded-md hover:bg-muted transition-colors"
+                onClick={() => {
+                  setOpen(false);
+                  setSearchQuery("");
+                  onCreatePatient();
+                }}
+              >
+                <Plus className="h-4 w-4" />
+                Novo Paciente
+              </button>
+            </div>
+          )}
         </Command>
       </PopoverContent>
     </Popover>

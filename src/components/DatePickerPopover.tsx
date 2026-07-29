@@ -63,7 +63,7 @@ export function DatePickerPopover({
         <Button
           variant="outline"
           className={cn(
-            "w-full justify-start text-left font-normal",
+            "w-full justify-start text-left font-normal border-input text-foreground hover:bg-accent hover:text-accent-foreground shadow-none",
             !date && "text-muted-foreground"
           )}
           disabled={disabled}
