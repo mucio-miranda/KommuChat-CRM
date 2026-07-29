@@ -81,6 +81,8 @@ out/
 # Markdown files (except README)
 *.md
 !README.md
+!project.md
+!.claude/skills/**/*.md
 
 # SQL scripts (historical, not executed by the app)
 sql/
