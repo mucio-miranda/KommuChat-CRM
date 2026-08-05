@@ -315,16 +315,18 @@ export function CreateEventModal({
     setIsLoading(true);
 
     try {
+      const isAllDay = formData.duracao_minutos === "1440";
+
       // Formatar data/hora para ISO 8601
       const startDateTime = new Date(
-        `${formData.startDate}T${formData.startTime}:00`
+        `${formData.startDate}T${formData.startTime || "00:00"}:00`
       );
       const endDateTime = new Date(
         `${formData.endDate || formData.startDate}T${formData.endTime || calculateEndTime(formData.startTime, formData.duracao_minutos)}:00`
       );
 
-      // Verificar se a data de término é válida
-      if (endDateTime <= startDateTime) {
+      // Verificar se a data de término é válida (pular para dia inteiro)
+      if (!isAllDay && endDateTime <= startDateTime) {
         toast({
           title: "Erro",
           description: "A hora de término deve ser posterior à hora de início",
@@ -333,9 +335,6 @@ export function CreateEventModal({
         setIsLoading(false);
         return;
       }
-
-      // Validação de conflitos de horários desativada
-      // Permite criar eventos no mesmo horário ou com sobreposição
 
       // Preparar participantes (attendees)
       const attendees = formData.attendees
@@ -357,18 +356,26 @@ export function CreateEventModal({
         eventDescription += `\n\n[PATIENT_METADATA]${JSON.stringify(patientMetadata)}[/PATIENT_METADATA]`;
       }
 
+      // Para dia inteiro, Google Calendar usa { date } em vez de { dateTime }
+      // A data de fim deve ser o dia seguinte (convenção da API)
+      const allDayEndDate = (() => {
+        const d = new Date(formData.startDate + "T00:00:00");
+        d.setDate(d.getDate() + 1);
+        return d.toISOString().split("T")[0];
+      })();
+
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
       // Preparar dados do evento
       const googleEvent: Partial<GoogleCalendarEvent> = {
         summary: formData.title,
         description: eventDescription || undefined,
-        start: {
-          dateTime: startDateTime.toISOString(),
-          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        },
-        end: {
-          dateTime: endDateTime.toISOString(),
-          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        },
+        start: isAllDay
+          ? { date: formData.startDate }
+          : { dateTime: startDateTime.toISOString(), timeZone },
+        end: isAllDay
+          ? { date: allDayEndDate }
+          : { dateTime: endDateTime.toISOString(), timeZone },
         location: formData.location || undefined,
         attendees: attendees.length > 0 ? attendees : undefined,
       };
