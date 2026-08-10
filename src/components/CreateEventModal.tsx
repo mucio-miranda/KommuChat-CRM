@@ -273,6 +273,18 @@ export function CreateEventModal({
           );
         }
       }
+
+      // Ao mudar hora de término, recalcular hora de início mantendo a duração fixa
+      if (field === "endTime" && value) {
+        const duration = parseInt(updated.duracao_minutos) || 60;
+        const [eh, em] = value.split(":").map(Number);
+        const totalMinutes = eh * 60 + em - duration;
+        if (totalMinutes >= 0) {
+          const sh = Math.floor(totalMinutes / 60);
+          const sm = totalMinutes % 60;
+          updated.startTime = `${String(sh).padStart(2, "0")}:${String(sm).padStart(2, "0")}`;
+        }
+      }
       // Se mudou a data de início, atualizar data de término também
       if (field === "startDate") {
         updated.endDate = value;
@@ -660,6 +672,16 @@ export function CreateEventModal({
                   onChange={(t) => handleInputChange("startTime", t)}
                   disabled={isLoading || formData.duracao_minutos === "1440"}
                 />
+                {formData.startTime && formData.duracao_minutos !== "1440" && (
+                  <div className="space-y-1.5 mt-3">
+                    <Label className="text-xs text-muted-foreground font-medium">Hora de término</Label>
+                    <TimePickerPopover
+                      value={formData.endTime}
+                      onChange={(t) => handleInputChange("endTime", t)}
+                      disabled={isLoading}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
