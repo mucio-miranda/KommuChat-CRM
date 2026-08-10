@@ -80,9 +80,16 @@ export default function Calendario() {
       
       // Para eventos de dia inteiro, não mostrar hora
       const isAllDayEvent = !event.start.dateTime;
-      const time = isAllDayEvent 
-        ? 'Dia inteiro' 
-        : startDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      let time = 'Dia inteiro';
+      if (!isAllDayEvent) {
+        const startStr = startDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        if (event.end?.dateTime) {
+          const endStr = new Date(event.end.dateTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+          time = `${startStr}-${endStr}`;
+        } else {
+          time = startStr;
+        }
+      }
       
       return {
         id: event.id,
