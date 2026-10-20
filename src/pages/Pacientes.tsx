@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
 import { useSupabase } from "@/hooks/useSupabase";
+import { fetchAllPages } from "@/lib/supabase-pagination";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -208,9 +209,12 @@ export default function Pacientes() {
 
       console.log('🎯 PACIENTES - Carregando dados da tabela IA:', tableName);
 
-      const { data: iaData, error: iaError } = await supabase
-        .from(tableName)
-        .select('id, nome, telefone, chatid, atende_humano, email, setdata, followup, follow, topoucall, atendimentofinal, data_agendamento');
+      const { data: iaData, error: iaError } = await fetchAllPages(() =>
+        supabase
+          .from(tableName)
+          .select('id, nome, telefone, chatid, atende_humano, email, setdata, followup, follow, topoucall, atendimentofinal, data_agendamento')
+          .order('id', { ascending: true })
+      );
 
       if (iaError) {
         console.error('Erro ao buscar pacientes IA:', iaError);

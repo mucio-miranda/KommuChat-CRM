@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSupabase } from "@/hooks/useSupabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { Patient } from "@/types/patient";
+import { fetchAllPages } from "@/lib/supabase-pagination";
 
 // Normaliza o número para o formato internacional sem espaços (ex: 5583991377388)
 // Aceita qualquer formato e adiciona o +55 automaticamente se ausente
@@ -69,9 +70,12 @@ export function usePatientsSearch() {
       console.log('📋 usePatientsSearch: Tabela IA:', currentIaTableName);
 
       // Buscar todos os pacientes da tabela unificada
-      const { data: iaPatients, error: iaError } = await supabase
-        .from(currentIaTableName)
-        .select('*');
+      const { data: iaPatients, error: iaError } = await fetchAllPages<Patient>(() =>
+        supabase
+          .from(currentIaTableName)
+          .select('*')
+          .order('id', { ascending: true })
+      );
 
       if (iaError) {
         console.error('❌ Erro ao buscar pacientes:', iaError);

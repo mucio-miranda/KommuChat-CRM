@@ -23,6 +23,7 @@ import {
 import { useWhatsApp } from '@/contexts/WhatsAppContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSupabase } from '@/hooks/useSupabase';
+import { fetchAllPages } from '@/lib/supabase-pagination';
 import { useToast } from '@/hooks/use-toast';
 import { useProfilePicture } from '@/hooks/useProfilePicture';
 import { evolutionService } from '@/lib/evolution-service';
@@ -175,11 +176,14 @@ export default function Automatizacoes() {
       const tableName = await getClienteTableName();
       console.log('🔍 Buscando pacientes da tabela:', tableName);
 
-      const { data, error } = await supabase
-        .from(tableName)
-        .select('id, nome, telefone, lembrete, data_agendamento, atendimentofinal, topoucall, follow, followup, setdata, email, atende_humano, chatid')
-        .not('whatsapp', 'is', null)
-        .order('setdata', { ascending: false, nullsFirst: false });
+      const { data, error } = await fetchAllPages<PatientWithWhatsApp>(() =>
+        supabase
+          .from(tableName)
+          .select('id, nome, telefone, lembrete, data_agendamento, atendimentofinal, topoucall, follow, followup, setdata, email, atende_humano, chatid')
+          .not('whatsapp', 'is', null)
+          .order('setdata', { ascending: false, nullsFirst: false })
+          .order('id', { ascending: true })
+      );
 
       if (error) {
         console.error('Erro ao buscar pacientes:', error);
@@ -251,11 +255,14 @@ export default function Automatizacoes() {
       try {
         const tableName = await getClienteTableName();
 
-        const { data, error } = await supabase
-          .from(tableName)
-          .select('id, nome, telefone, lembrete, data_agendamento, atendimentofinal, topoucall, follow, followup, setdata, email, atende_humano, chatid')
-          .not('whatsapp', 'is', null)
-          .order('setdata', { ascending: false, nullsFirst: false });
+        const { data, error } = await fetchAllPages<PatientWithWhatsApp>(() =>
+          supabase
+            .from(tableName)
+            .select('id, nome, telefone, lembrete, data_agendamento, atendimentofinal, topoucall, follow, followup, setdata, email, atende_humano, chatid')
+            .not('whatsapp', 'is', null)
+            .order('setdata', { ascending: false, nullsFirst: false })
+            .order('id', { ascending: true })
+        );
 
         if (error) {
           console.error('Erro no refresh automático:', error);
